@@ -3,7 +3,7 @@
 *Last updated: 2026-04-20*
 
 Quick reference for spec sections. For templates, see
-[`<root>/.github/copilot/spec-workflows/templates/`](../../../spec-workflows/templates/).
+[`<system>/spec-workflows/templates/`](../../../spec-workflows/templates/).
 
 ---
 

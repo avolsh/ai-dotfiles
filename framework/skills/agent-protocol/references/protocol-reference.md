@@ -38,7 +38,7 @@ bootstrap. Run it when the user explicitly requests it or as a setup task.
 
 The agent verifies that system-scope and project-scope skills cover the
 workspace's **high-leverage workflows**, using the **local submodule** at
-`.github/copilot/upstream/claude-skills/` as the reference catalog.
+`<system>/upstream/claude-skills/` as the reference catalog.
 
 **Procedure:**
 
@@ -58,7 +58,7 @@ workspace's **high-leverage workflows**, using the **local submodule** at
    - If neither, would a skill materially reduce repeated mistakes?
 
 4. **Check upstream skill catalog (local submodule)** --
-   Read `.github/copilot/upstream/claude-skills/` directory tree.
+   Read `<system>/upstream/claude-skills/` directory tree.
    For each justified gap, check if a matching skill exists upstream.
    If found: recommend merge/vendor/defer/do-not-vendor.
    If not found: log the gap for manual skill creation.

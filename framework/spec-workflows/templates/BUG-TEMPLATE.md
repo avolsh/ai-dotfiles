@@ -137,7 +137,7 @@ Pending — Plan stage only.
 **After each task — before proceeding:**
 - Run build/test per project `AGENTS.md` § Build and Run.
 - Post **"The Bottom Line"** using the canonical format in
-  `<root>/.github/copilot/skills/agent-protocol/SKILL.md`
+  `<system>/skills/agent-protocol/SKILL.md`
   § The Bottom Line — canonical format, and wait for explicit human
   approval.
 - Update the task row's Status column in this spec.

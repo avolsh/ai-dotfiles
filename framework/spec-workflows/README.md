@@ -110,7 +110,7 @@ Follow the three gated prompts in order. None may be skipped.
 
 | User intent | Prompt | Output |
 |---|---|---|
-| Start a new CR / IMP | [`<root>/.github/copilot/prompts/create-spec.prompt.md`](../prompts/create-spec.prompt.md) | Spec file at `status: specify` |
-| Architecture review | [`<root>/.github/copilot/prompts/visualize-spec.prompt.md`](../prompts/visualize-spec.prompt.md) | `## Architecture` section populated |
-| Break into tasks | [`<root>/.github/copilot/prompts/plan-spec.prompt.md`](../prompts/plan-spec.prompt.md) | `## Tasks` table; status `plan` |
-| Triage a bug | [`<root>/.github/copilot/prompts/bug-triage.prompt.md`](../prompts/bug-triage.prompt.md) | Spec file at `status: specify` |
+| Start a new CR / IMP | [`<system>/prompts/create-spec.prompt.md`](../prompts/create-spec.prompt.md) | Spec file at `status: specify` |
+| Architecture review | [`<system>/prompts/visualize-spec.prompt.md`](../prompts/visualize-spec.prompt.md) | `## Architecture` section populated |
+| Break into tasks | [`<system>/prompts/plan-spec.prompt.md`](../prompts/plan-spec.prompt.md) | `## Tasks` table; status `plan` |
+| Triage a bug | [`<system>/prompts/bug-triage.prompt.md`](../prompts/bug-triage.prompt.md) | Spec file at `status: specify` |

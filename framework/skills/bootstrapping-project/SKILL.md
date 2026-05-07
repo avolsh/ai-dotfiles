@@ -21,8 +21,8 @@ description: >
 
 | Mode | Prompt | When |
 |---|---|---|
-| **Bootstrap** | [`<root>/.github/copilot/prompts/bootstrap-project.prompt.md`](../../prompts/bootstrap-project.prompt.md) | New project; no `.github/copilot/` exists yet |
-| **Update** | [`<root>/.github/copilot/prompts/update-project.prompt.md`](../../prompts/update-project.prompt.md) | Project already has framework artifacts; bring them up to date |
+| **Bootstrap** | [`<system>/prompts/bootstrap-project.prompt.md`](../../prompts/bootstrap-project.prompt.md) | New project; no `.github/copilot/` exists yet |
+| **Update** | [`<system>/prompts/update-project.prompt.md`](../../prompts/update-project.prompt.md) | Project already has framework artifacts; bring them up to date |
 
 Bootstrap is additive. Update is a diff.
 
@@ -52,7 +52,7 @@ Full details per artifact:
 |---|---|
 | `docs/architecture/system-overview.md` | High-level system diagram and data flow |
 | `docs/architecture/code-conventions.md` | Linting, naming, file layout conventions |
-| `docs/requirements/README.md` | Per-feature requirements baselines: FRs, invariants, NFRs, out-of-scope items, and current-state authority. See `<root>/.github/copilot/skills/writing-specs/references/baseline-citations.md`. |
+| `docs/requirements/README.md` | Per-feature requirements baselines: FRs, invariants, NFRs, out-of-scope items, and current-state authority. See `<system>/skills/writing-specs/references/baseline-citations.md`. |
 | `.github/copilot/skills/<skill-name>/SKILL.md` | Project-scope skills |
 | `.github/copilot/prompts/<workflow>.prompt.md` | Project-scope workflow prompts |
 
@@ -69,7 +69,7 @@ Full details per artifact:
 3. **Render** each required artifact from the templates in
    `references/scaffold-manifest.md`. Fill placeholders from the scan.
 4. **Validate** — every link resolves, every referenced skill exists.
-5. **Register** in `<root>/PROJECTS.md` with path, purpose, build commands.
+5. **Register** in `<workspace>/PROJECTS.md` with path, purpose, build commands.
 6. **Present** the diff to the human for review. Commit only after approval.
 
 Each step is gated. This is not an autonomous scaffold — every artifact is
@@ -77,9 +77,9 @@ shown to the human before it's written.
 
 ## Pre-flight for any bootstrapping session
 
-- [ ] Read `<root>/.github/copilot-instructions.md`
-- [ ] Read `<root>/.github/copilot/boundaries.md`
-- [ ] Read `<root>/PROJECTS.md`
+- [ ] Read `<workspace>/.github/copilot-instructions.md`
+- [ ] Read `<system>/boundaries.md`
+- [ ] Read `<workspace>/PROJECTS.md`
 - [ ] Read this `SKILL.md`
 - [ ] Read [`references/scaffold-manifest.md`](references/scaffold-manifest.md)
 

@@ -10,11 +10,11 @@ already has some `.github/copilot/` content but it may be stale or
 incomplete. For brand-new projects, use
 [`bootstrap-project.prompt.md`](bootstrap-project.prompt.md) instead.
 
-Full process: [`<root>/.github/copilot/skills/bootstrapping-project/SKILL.md`](../skills/bootstrapping-project/SKILL.md).
+Full process: [`<system>/skills/bootstrapping-project/SKILL.md`](../skills/bootstrapping-project/SKILL.md).
 
 ## Preconditions
 
-- Project exists in `<root>/PROJECTS.md`.
+- Project exists in `<workspace>/PROJECTS.md`.
 - Project has at least `.github/copilot-instructions.md` or `AGENTS.md`
   already in place.
 

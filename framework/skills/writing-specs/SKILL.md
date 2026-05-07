@@ -1,6 +1,6 @@
 ---
 name: writing-specs
-source: .github/copilot/upstream/claude-skills/engineering/spec-driven-workflow (merged)
+source: <system>/upstream/claude-skills/engineering/spec-driven-workflow (merged)
 description: >
   Guides the agent through the full spec lifecycle from creating a spec
   through planning, task execution, and closure. Use when creating,
@@ -172,4 +172,4 @@ Copy to `<project>/docs/specs/active/`, fill front-matter and title.
 - [`references/acceptance-criteria-patterns.md`](references/acceptance-criteria-patterns.md) — G/W/T patterns.
 - [`references/bounded-autonomy-rules.md`](references/bounded-autonomy-rules.md) — decision matrix.
 - [`references/baseline-citations.md`](references/baseline-citations.md) — per-feature requirements baselines: structure, IDs, `cites-reqs:` format.
-- [`<root>/.github/copilot/spec-workflows/`](../../spec-workflows/) — lifecycle, types, templates, questions.
+- [`<system>/spec-workflows/`](../../spec-workflows/) — lifecycle, types, templates, questions.

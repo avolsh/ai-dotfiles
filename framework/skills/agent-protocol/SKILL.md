@@ -17,12 +17,10 @@ Documentation uses two path prefixes to avoid fragile relative paths
 
 | Prefix | Meaning | Example resolution |
 |---|---|---|
-| `<root>/` | Workspace root (where root `AGENTS.md` lives) | `<root>/.github/copilot/skills/` → `.github/copilot/skills/` |
 | `<project>/` | Target project root (where project `AGENTS.md` lives) | `<project>/docs/architecture/` → `src/github.com/tobeverse/tobevisit-content/docs/architecture/` |
 
 **Rules:**
 
-- Use `<root>/` for workspace-level resources (agent framework, upstream catalog).
 - Use `<project>/` for project-specific resources (architecture docs, specs, project skills).
 - Shallow relative paths (single `../` within the same directory tree) are acceptable.
 - Deep relative paths (`../../` or deeper crossing directory boundaries) MUST
@@ -79,7 +77,7 @@ An AI agent starting work MUST read files in this order:
    Open `skills/README.md` only when you need to discover or resolve a skill
    name; if the skill list is already known, read the relevant `SKILL.md`
    files directly. For spec creation or spec editing, load the workspace skill
-   `<root>/.github/copilot/skills/writing-specs/SKILL.md` unless a project-scope
+   `<system>/skills/writing-specs/SKILL.md` unless a project-scope
    override exists.
 
 ### Context window budget
@@ -164,7 +162,7 @@ a spec. Each task must independently pass all checks before proceeding.
 - [ ] Affected docs updated (reference, how-to, glossary).
 - [ ] Touched baselines updated to reflect post-closure actual state -- see
       FR-12 in
-      `<root>/.github/copilot/skills/writing-specs/references/baseline-citations.md`.
+      `<system>/skills/writing-specs/references/baseline-citations.md`.
 - [ ] `*Last updated: YYYY-MM-DD*` date set on every modified doc.
 - [ ] No broken links or missing references in affected docs.
 - [ ] **Pipeline step verified** (if the task touches a workflow step) -- verify output.

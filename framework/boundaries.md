@@ -44,7 +44,7 @@ Three tiers, severity increasing from top to bottom.
 2. **Changing AI prompts** — they affect data quality at scale.
 3. **Changing spec templates, workflow definitions, or boundaries** —
    these govern all future work.
-4. **Changing shared framework files** in `<root>/.github/copilot/` — they
+4. **Changing shared framework files** in `<system>/` — they
    affect every project in `PROJECTS.md`.
 5. **Changing cross-repo schemas or output formats** — must be coordinated
    via a single spec with all repos listed in `affected-repos`.

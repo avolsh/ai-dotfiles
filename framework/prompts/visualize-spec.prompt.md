@@ -9,7 +9,7 @@ stage — the spec stays at `status: specify` throughout. You populate the
 `## Architecture` section with Mermaid diagrams and return to the Specify
 prompt for the requirements gate.
 
-Full process: [`<root>/.github/copilot/spec-workflows/README.md`](../spec-workflows/README.md).
+Full process: [`<system>/spec-workflows/README.md`](../spec-workflows/README.md).
 
 ## Preconditions
 

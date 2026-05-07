@@ -29,16 +29,16 @@
 |---|---|
 | Specify | Project `.github/copilot-instructions.md`, this file, [`questions/imp-questions.md`](questions/imp-questions.md), project `docs/architecture/module-map.md` |
 | Visualize (sub-step) | The spec, project architecture overview, relevant reference schemas |
-| Plan | The spec, `<root>/.github/copilot/skills/model-selection/SKILL.md`, skill `SKILL.md` files for every skill in front-matter |
-| Task | The spec, `<root>/.github/copilot/boundaries.md`, project boundaries (if any), required skill `SKILL.md` files, target code from task's "Files" column + nearest precedent |
+| Plan | The spec, `<system>/skills/model-selection/SKILL.md`, skill `SKILL.md` files for every skill in front-matter |
+| Task | The spec, `<system>/boundaries.md`, project boundaries (if any), required skill `SKILL.md` files, target code from task's "Files" column + nearest precedent |
 
 ### BUG — Bug Report
 
 | Stage | Load |
 |---|---|
 | Specify | Project `.github/copilot-instructions.md`, this file, [`questions/bug-questions.md`](questions/bug-questions.md), project `docs/architecture/module-map.md` |
-| Plan | The spec, `<root>/.github/copilot/skills/model-selection/SKILL.md` |
-| Task | The spec, `<root>/.github/copilot/boundaries.md`, project boundaries (if any), target code, failing test scaffold |
+| Plan | The spec, `<system>/skills/model-selection/SKILL.md` |
+| Task | The spec, `<system>/boundaries.md`, project boundaries (if any), target code, failing test scaffold |
 
 ### IMP — Improvement
 
@@ -53,8 +53,8 @@
 
 These skills are loaded at **every** stage, regardless of type:
 
-- `<root>/.github/copilot/skills/agent-protocol/SKILL.md` — if the task is non-trivial.
-- `<root>/.github/copilot/skills/writing-specs/SKILL.md` — when editing any spec file.
+- `<system>/skills/agent-protocol/SKILL.md` — if the task is non-trivial.
+- `<system>/skills/writing-specs/SKILL.md` — when editing any spec file.
 
 Project-scope skills (if listed in the spec's `skills` front-matter field) are
 also loaded at every stage and resolved project-first via the two-scope model.

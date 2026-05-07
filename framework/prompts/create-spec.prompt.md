@@ -7,7 +7,7 @@ description: "Specify stage — create a CR or IMP spec with requirements"
 You are running the **Specify stage** of the spec workflow. This is the
 first of three hard-gated stages; do not proceed past the gate at the end.
 
-Full process: [`<root>/.github/copilot/spec-workflows/README.md`](../spec-workflows/README.md).
+Full process: [`<system>/spec-workflows/README.md`](../spec-workflows/README.md).
 
 ## Preconditions
 
@@ -21,10 +21,10 @@ Full process: [`<root>/.github/copilot/spec-workflows/README.md`](../spec-workfl
 Before asking questions, load:
 
 1. Target project's `.github/copilot-instructions.md` (or `AGENTS.md`).
-2. `<root>/.github/copilot/spec-workflows/spec-types.md`.
+2. `<system>/spec-workflows/spec-types.md`.
 3. The relevant question list:
-   - CR: `<root>/.github/copilot/spec-workflows/questions/cr-questions.md`.
-   - IMP: `<root>/.github/copilot/spec-workflows/questions/imp-questions.md`.
+   - CR: `<system>/spec-workflows/questions/cr-questions.md`.
+   - IMP: `<system>/spec-workflows/questions/imp-questions.md`.
 4. Target project's `docs/architecture/module-map.md` (if it exists).
 5. Target project's `docs/requirements/README.md` and any
    `docs/requirements/<feature>.md` baselines for the affected
@@ -50,7 +50,7 @@ Q2 feeds the Split check in Step 4.
 
 After answers are received:
 
-1. Copy [`<root>/.github/copilot/spec-workflows/templates/CR-TEMPLATE.md`](../spec-workflows/templates/CR-TEMPLATE.md)
+1. Copy [`<system>/spec-workflows/templates/CR-TEMPLATE.md`](../spec-workflows/templates/CR-TEMPLATE.md)
    (or `IMP-TEMPLATE.md` for improvements) to `<project>/docs/specs/active/`.
 2. File name: `CR-YYYYMMDD-<kebab-case-title>.md` (use today's date).
 3. Fill front-matter: `id`, `date`, `status: specify`, `owner`, `risk`,
@@ -68,7 +68,7 @@ After answers are received:
 
 ## Step 4 — Split check (mandatory, before Visualize)
 
-Load [`<root>/.github/copilot/skills/writing-specs/references/splitting-rules.md`](../skills/writing-specs/references/splitting-rules.md).
+Load [`<system>/skills/writing-specs/references/splitting-rules.md`](../skills/writing-specs/references/splitting-rules.md).
 Evaluate every trigger in § 2 against the FR clusters plus the
 Separability answer from Step 2.
 

@@ -9,7 +9,7 @@ only when the project has **no `.github/copilot/` directory**. For
 existing projects that need a refresh, use
 [`update-project.prompt.md`](update-project.prompt.md) instead.
 
-Full process: [`<root>/.github/copilot/skills/bootstrapping-project/SKILL.md`](../skills/bootstrapping-project/SKILL.md).
+Full process: [`<system>/skills/bootstrapping-project/SKILL.md`](../skills/bootstrapping-project/SKILL.md).
 
 ## Preconditions
 
@@ -72,7 +72,7 @@ Artifacts to render (in this order):
 
 ## Step 5 — Register in PROJECTS.md
 
-Add a row to `<root>/PROJECTS.md` under **Production projects**:
+Add a row to `<workspace>/PROJECTS.md` under **Production projects**:
 
 ```markdown
 | <project-name> | `<path>` | yes | yes |

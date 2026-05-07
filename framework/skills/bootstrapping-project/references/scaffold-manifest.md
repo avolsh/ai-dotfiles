@@ -6,7 +6,7 @@ Per-artifact guidance for the [`bootstrapping-project`](../SKILL.md) skill.
 Placeholders use `<angle-brackets>` — replace every one before writing.
 
 For full file templates, see
-[`<root>/.github/copilot/templates/`](../../../templates/).
+[`<system>/templates/`](../../../templates/).
 
 ---
 
@@ -41,7 +41,7 @@ improvements log, architecture docs.
 ### 4. `docs/specs/active/README.md` + `docs/specs/archived/README.md`
 
 Index tables for specs. Active = `specify`/`plan`/`in-progress`. Archived =
-`done`. Link to `<root>/.github/copilot/spec-workflows/README.md` for
+`done`. Link to `<system>/spec-workflows/README.md` for
 the full lifecycle.
 
 ### 5. `docs/architecture/module-map.md`
@@ -73,7 +73,7 @@ action taken. Referenced from boundaries and agent-protocol.
 1. Read `package.json` / `Makefile` / `Cargo.toml` → identify stack + build commands.
 2. Classify project (web, service, pipeline, library).
 3. Render each required artifact; show as a single diff.
-4. On approval, commit. Add a row to `<root>/PROJECTS.md`.
+4. On approval, commit. Add a row to `<workspace>/PROJECTS.md`.
 
 ## Update walkthrough
 

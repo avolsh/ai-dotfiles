@@ -8,28 +8,28 @@
 
 | Resource | Location |
 |---|---|
-| Boundaries (system-scope) | `<root>/.github/copilot/boundaries.md` |
-| Spec workflows | `<root>/.github/copilot/spec-workflows/` (lifecycle, types, templates, questions) |
-| System skills | `<root>/.github/copilot/skills/` |
-| Workflow prompts | `<root>/.github/copilot/prompts/` |
-| Upstream skill catalog | `<root>/.github/copilot/upstream/claude-skills/` (submodule, read-only) |
-| Upstream skills index | `<root>/.github/copilot/upstream/README.md` |
+| Boundaries (system-scope) | `<system>/boundaries.md` |
+| Spec workflows | `<system>/spec-workflows/` (lifecycle, types, templates, questions) |
+| System skills | `<system>/skills/` |
+| Workflow prompts | `<system>/prompts/` |
+| Upstream skill catalog | `<system>/upstream/claude-skills/` (submodule, read-only) |
+| Upstream skills index | `<system>/upstream/README.md` |
 
 ## Two-scope instruction model
 
 Skills, boundaries, and protocol exist at two scopes. Load both.
-Full details: `<root>/.github/copilot/skills/agent-protocol/SKILL.md` Two-scope model section.
+Full details: `<system>/skills/agent-protocol/SKILL.md` Two-scope model section.
 
 | Scope | Location | Overrides |
 |---|---|---|
-| **System** | `<root>/.github/copilot/` | Base layer |
+| **System** | `<system>/` | Base layer |
 | **Project** | `<project>/.github/copilot/` | Extends system; wins on conflict |
 
-`<root>/` = workspace root, `<project>/` = target project root.
+`<project>/` = target project root.
 
 ## Non-negotiable rules (all projects)
 
-Full list: [`<root>/.github/copilot/boundaries.md`](/<root>/.github/copilot/boundaries.md)
+Full list: [`<system>/boundaries.md`](/<system>/boundaries.md)
 (system scope) + each project's
 `<project>/.github/copilot/instructions/general.md` (project scope).
 
@@ -48,7 +48,7 @@ specify → plan → in-progress → done → archived/
 ```
 
 Each transition is a **hard human gate**. No status is skipped.
-Full process: [`<root>/.github/copilot/spec-workflows/README.md`](/<root>/.github/copilot/spec-workflows/README.md).
+Full process: [`<system>/spec-workflows/README.md`](/<system>/spec-workflows/README.md).
 
 | Type | Prefix | Use when |
 |---|---|---|
@@ -57,29 +57,29 @@ Full process: [`<root>/.github/copilot/spec-workflows/README.md`](/<root>/.githu
 | Improvement | `IMP-` | Non-functional enhancement, refactor, performance |
 
 Type details + per-stage context:
-[`<root>/.github/copilot/spec-workflows/spec-types.md`](/<root>/.github/copilot/spec-workflows/spec-types.md).
+[`<system>/spec-workflows/spec-types.md`](/<system>/spec-workflows/spec-types.md).
 
 ## Available skills
 
 | Skill | Path | When to use |
 |---|---|---|
-| `agent-protocol` | `<root>/.github/copilot/skills/agent-protocol/SKILL.md` | Context loading, checklists, output conventions, spec-driven work |
-| `writing-specs` | `<root>/.github/copilot/skills/writing-specs/SKILL.md` | Spec lifecycle — creating CRs, BUGs, IMPs, planning, closure |
-| `model-selection` | `<root>/.github/copilot/skills/model-selection/SKILL.md` | AI model tier assignment for Plan stage |
-| `bootstrapping-project` | `<root>/.github/copilot/skills/bootstrapping-project/SKILL.md` | Scaffold a new project or refresh an existing one |
-| `writing-docs` | `<root>/.github/copilot/skills/writing-docs/SKILL.md` | Doc conventions, glossary, freshness rules |
+| `agent-protocol` | `<system>/skills/agent-protocol/SKILL.md` | Context loading, checklists, output conventions, spec-driven work |
+| `writing-specs` | `<system>/skills/writing-specs/SKILL.md` | Spec lifecycle — creating CRs, BUGs, IMPs, planning, closure |
+| `model-selection` | `<system>/skills/model-selection/SKILL.md` | AI model tier assignment for Plan stage |
+| `bootstrapping-project` | `<system>/skills/bootstrapping-project/SKILL.md` | Scaffold a new project or refresh an existing one |
+| `writing-docs` | `<system>/skills/writing-docs/SKILL.md` | Doc conventions, glossary, freshness rules |
 
 ## Workflows (shared prompts)
 
 | User says | Load prompt | Skills |
 |---|---|---|
-| "create CR", "new feature", "specify" | `<root>/.github/copilot/prompts/create-spec.prompt.md` | writing-specs, agent-protocol |
-| "create IMP", "improve", "refactor" | `<root>/.github/copilot/prompts/create-spec.prompt.md` | writing-specs, agent-protocol |
-| "visualize", "architecture" | `<root>/.github/copilot/prompts/visualize-spec.prompt.md` | writing-specs |
-| "bug", "triage", "investigate issue" | `<root>/.github/copilot/prompts/bug-triage.prompt.md` | writing-specs |
-| "plan", "break into tasks" | `<root>/.github/copilot/prompts/plan-spec.prompt.md` | writing-specs, model-selection |
-| "bootstrap project", "new project" | `<root>/.github/copilot/prompts/bootstrap-project.prompt.md` | bootstrapping-project |
-| "update project framework", "refresh docs" | `<root>/.github/copilot/prompts/update-project.prompt.md` | bootstrapping-project |
+| "create CR", "new feature", "specify" | `<system>/prompts/create-spec.prompt.md` | writing-specs, agent-protocol |
+| "create IMP", "improve", "refactor" | `<system>/prompts/create-spec.prompt.md` | writing-specs, agent-protocol |
+| "visualize", "architecture" | `<system>/prompts/visualize-spec.prompt.md` | writing-specs |
+| "bug", "triage", "investigate issue" | `<system>/prompts/bug-triage.prompt.md` | writing-specs |
+| "plan", "break into tasks" | `<system>/prompts/plan-spec.prompt.md` | writing-specs, model-selection |
+| "bootstrap project", "new project" | `<system>/prompts/bootstrap-project.prompt.md` | bootstrapping-project |
+| "update project framework", "refresh docs" | `<system>/prompts/update-project.prompt.md` | bootstrapping-project |
 
 Project-specific prompts live in `<project>/.github/copilot/prompts/`.
 
@@ -103,5 +103,5 @@ Practical implications for non-Copilot agents:
 - **`@path` in `CLAUDE.md`:** only Claude Code follows it. Other agents
   must open the path manually if they encounter it.
 - **`#skill:<name>` in `.prompt.md` files:** no agent auto-resolves this.
-  Open `<root>/.github/copilot/skills/<name>/SKILL.md` (project scope first, then
+  Open `<system>/skills/<name>/SKILL.md` (project scope first, then
   workspace) when you see the marker.

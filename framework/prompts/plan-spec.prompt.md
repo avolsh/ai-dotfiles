@@ -8,7 +8,7 @@ description: "Plan stage — decompose an approved spec into vertical-slice task
 You are running the **Plan stage**. Requirements (and architecture, if
 triggered) are already approved by the human in the Specify stage.
 
-Full process: [`<root>/.github/copilot/spec-workflows/README.md`](../spec-workflows/README.md).
+Full process: [`<system>/spec-workflows/README.md`](../spec-workflows/README.md).
 
 ## Preconditions
 
@@ -20,7 +20,7 @@ Full process: [`<root>/.github/copilot/spec-workflows/README.md`](../spec-workfl
 ## Step 1 — Load context
 
 1. The spec file.
-2. `<root>/.github/copilot/skills/model-selection/SKILL.md` — tier assignment.
+2. `<system>/skills/model-selection/SKILL.md` — tier assignment.
 3. `SKILL.md` files for every skill listed in the spec's `skills` field.
 4. Target project's `docs/architecture/module-map.md` (to refine
    `affected-code` paths into specific files).
@@ -54,7 +54,7 @@ For each task:
 
 ## Step 3 — Safety-net split check
 
-Run [`<root>/.github/copilot/skills/writing-specs/references/splitting-rules.md § 3`](../skills/writing-specs/references/splitting-rules.md)
+Run [`<system>/skills/writing-specs/references/splitting-rules.md § 3`](../skills/writing-specs/references/splitting-rules.md)
 against the decomposed task list. If any signal fires:
 
 1. Stop. Do not write the `## Tasks` table.
@@ -74,7 +74,7 @@ Fill the `## Tasks` table in the spec. Add a line above the table:
 
 If the spec's Agent instructions mention "The Bottom Line",
 cross-reference the canonical format in
-`<root>/.github/copilot/skills/agent-protocol/SKILL.md#the-bottom-line--canonical-format`
+`<system>/skills/agent-protocol/SKILL.md#the-bottom-line--canonical-format`
 rather than duplicating the field list.
 
 Refresh `## Cost Estimate` so its token range, human gate count /

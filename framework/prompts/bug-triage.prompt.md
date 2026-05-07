@@ -8,7 +8,7 @@ You are running the **Specify stage for a BUG**. Same gates as the
 Specify prompt for CRs, with a reproduction-first question list and a
 mandatory "reproduce with failing test" first task.
 
-Full process: [`<root>/.github/copilot/spec-workflows/README.md`](../spec-workflows/README.md).
+Full process: [`<system>/spec-workflows/README.md`](../spec-workflows/README.md).
 
 ## Preconditions
 
@@ -18,8 +18,8 @@ Full process: [`<root>/.github/copilot/spec-workflows/README.md`](../spec-workfl
 ## Step 1 — Load context
 
 1. Target project's `.github/copilot-instructions.md` (or `AGENTS.md`).
-2. `<root>/.github/copilot/spec-workflows/spec-types.md`.
-3. `<root>/.github/copilot/spec-workflows/questions/bug-questions.md`.
+2. `<system>/spec-workflows/spec-types.md`.
+3. `<system>/spec-workflows/questions/bug-questions.md`.
 4. Target project's `docs/architecture/module-map.md` (if it exists).
 5. Target project's `docs/requirements/README.md` and any
    `docs/requirements/<feature>.md` baselines for the affected
@@ -50,7 +50,7 @@ answer (Q2):
 
 For each spec:
 
-1. Copy [`<root>/.github/copilot/spec-workflows/templates/BUG-TEMPLATE.md`](../spec-workflows/templates/BUG-TEMPLATE.md)
+1. Copy [`<system>/spec-workflows/templates/BUG-TEMPLATE.md`](../spec-workflows/templates/BUG-TEMPLATE.md)
    to `<project>/docs/specs/active/`.
 2. File name: `BUG-YYYYMMDD-<kebab-case-title>.md` (today's date).
 3. Fill front-matter: `id`, `date`, `status: specify`, `owner`, `severity`,
