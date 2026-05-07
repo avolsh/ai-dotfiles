@@ -21,10 +21,12 @@ docs/
 
 ## Context Loading
 Read in this order before making changes:
-1. This file (`.github/copilot-instructions.md`)
-2. `docs/README.md` — documentation index
-3. Project-specific module map or architecture docs
-4. Target code directory
+1. The active tool's `<system>` instruction file (e.g., `~/.claude/CLAUDE.md`,
+   `~/.copilot/AGENTS.md`, `~/.codex/AGENTS.md`) — framework bootstrap.
+2. This file (`.github/copilot-instructions.md`) — project rules.
+3. `docs/README.md` — documentation index.
+4. Project-specific module map or architecture docs.
+5. Target code directory.
 
 ## Non-negotiable rules
 
@@ -35,24 +37,31 @@ Read in this order before making changes:
 
 ## Available skills
 
+System-scope skills are populated under each tool's home directory by
+`ai-switch.sh` (rendered from `ai-dotfiles`). Project-scope skills, if any,
+live under `.github/copilot/skills/` and override system entries with the
+same name.
+
 | Skill | Path | When to use |
 |---|---|---|
-| `agent-protocol` | `.github/copilot/skills/agent-protocol/SKILL.md` | Context loading, checklists, output conventions |
-<!-- Add project-specific skills below -->
+| `agent-protocol` | `<system>/skills/agent-protocol/SKILL.md` | Context loading, checklists, output conventions |
+<!-- Add project-specific skills below, pointing at <project>/.github/copilot/skills/<name>/SKILL.md -->
 
 ## Workflows
 
 | User says | Load prompt | Skills |
 |---|---|---|
-| "create CR", "new feature" | `.github/copilot/prompts/create-spec.prompt.md` | writing-specs, agent-protocol |
-| "create IMP", "improve", "refactor" | `.github/copilot/prompts/create-spec.prompt.md` | writing-specs, agent-protocol |
-| "bug", "triage" | `.github/copilot/prompts/bug-triage.prompt.md` | writing-specs |
-| "plan", "break into tasks" | `.github/copilot/prompts/plan-spec.prompt.md` | writing-specs, model-selection |
+| "create CR", "new feature" | `<system>/prompts/create-spec.prompt.md` | writing-specs, agent-protocol |
+| "create IMP", "improve", "refactor" | `<system>/prompts/create-spec.prompt.md` | writing-specs, agent-protocol |
+| "bug", "triage" | `<system>/prompts/bug-triage.prompt.md` | writing-specs |
+| "plan", "break into tasks" | `<system>/prompts/plan-spec.prompt.md` | writing-specs, model-selection |
 
 ## Note for non-Copilot agents
 
 When you read a `.prompt.md` file and see `#skill:<name>`, load the
-corresponding skill file: `.github/copilot/skills/<name>/SKILL.md`
+corresponding skill file: `<system>/skills/<name>/SKILL.md` (or the
+project-scope equivalent at `.github/copilot/skills/<name>/SKILL.md` if
+it exists — project wins on name collision).
 
 ## Build and Run
 - `<build command>`

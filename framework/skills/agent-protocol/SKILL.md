@@ -5,24 +5,33 @@ description: "Operating procedures for AI agents. Context loading, checklists, o
 
 # Agent Protocol
 
-*Last updated: 2026-04-29*
+*Last updated: 2026-05-07*
 
-Operating procedures for AI agents working in the workspace. Covers context
-loading, checklists, output conventions, determinism, and document freshness.
+Operating procedures for AI agents working in any project that participates in
+the AI Agent Framework. Covers context loading, checklists, output
+conventions, determinism, and document freshness.
 
 ## Path prefixes
 
-Documentation uses two path prefixes to avoid fragile relative paths
+Documentation uses three path prefixes to avoid fragile relative paths
 (`../../..`). Agents and humans resolve them at read time.
 
 | Prefix | Meaning | Example resolution |
 |---|---|---|
-| `<project>/` | Target project root (where project `AGENTS.md` lives) | `<project>/docs/architecture/` → `src/github.com/tobeverse/tobevisit-content/docs/architecture/` |
+| `<system>/` | User-home, populated by `ai-switch.sh` from `ai-dotfiles`. Resolves to the active tool's home directory (`~/.claude/`, `~/.copilot/`, `~/.codex/`). `<system>/skills/<name>` resolves via per-entry symlink in **all three** tool homes (skills overlay covers claude+copilot+codex). `<system>/spec-workflows/`, `<system>/prompts/`, `<system>/templates/`, and `<system>/boundaries.md` resolve via tool-agnostic reference symlinks installed once per tool home. `<system>/agents/<name>` resolves via per-entry symlink in `~/.claude/agents/` and `~/.copilot/agents/` (Codex does not consume system agents). | `<system>/skills/agent-protocol/SKILL.md` → `~/.claude/skills/agent-protocol/SKILL.md` |
+| `<project>/` | Per-repo project root. Holds `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.github/copilot/instructions/`, and (when present) project-scope `.github/copilot/skills/`, `.github/copilot/prompts/`, `.github/copilot/agents/`. Project entries extend or override system-scope catalog entries on name collision. | `<project>/docs/architecture/` → `src/github.com/tobeverse/tobevisit-content/docs/architecture/` |
+| `<workspace>/` | Optional. Host-specific workspace root containing `PROJECTS.md`, when the host has a multi-project workspace concept. Single-project hosts can omit; the `<workspace>/PROJECTS.md` step in workflows is conditional on this placeholder being configured. | `<workspace>/PROJECTS.md` → `~/vcs/geeoz/tobevisit/PROJECTS.md` |
 
 **Rules:**
 
-- Use `<project>/` for project-specific resources (architecture docs, specs, project skills).
-- Shallow relative paths (single `../` within the same directory tree) are acceptable.
+- Use `<system>/` for framework artifacts (skills catalog, spec-workflows,
+  prompts, templates, boundaries) rendered into the user's tool homes.
+- Use `<project>/` for project-specific resources (architecture docs, specs,
+  project-scope skills/prompts/agents).
+- Use `<workspace>/` only for host workspace-map references (PROJECTS.md).
+  Mark workflow steps that read it as conditional.
+- Shallow relative paths (single `../` within the same directory tree) are
+  acceptable.
 - Deep relative paths (`../../` or deeper crossing directory boundaries) MUST
   use a prefix instead.
 
@@ -32,30 +41,43 @@ Skills, boundaries, and protocol exist at two scopes. Agents load both.
 
 | Scope | Location | Overrides |
 |---|---|---|
-| **System** | `.github/copilot/skills/` (workspace root) | Base layer |
-| **Project** | `<project>/.github/copilot/skills/` | Extends system; wins on conflict |
+| **System** | `~/.{claude,copilot,codex}/` — instruction files (`CLAUDE.md`, `AGENTS.md`), per-entry symlinks under `skills/` and `agents/`, manifest at `.active-manifest`. Rendered by `ai-switch.sh` from `ai-dotfiles`. | Base layer |
+| **Project** | Per-repo: `<project>/CLAUDE.md`, `<project>/AGENTS.md`, `<project>/.github/copilot-instructions.md`, `<project>/.github/copilot/instructions/`, **`<project>/.github/copilot/skills/`**, **`<project>/.github/copilot/prompts/`**, **`<project>/.github/copilot/agents/`** (when present) | Extends system; wins on name collision |
 
-**Skill resolution order:** project scope then workspace scope. When a task
-lists a skill name, check the project's `.github/copilot/skills/` first, then
-fall back to the workspace `.github/copilot/skills/`.
+**Skill resolution order:** project scope → system scope. When a task lists a
+skill name, check the project's `.github/copilot/skills/<name>/SKILL.md`
+first, then fall back to `<system>/skills/<name>/SKILL.md`. A project skill
+with the same name as a system skill **wins**. Project skills with novel
+names add to the active set without displacing the system catalog.
+
+The old workspace scope (a separate layer at the workspace root containing
+duplicated framework artifacts) **no longer exists** post-migration. Framework
+artifacts live in `<system>` only; per-repo rules live in `<project>` only;
+host workspace-map references live behind the optional `<workspace>/`
+placeholder.
 
 **Multi-project navigation principles** (adapted from monorepo patterns):
 
-1. **Root PROJECTS.md defines the workspace map** -- single source of truth
-   for project locations, tech stacks, and build commands.
+1. **`<workspace>/PROJECTS.md` defines the workspace map** -- single source
+   of truth for project locations, tech stacks, and build commands. Optional
+   per host.
 2. **Per-project AGENTS.md defines constraints** -- each project's rules are
    authoritative within its scope.
 3. **Cross-project impact analysis** -- when changing shared framework docs
-   in `.github/copilot/`, assess impact on all projects listed in `PROJECTS.md`.
+   in `<system>/`, assess impact on every project listed in
+   `<workspace>/PROJECTS.md`.
 
 ## Context loading order
 
 An AI agent starting work MUST read files in this order:
 
-1. Root `AGENTS.md` (workspace root) -- bootstrap.
-2. Target project `AGENTS.md` -- project-specific rules.
-3. `PROJECTS.md` -- only when routing is unclear, the change is cross-project,
-   or shared framework files are involved.
+1. `<system>` instruction file for the active tool (`~/.claude/CLAUDE.md`,
+   `~/.copilot/AGENTS.md`, or `~/.codex/AGENTS.md`) -- framework bootstrap,
+   rendered by `ai-switch.sh`.
+2. Target project `AGENTS.md` (or `CLAUDE.md`) -- project-specific rules.
+3. `<workspace>/PROJECTS.md` -- only when routing is unclear, the change is
+   cross-project, or shared framework files are involved. Skip if the host has
+   no `<workspace>` configured.
 4. Relevant spec from the project's `docs/specs/active/` (if working on a spec).
    Once the spec exists, load the current spec file rather than the template.
    Read `## Summary` first to anchor Goal, Scope, and Out of scope before
@@ -86,14 +108,14 @@ Load only what the current task requires. Not every task needs the full protocol
 
 | Task type | Load (minimum) | Load (on demand) |
 |---|---|---|
-| Quick fix / typo | Root `AGENTS.md` + project `AGENTS.md` | -- |
-| Feature work (no spec) | Above + project `boundaries.md` + relevant skill(s) | `agent-protocol.md` if ambiguity arises |
+| Quick fix / typo | `<system>` instruction file + project `AGENTS.md` | -- |
+| Feature work (no spec) | Above + `<system>/boundaries.md` + relevant skill(s) | `agent-protocol.md` if ambiguity arises |
 | Spec-driven work | Above + current spec + `agent-protocol.md` + `spec-lifecycle.md` + stage skills (see `spec-types.md` § Skills per stage) | Question templates, ADR conventions, `agent-protocol-reference.md` for determinism/schema-sync/doc-freshness |
-| Skills audit | `PROJECTS.md` + `.github/copilot/skills/` + upstream catalog tree | Individual upstream `SKILL.md` files |
+| Skills audit | `<workspace>/PROJECTS.md` + `<system>/skills/` + project `<project>/.github/copilot/skills/` + upstream catalog tree | Individual upstream `SKILL.md` files |
 | Framework changes | Full protocol + both scopes | All framework docs |
 
 **Rules:**
-- `PROJECTS.md` is **not** auto-imported; read it on demand.
+- `<workspace>/PROJECTS.md` is **not** auto-imported; read it on demand.
 - `affected-docs` and `affected-code` are planning inventories, not bulk-read
   lists. Load only the entries needed for the current stage or task, and skip
   unrelated or `(new)` entries until they become relevant.
