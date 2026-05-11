@@ -285,7 +285,11 @@ ai_switch_main() {
     } > "$manifest_for"
   done
 
-  # --- 7. Summary ---
+  # --- 7. Write tool-agnostic state file (FR-3). ---
+  mkdir -p "${HOME}/.config/ai-dotfiles"
+  printf '%s/%s\n' "$profile" "$backend" > "${HOME}/.config/ai-dotfiles/state"
+
+  # --- 8. Summary ---
   printf '✓ profile=%s backend=%s model=%s skills=%s agents=%s\n' \
     "$profile" "$backend" "${ANTHROPIC_MODEL:-}" "$skill_count" "$agent_count"
 }
