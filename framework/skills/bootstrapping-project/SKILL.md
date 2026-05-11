@@ -3,31 +3,48 @@ name: bootstrapping-project
 description: >
   Scaffolds a new project — or retrofits an existing one — so it complies
   with the AI Agent Framework. Use when onboarding a repo into
-  `<workspace>/PROJECTS.md` (when configured) or when framework structure
+  the workspace root files (when configured) or when framework structure
   needs to be added or refreshed.
 ---
 
 # Bootstrapping a Project
 
-*Last updated: 2026-05-07*
+*Last updated: 2026-05-11*
 
 ## When to use
 
-- A new project is being added to `<workspace>/PROJECTS.md` (or stood up on
+- A new project is being added to the workspace root files (or stood up on
   a host with no workspace map).
 - An existing project has outdated or missing framework artifacts (no
   `.github/copilot/`, no `docs/specs/`, stale instructions).
 - The framework (in `<system>`) has been upgraded and projects need to
   catch up.
 
-## Two operating modes
+## Three operating modes
 
 | Mode | Prompt | When |
 |---|---|---|
-| **Bootstrap** | [`<system>/prompts/bootstrap-project.prompt.md`](../../prompts/bootstrap-project.prompt.md) | New project; no `.github/copilot/` exists yet |
-| **Update** | [`<system>/prompts/update-project.prompt.md`](../../prompts/update-project.prompt.md) | Project already has framework artifacts; bring them up to date |
+| **Bootstrap project** | [`<system>/prompts/bootstrap-project.prompt.md`](../../prompts/bootstrap-project.prompt.md) | New project; no `.github/copilot/` exists yet |
+| **Bootstrap workspace** | (inline — see below) | New workspace root; no `CLAUDE.md`/`AGENTS.md` exists yet |
+| **Update** | [`<system>/prompts/update-project.prompt.md`](../../prompts/update-project.prompt.md) | Project or workspace already has framework artifacts; bring them up to date |
 
 Bootstrap is additive. Update is a diff.
+
+### Bootstrap workspace mode
+
+A workspace root is fundamentally different from a project: no `.git/` by
+default, no build commands, no per-filetype rules, no `scripts/sync-agents.sh`.
+
+**Creates:**
+
+| Path | Purpose |
+|---|---|
+| `CLAUDE.md` | `@`-imports `.github/copilot-instructions.md`. Claude Code loads this at session start. |
+| `AGENTS.md` | Self-contained copy of workspace instructions for Codex. |
+| `.github/copilot-instructions.md` | Workspace instructions for GitHub Copilot. Canonical source — project table, routing, shared safety, cross-repo coordination. |
+| `docs/improvements-log.md` | Append-only process-improvement log (if `docs/` exists). |
+
+**Does NOT create:** `scripts/sync-agents.sh`, `Makefile`, `.github/copilot/instructions/general.md`, `docs/specs/`, `docs/architecture/module-map.md` — these are project-only artifacts.
 
 ## Scaffold manifest
 
@@ -81,9 +98,10 @@ Full details per artifact:
    exits 0.
 5. **Validate** — every link resolves, every referenced skill exists, and
    `grep -E '^@' AGENTS.md` returns no matches (Codex compatibility).
-6. **Register** in `<workspace>/PROJECTS.md` with path, purpose, build
-   commands. **Conditional** — skip this step if the host has no
-   `<workspace>` configured (single-project hosts).
+6. **Register** in the workspace root `CLAUDE.md`, `AGENTS.md`, and
+   `.github/copilot-instructions.md` with path, purpose, build commands.
+   **Conditional** — skip this step if the host has no `<workspace>`
+   configured (single-project hosts).
 7. **Present** the diff to the human for review. Commit only after approval.
 
 Each step is gated. This is not an autonomous scaffold — every artifact is
@@ -104,7 +122,7 @@ confirm:
 ## Pre-flight for any bootstrapping session
 
 - [ ] Read `<system>/boundaries.md`
-- [ ] Read `<workspace>/PROJECTS.md` (skip if `<workspace>` is not configured)
+- [ ] Read `<workspace>/CLAUDE.md` (skip if `<workspace>` is not configured)
 - [ ] Read this `SKILL.md`
 - [ ] Read [`references/scaffold-manifest.md`](references/scaffold-manifest.md)
 

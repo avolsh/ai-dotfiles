@@ -14,7 +14,7 @@ Full process: [`<system>/spec-workflows/README.md`](../spec-workflows/README.md)
 - User wants to create a new CR (feature / change) or IMP (non-functional
   improvement). For bug reports, use `bug-triage.prompt.md` instead.
 - The target project is identified. If unclear, ask which project in
-  `PROJECTS.md` is affected.
+  the workspace is affected.
 
 ## Step 1 — Load context
 

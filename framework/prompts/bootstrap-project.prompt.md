@@ -16,7 +16,7 @@ Full process: [`<system>/skills/bootstrapping-project/SKILL.md`](../skills/boots
 - Project directory exists (e.g., `src/github.com/<org>/<name>/`).
 - Project has some code or build manifest (`package.json`, `Makefile`,
   `Cargo.toml`, `go.mod`, or equivalent).
-- User has confirmed this project should be added to `PROJECTS.md`.
+- User has confirmed this project should be added to the workspace.
 
 ## Step 1 — Scan the project
 
@@ -70,23 +70,21 @@ Artifacts to render (in this order):
 - [ ] At least one "Non-negotiable rule" is project-specific (not just
       the generic boilerplate).
 
-## Step 5 — Register in PROJECTS.md
+## Step 5 — Register in workspace root files
 
-Add a row to `<workspace>/PROJECTS.md` under **Production projects**:
+Add the project to the workspace root `CLAUDE.md`, `AGENTS.md`, and
+`.github/copilot-instructions.md`:
 
-```markdown
-| <project-name> | `<path>` | yes | yes |
-```
-
-And append a routing note under **Project routing notes** with purpose,
-read-first order, and main commands.
+- Add a row to the **Projects** table with name, path, and purpose.
+- Add a routing section under **Project routing** with read-first order
+  and main commands.
 
 ## Step 6 — Present and gate (hard stop)
 
 Post:
 
 - List of files to be created (with paths).
-- Diff preview for `PROJECTS.md`.
+- Diff preview for workspace root files.
 - Classification (web / service / pipeline / …) and rationale.
 - Any open questions (e.g., uncertain stack choice).
 

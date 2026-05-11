@@ -6,7 +6,7 @@
 #
 # Scope (default): .github/copilot/**/*.md (excluding upstream/),
 # docs/**/*.md, plus top-level canonical files (copilot-instructions.md,
-# AGENTS.md, CLAUDE.md, PROJECTS.md, README.md).
+# AGENTS.md, CLAUDE.md, README.md).
 #
 # Custom scope: ./scripts/check-md-links.sh path1 path2 ...
 #
@@ -29,7 +29,7 @@ else
     {
       [[ -d "$ROOT/.github/copilot" ]] && find "$ROOT/.github/copilot" -type f -name '*.md' -not -path '*/upstream/*'
       [[ -d "$ROOT/docs" ]] && find "$ROOT/docs" -type f -name '*.md'
-      for top in "$ROOT/.github/copilot-instructions.md" "$ROOT/AGENTS.md" "$ROOT/CLAUDE.md" "$ROOT/PROJECTS.md" "$ROOT/README.md"; do
+      for top in "$ROOT/.github/copilot-instructions.md" "$ROOT/AGENTS.md" "$ROOT/CLAUDE.md" "$ROOT/README.md"; do
         [[ -f "$top" ]] && echo "$top"
       done
     } | sort -u

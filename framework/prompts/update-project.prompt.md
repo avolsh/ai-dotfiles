@@ -14,7 +14,7 @@ Full process: [`<system>/skills/bootstrapping-project/SKILL.md`](../skills/boots
 
 ## Preconditions
 
-- Project exists in `<workspace>/PROJECTS.md`.
+- Project exists in the workspace (listed in `<workspace>/CLAUDE.md`).
 - Project has at least `.github/copilot-instructions.md` or `AGENTS.md`
   already in place.
 
@@ -80,8 +80,8 @@ On approval, apply patches in one pass. Then verify:
 - [ ] Lifecycle mentions are consistent (4-status: specify / plan /
       in-progress / done).
 - [ ] `*Last updated:*` is today's date on every modified doc.
-- [ ] `PROJECTS.md` row still matches reality — update if the path,
-      purpose, or build commands changed.
+- [ ] Workspace root `CLAUDE.md`/`AGENTS.md` project entry still matches
+      reality — update if the path, purpose, or commands changed.
 
 ## Hard rules
 

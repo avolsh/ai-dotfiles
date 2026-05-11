@@ -20,7 +20,7 @@ Verification by Change Type, Build and Run, Available skills, Workflows.
 
 **Freestanding — no `@`-imports.** References `<system>/...` for framework
 artifacts (skills catalog, prompts, spec-workflows, templates, boundaries)
-and `<workspace>/PROJECTS.md` for the workspace map (when configured).
+and the workspace root files for the workspace map (when configured).
 Do **not** include `@.github/copilot/instructions/general.md` — Codex does
 not resolve `@`-imports, and `AGENTS.md` is generated mechanically from this
 file, so the import would land as literal text and Codex would silently
@@ -100,8 +100,8 @@ action taken. Referenced from boundaries and agent-protocol.
 
 ## Workspace root artifacts
 
-When the working directory is a **workspace root** (contains `PROJECTS.md`
-or multiple sub-projects), the root itself must also have `CLAUDE.md` and
+When the working directory is a **workspace root** (contains multiple
+sub-projects), the root itself must also have `CLAUDE.md` and
 `AGENTS.md`. These serve a different purpose than project-level files:
 
 | Path | Purpose |
@@ -140,8 +140,9 @@ decision is uninformed.
 5. Validate: every link resolves, every referenced skill exists,
    `grep -E '^@' AGENTS.md` returns no matches, `make sync-agents-check`
    exits 0.
-6. On approval, commit. Add a row to `<workspace>/PROJECTS.md` if the host
-   has a workspace map (skip otherwise).
+6. On approval, commit. Add a row to the workspace root `CLAUDE.md`,
+   `AGENTS.md`, and `.github/copilot-instructions.md` if the host has a
+   workspace (skip otherwise).
 
 ## Update walkthrough
 

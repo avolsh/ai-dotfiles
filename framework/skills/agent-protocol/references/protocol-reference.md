@@ -46,7 +46,7 @@ workspace's **high-leverage workflows**, using the **local submodule** at
    Read `.github/copilot/skills/` and list all skill folders.
 
 2. **Inventory high-leverage workflows** --
-   From `PROJECTS.md`, project AGENTS docs, and active production code:
+   From workspace root files, project AGENTS docs, and active production code:
    list workflows that are recurring, non-obvious, error-prone, or
    expensive to rediscover.
 

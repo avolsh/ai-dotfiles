@@ -51,7 +51,7 @@ Three tiers, severity increasing from top to bottom.
 3. **Changing spec templates, workflow definitions, or boundaries** —
    these govern all future work.
 4. **Changing shared framework files** in `<system>/` — they
-   affect every project in `PROJECTS.md`.
+   affect every project in the workspace.
 5. **Changing cross-repo schemas or output formats** — must be coordinated
    via a single spec with all repos listed in `affected-repos`.
 
