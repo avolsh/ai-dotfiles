@@ -1,6 +1,6 @@
 # Boundaries
 
-*Last updated: 2026-04-29*
+*Last updated: 2026-05-11*
 
 > **System-scope** boundaries for all AI agents working in this workspace.
 > Each project MAY extend these with project-specific rules in
@@ -13,30 +13,36 @@ Three tiers, severity increasing from top to bottom.
 
 1. **Read the project's `.github/copilot-instructions.md` (or AGENTS.md)
    first** — it is the project-scope authority.
-2. **Follow the spec workflow.** No coding until the spec is in
+2. **Ensure `CLAUDE.md` and `AGENTS.md` exist** at every project root and
+   at the workspace root. For projects they describe project rules, tech
+   stack, and build commands. For workspace roots they describe the
+   workspace project list and cross-project conventions. If either file is
+   missing, create it before starting any other work (follow the scaffold
+   manifest).
+3. **Follow the spec workflow.** No coding until the spec is in
    `in-progress`. See
    [`spec-workflows/spec-lifecycle.md`](spec-workflows/spec-lifecycle.md).
-3. **Post task-start preflight proof** — `Task #`, precedent files read,
+4. **Post task-start preflight proof** — `Task #`, precedent files read,
    loaded skill paths (with scope) — before the first edit in each task.
-4. **Load all task skills** before coding. Resolve project-first, then
+5. **Load all task skills** before coding. Resolve project-first, then
    workspace (two-scope lookup).
-5. **Include tests in the same task** as feature or fix logic. Never defer
+6. **Include tests in the same task** as feature or fix logic. Never defer
    tests to a follow-up task or spec.
-6. **Run build and test** per the project's `AGENTS.md` § Build and Run
+7. **Run build and test** per the project's `AGENTS.md` § Build and Run
    before posting "The Bottom Line".
-7. **Write all file output in English.** Chat discussion may use any
+8. **Write all file output in English.** Chat discussion may use any
    language, but all content written to the filesystem (specs, docs,
    code comments, commit messages, `.github/` files) MUST be in English.
-8. **Post "The Bottom Line"** using the canonical format in
+9. **Post "The Bottom Line"** using the canonical format in
    [`skills/agent-protocol/SKILL.md`](skills/agent-protocol/SKILL.md#the-bottom-line--canonical-format)
    and wait for explicit human approval before starting the next task.
-9. **Update `*Last updated: YYYY-MM-DD*`** on every modified doc.
-10. **Update task row status in-place** as each task completes.
-11. **Update the project's `module-map.md`** if the task added, removed,
+10. **Update `*Last updated: YYYY-MM-DD*`** on every modified doc.
+11. **Update task row status in-place** as each task completes.
+12. **Update the project's `module-map.md`** if the task added, removed,
     or renamed bounded contexts, key files, or workflow steps.
-12. **Log process improvements immediately** to the project's
+13. **Log process improvements immediately** to the project's
     `docs/improvements-log.md` — do not defer.
-13. **Verify pipeline output** if the task touches a workflow step.
+14. **Verify pipeline output** if the task touches a workflow step.
 
 ## Ask first
 

@@ -1,6 +1,6 @@
 # Scaffold Manifest
 
-*Last updated: 2026-05-07*
+*Last updated: 2026-05-11*
 
 Per-artifact guidance for the [`bootstrapping-project`](../SKILL.md) skill.
 Placeholders use `<angle-brackets>` — replace every one before writing.
@@ -95,6 +95,24 @@ files. Start minimal — one-line placeholder if no contexts exist yet.
 
 Append-only log. Entry format: date, context (task/spec), observation,
 action taken. Referenced from boundaries and agent-protocol.
+
+---
+
+## Workspace root artifacts
+
+When the working directory is a **workspace root** (contains `PROJECTS.md`
+or multiple sub-projects), the root itself must also have `CLAUDE.md` and
+`AGENTS.md`. These serve a different purpose than project-level files:
+
+| Path | Purpose |
+|---|---|
+| `CLAUDE.md` | Slim. `@`-imports to workspace-level instructions (if any). Claude Code loads this at session start, giving it awareness of the workspace structure. |
+| `AGENTS.md` | Self-contained. Lists all projects in the workspace, their paths, purposes, and cross-project conventions. Codex reads this for workspace-wide context. |
+
+Both files must always exist. If neither a project nor a workspace root has
+`CLAUDE.md` / `AGENTS.md`, agents start sessions with zero project context
+— the `create-spec` prompt's Step 1 silently skips, and every subsequent
+decision is uninformed.
 
 ---
 

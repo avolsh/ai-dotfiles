@@ -1,7 +1,8 @@
 # upstream/ — pending placeholder
 
-This directory is reserved for the upstream skill catalog submodule (previously at
-`tobevisit/.github/copilot/upstream/claude-skills/`).
+This directory is reserved for the upstream skill catalog submodule (previously
+hosted under tobevisit's old workspace framework root, now deleted by FR-29 of
+the bootstrap IMP).
 
 **Status:** Not yet populated. Re-pointing or re-adding the submodule is deferred to a
 future spec (see `IMP-20260504-ai-dotfiles-bootstrap` OS-6 / followup `IMP-20260505-ai-dotfiles-followups` FR-9).

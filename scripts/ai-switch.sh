@@ -165,6 +165,8 @@ ai_switch_main() {
     # $2..  list of tool home dirs
     local subdir="$1"; shift
     local tool_home src_root entry name
+    # zsh: unmatched globs abort by default; nullglob makes them expand to nothing.
+    [ -n "${ZSH_VERSION:-}" ] && setopt local_options nullglob 2>/dev/null || true
     for tool_home in "$@"; do
       mkdir -p "$tool_home/$subdir" || {
         _ai_err "cannot create $tool_home/$subdir"
@@ -217,6 +219,8 @@ ai_switch_main() {
     # $2..  tool home dirs
     local subdir="$1"; shift
     local tool_home entry target prefix_fw prefix_pf
+    # zsh: unmatched globs abort by default; nullglob makes them expand to nothing.
+    [ -n "${ZSH_VERSION:-}" ] && setopt local_options nullglob 2>/dev/null || true
     prefix_fw="$AI_DOTFILES/framework/$subdir/"
     prefix_pf="$AI_DOTFILES/profiles/$profile/$subdir/"
     for tool_home in "$@"; do
