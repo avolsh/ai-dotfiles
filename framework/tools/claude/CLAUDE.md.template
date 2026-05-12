@@ -29,15 +29,10 @@ Full details: `<system>/skills/agent-protocol/SKILL.md` Two-scope model section.
 
 ## Non-negotiable rules (all projects)
 
-Full list: [`<system>/boundaries.md`](/<system>/boundaries.md)
-(system scope) + each project's
-`<project>/.github/copilot/instructions/general.md` (project scope).
+@boundaries.md
 
-Summary: one task at a time, preflight proof, "The Bottom Line" gate,
-"continue" = next single task only. Never commit `.env` or secrets.
-Include tests with every feature change. Never skip the Specify stage.
-Log each discovered process improvement immediately in the project's
-`docs/improvements-log.md` (do not defer).
+Project scope: each project's
+`<project>/.github/copilot/instructions/general.md`.
 
 ## Spec workflow
 

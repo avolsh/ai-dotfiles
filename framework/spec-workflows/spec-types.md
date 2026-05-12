@@ -1,6 +1,6 @@
 # Spec Types
 
-*Last updated: 2026-04-29*
+*Last updated: 2026-05-11*
 
 ## Type catalog
 
@@ -49,10 +49,11 @@
 | Plan | Same as CR |
 | Task | Same as CR |
 
-## Skills always loaded
+## Always loaded
 
-These skills are loaded at **every** stage, regardless of type:
+These files are loaded at **every** stage, regardless of type:
 
+- `<system>/boundaries.md` — non-negotiable rules governing all work.
 - `<system>/skills/agent-protocol/SKILL.md` — if the task is non-trivial.
 - `<system>/skills/writing-specs/SKILL.md` — when editing any spec file.
 
