@@ -4,6 +4,9 @@
 keys/
 *.local.env
 
+framework/skills/.system/*
+framework/skills/.system/.*
+
 # Shared default tool-home state linked into profiles by ai-switch.
 profiles/*/claude/*
 profiles/*/claude/.*
