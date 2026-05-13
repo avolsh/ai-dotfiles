@@ -1,21 +1,24 @@
-.PHONY: help install profile-init reset
+.PHONY: help install install-check profile-init reset project workspace links-check check
 
 help:
 	@echo "Targets:"
-	@echo "  install                    Run ./scripts/ai-install.sh"
-	@echo "  profile-init PROFILE=name  Run ./scripts/ai-profile-init.sh \"name\""
-	@echo "  reset                      Run ./scripts/ai-switch.sh --reset"
+	@echo "  install                    Run ai-install.sh (idempotent ~/.zshrc setup)"
+	@echo "  install-check              Check ~/.zshrc managed block for drift"
+	@echo "  profile-init PROFILE=name  Initialize a profile's tool subdirs"
+	@echo "  reset                      Remove active-profile env (ai-switch --reset)"
+	@echo "  project                    Scaffold current dir as a project repo"
+	@echo "  workspace                  Scaffold current dir as a workspace root"
+	@echo "  links-check                Verify markdown link integrity"
+	@echo "  check                      Run all checks (links-check + install-check)"
 	@echo ""
-	@echo "Direct script forms:"
-	@echo "  ./scripts/ai-install.sh"
-	@echo "  ./scripts/ai-profile-init.sh <profile>"
+	@echo "Source-only (cannot be a Make target):"
 	@echo "  source ./scripts/ai-switch.sh <profile>"
-	@echo "  source ./scripts/ai-switch.sh --reset"
-	@echo "  ./scripts/ai-workspace.sh"
-	@echo "  ./scripts/ai-project.sh"
 
 install:
 	./scripts/ai-install.sh
+
+install-check:
+	./scripts/ai-install.sh --check
 
 profile-init:
 	@if [ -z "$(PROFILE)" ]; then \
@@ -26,3 +29,14 @@ profile-init:
 
 reset:
 	./scripts/ai-switch.sh --reset
+
+project:
+	./scripts/ai-project.sh
+
+workspace:
+	./scripts/ai-workspace.sh
+
+links-check:
+	./framework/scripts/check-md-links.sh
+
+check: links-check install-check
