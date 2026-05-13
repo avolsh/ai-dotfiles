@@ -234,6 +234,25 @@ _ai_should_skip_shared_name() {
   return 1
 }
 
+_ai_link_shared_state_source() {
+  local src="$1"
+  local dst="$2"
+  local replace_existing="${3:-0}"
+
+  if { [ -e "$dst" ] || [ -L "$dst" ]; } && [ ! -L "$dst" ]; then
+    if [ "$replace_existing" != "1" ]; then
+      _ai_err "shared state target exists and is not a symlink; skipping: $dst"
+      return 0
+    fi
+    rm -rf "$dst"
+  fi
+
+  if [ -L "$dst" ]; then
+    rm -f "$dst"
+  fi
+  ln -sfn "$src" "$dst"
+}
+
 _ai_link_shared_state_for_tool() {
   local tool="$1"
   local profile_tool_dir="$2"
@@ -253,16 +272,12 @@ _ai_link_shared_state_for_tool() {
     fi
 
     dst="$profile_tool_dir/$name"
-    if { [ -e "$dst" ] || [ -L "$dst" ]; } && [ ! -L "$dst" ]; then
-      _ai_err "shared state target exists and is not a symlink; skipping: $dst"
-      continue
-    fi
-
-    if [ -L "$dst" ]; then
-      rm -f "$dst"
-    fi
-    ln -sfn "$src" "$dst"
+    _ai_link_shared_state_source "$src" "$dst" 0
   done < <(find "$home_tool_dir" -mindepth 1 -maxdepth 1 -print)
+
+  if [ "$tool" = "claude" ] && [ -e "$HOME/.claude.json" ]; then
+    _ai_link_shared_state_source "$HOME/.claude.json" "$profile_tool_dir/.claude.json" 1
+  fi
 }
 
 _ai_link_shared_state() {
@@ -444,8 +459,9 @@ _ai_rc=$?
 unset -f ai_switch_main _ai_err _ai_launchctl_setenv _ai_launchctl_unsetenv \
   _ai_var_value _ai_print_var _ai_active_profile_from_rc _ai_write_active_block \
   _ai_remove_active_block _ai_available_profiles _ai_report_state \
-  _ai_is_profile_managed _ai_should_skip_shared_name _ai_link_shared_state_for_tool \
-  _ai_link_shared_state _ai_reset_framework_links_for_tool _ai_remove_profile_symlinks 2>/dev/null
+  _ai_is_profile_managed _ai_should_skip_shared_name _ai_link_shared_state_source \
+  _ai_link_shared_state_for_tool _ai_link_shared_state _ai_reset_framework_links_for_tool \
+  _ai_remove_profile_symlinks 2>/dev/null
 if [ "$_ai_sourced" = "1" ]; then
   unset _ai_sourced
   return $_ai_rc 2>/dev/null
