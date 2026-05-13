@@ -1,6 +1,6 @@
 # Scaffold Manifest
 
-*Last updated: 2026-05-12*
+*Last updated: 2026-05-13*
 
 Per-artifact guidance for the [`bootstrapping-project`](../SKILL.md) skill.
 Placeholders use `<angle-brackets>` — replace every one before writing.
@@ -142,6 +142,7 @@ prompt's Step 1 silently skips, and every subsequent decision is uninformed.
 |---|---|
 | `docs/architecture/system-overview.md` | High-level diagram and data flow |
 | `docs/architecture/code-conventions.md` | Linting, naming, file layout |
+| `.github/copilot/instructions/<filetype>.md` | Copilot `applyTo`-filtered per-filetype instructions, such as `typescript.md`, `tests.md`, or `docs.md` |
 | `.github/copilot/skills/<name>/SKILL.md` | Project-scope skills |
 | `.github/copilot/prompts/<name>.prompt.md` | Project-scope workflow prompts |
 
