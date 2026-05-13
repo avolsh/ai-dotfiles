@@ -369,6 +369,141 @@ _ai_remove_profile_symlinks() {
   fi
 }
 
+# Move a real file/dir from a profile back into $HOME/.<tool>/. Atomic-rename
+# writes by Claude/Copilot/Codex CLIs replace the symlinks we create at switch
+# time with real files; without this, that fresh state would be stranded in
+# the profile dir after --reset and the user would re-authenticate.
+_ai_restore_path() {
+  local src="$1"
+  local dst="$2"
+  local child
+
+  [ -e "$src" ] || return 0
+
+  # Stale symlink at destination — clear it so mv lands a real file.
+  if [ -L "$dst" ]; then
+    rm -f "$dst"
+  fi
+
+  if [ ! -e "$dst" ]; then
+    mv "$src" "$dst"
+    return 0
+  fi
+
+  # File overwrites file (profile copy is newer).
+  if [ ! -d "$src" ] && [ ! -d "$dst" ]; then
+    mv -f "$src" "$dst"
+    return 0
+  fi
+
+  # Dir-merges-dir — recurse so individual files inside still overwrite.
+  if [ -d "$src" ] && [ -d "$dst" ]; then
+    while IFS= read -r child; do
+      [ -e "$child" ] || continue
+      _ai_restore_path "$child" "$dst/${child##*/}"
+    done < <(find "$src" -mindepth 1 -maxdepth 1 -print)
+    rmdir "$src" 2>/dev/null || true
+    return 0
+  fi
+
+  # Type mismatch — keep the profile copy intact and warn.
+  _ai_err "restore: type mismatch, leaving in place: $src vs $dst"
+}
+
+_ai_restore_shared_state_for_tool() {
+  local tool="$1"
+  local profile_tool_dir="$2"
+  local home_tool_dir="$HOME/.$tool"
+  local entry name
+
+  [ -d "$profile_tool_dir" ] || return 0
+  mkdir -p "$home_tool_dir"
+
+  while IFS= read -r entry; do
+    [ -e "$entry" ] || continue
+    [ -L "$entry" ] && continue            # symlinks handled by _ai_remove_profile_symlinks
+    name="${entry##*/}"
+
+    # Framework-managed entries belong to the profile, not ~/.tool/.
+    if _ai_is_profile_managed "$tool" "$name"; then
+      continue
+    fi
+    if _ai_should_skip_shared_name "$name"; then
+      continue
+    fi
+
+    # The Claude CLI's per-user config sits at ~/.claude.json, not inside ~/.claude/.
+    if [ "$tool" = "claude" ] && [ "$name" = ".claude.json" ]; then
+      _ai_merge_json_into "$entry" "$HOME/.claude.json" && rm -f "$entry" \
+        || _ai_restore_path "$entry" "$HOME/.claude.json"
+      continue
+    fi
+
+    _ai_restore_path "$entry" "$home_tool_dir/$name"
+  done < <(find "$profile_tool_dir" -mindepth 1 -maxdepth 1 -print)
+}
+
+# Merge src JSON into dst JSON; src keys win on conflict. Avoids dropping
+# cache/UI state that lives only in the home copy.
+_ai_merge_json_into() {
+  local src="$1"
+  local dst="$2"
+  [ -f "$src" ] || return 1
+  command -v python3 >/dev/null 2>&1 || return 1
+  python3 - "$src" "$dst" <<'PY' || return 1
+import json, os, sys
+src, dst = sys.argv[1], sys.argv[2]
+with open(src) as f:
+    s = json.load(f)
+d = {}
+if os.path.exists(dst):
+    try:
+        with open(dst) as f:
+            d = json.load(f)
+    except Exception:
+        d = {}
+if not isinstance(d, dict) or not isinstance(s, dict):
+    sys.exit(2)
+d.update(s)
+tmp = dst + ".ai-restore.tmp"
+with open(tmp, "w") as f:
+    json.dump(d, f, indent=2)
+os.replace(tmp, dst)
+PY
+}
+
+_ai_restore_shared_state() {
+  local profile_dir="$1"
+  [ -d "$profile_dir" ] || return 0
+  _ai_restore_shared_state_for_tool claude  "$profile_dir/claude"
+  _ai_restore_shared_state_for_tool copilot "$profile_dir/copilot"
+  _ai_restore_shared_state_for_tool codex   "$profile_dir/codex"
+}
+
+# OAuth tokens may have rotated while the profile-specific Keychain entry
+# was the active one. Copy the latest token back to the default service so
+# the CLI authenticates after --reset.
+_ai_sync_claude_keychain_back() {
+  local config_dir="$1"
+  local default_service="Claude Code-credentials"
+  local hash profile_service profile_token default_token
+
+  command -v security >/dev/null 2>&1 || return 0
+  command -v shasum   >/dev/null 2>&1 || return 0
+
+  hash="$(printf '%s' "$config_dir" | shasum -a 256 | cut -c1-8)"
+  profile_service="${default_service}-${hash}"
+
+  profile_token="$(security find-generic-password -s "$profile_service" -a "$USER" -w 2>/dev/null || true)"
+  [ -z "$profile_token" ] && return 0
+
+  default_token="$(security find-generic-password -s "$default_service" -a "$USER" -w 2>/dev/null || true)"
+  [ "$profile_token" = "$default_token" ] && return 0
+
+  security add-generic-password -U -a "$USER" -s "$default_service" -w "$profile_token" >/dev/null 2>&1 \
+    || _ai_err "failed to refresh Keychain entry '$default_service' from '$profile_service'"
+}
+
 ai_switch_main() {
   local rc_file="${AI_SWITCH_RC_FILE:-$HOME/.zshrc}"
   local marker_start='# >>> ai-dotfiles active profile >>>'
@@ -427,6 +562,21 @@ ai_switch_main() {
   fi
 
   if [ "$profile" = "__RESET__" ]; then
+    # Identify the currently active profile before we rewrite the rc block —
+    # its tool dirs may hold real files written by the CLIs (atomic rename
+    # replaces our symlinks with regular files) that must be restored to
+    # ~/.<tool>/ before symlinks are torn down.
+    local active_profile=""
+    active_profile="$(_ai_active_profile_from_rc "$rc_file" "$marker_start" "$marker_end" 2>/dev/null)"
+    if [ -z "$active_profile" ] && [ -n "${AI_PROFILE:-}" ]; then
+      active_profile="$AI_PROFILE"
+    fi
+
+    if [ -n "$active_profile" ] && [ -d "$AI_DOTFILES/profiles/$active_profile" ]; then
+      _ai_restore_shared_state "$AI_DOTFILES/profiles/$active_profile"
+      _ai_sync_claude_keychain_back "$AI_DOTFILES/profiles/$active_profile/claude"
+    fi
+
     _ai_remove_active_block "$rc_file" "$marker_start" "$marker_end" || return $?
     _ai_remove_profile_symlinks
     _ai_launchctl_unsetenv CLAUDE_CONFIG_DIR
@@ -500,6 +650,8 @@ unset -f ai_switch_main _ai_err _ai_launchctl_setenv _ai_launchctl_unsetenv \
   _ai_remove_active_block _ai_available_profiles _ai_report_state \
   _ai_is_profile_managed _ai_should_skip_shared_name _ai_link_shared_state_source \
   _ai_link_shared_state_for_tool _ai_link_shared_state _ai_sync_claude_keychain \
+  _ai_sync_claude_keychain_back _ai_restore_path _ai_restore_shared_state \
+  _ai_restore_shared_state_for_tool _ai_merge_json_into \
   _ai_reset_framework_links_for_tool _ai_remove_profile_symlinks 2>/dev/null
 if [ "$_ai_sourced" = "1" ]; then
   unset _ai_sourced
