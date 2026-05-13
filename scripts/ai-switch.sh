@@ -253,11 +253,14 @@ _ai_link_shared_state_for_tool() {
     fi
 
     dst="$profile_tool_dir/$name"
-    if [ -e "$dst" ] && [ ! -L "$dst" ]; then
+    if { [ -e "$dst" ] || [ -L "$dst" ]; } && [ ! -L "$dst" ]; then
       _ai_err "shared state target exists and is not a symlink; skipping: $dst"
       continue
     fi
 
+    if [ -L "$dst" ]; then
+      rm -f "$dst"
+    fi
     ln -sfn "$src" "$dst"
   done < <(find "$home_tool_dir" -mindepth 1 -maxdepth 1 -print)
 }

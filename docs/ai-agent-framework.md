@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-05-12*
+*Last updated: 2026-05-13*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -41,8 +41,9 @@ ai-dotfiles/
 │       ├── copilot/               ← Pre-built — COPILOT_HOME target
 │       └── codex/                 ← Pre-built — CODEX_HOME target
 ├── scripts/
-│   ├── ai-switch.sh               ← Exports CLAUDE_CONFIG_DIR/COPILOT_HOME/CODEX_HOME
+│   ├── ai-switch.sh               ← Switches active profile, persists env, links shared state
 │   └── ai-profile-init.sh         ← Renders profile tool subdirs (one-time per profile)
+├── Makefile                       ← Entry-point wrapper; run `make help`
 ├── docs/
 │   ├── ai-agent-framework.md      ← This document
 │   └── spec-workflow-guide.md     ← Four-status lifecycle walkthrough
@@ -80,6 +81,11 @@ with system rules.
 |---|---|---|
 | **System** | Framework skills, prompts, spec templates, boundaries — pre-built per profile, addressed via `CLAUDE_CONFIG_DIR` / `COPILOT_HOME` / `CODEX_HOME` | `profiles/<profile>/{claude,copilot,codex}/` |
 | **Project** | Tech-stack rules, project skills, coding conventions | `.github/copilot/` inside each project |
+
+Profile-specific framework files stay in `profiles/<profile>/...`; user-level
+state such as auth, history, projects, and plugins stays in
+`$HOME/.{claude,copilot,codex}/` and is symlinked into the active profile on
+each successful `ai <profile>` switch.
 
 ## Skills — what the AI knows
 
@@ -134,8 +140,11 @@ hidden debt.
 
 | Action | Command |
 |---|---|
+| List ai-dotfiles wrapper targets | `make help` |
 | Initialize / re-initialize a profile's tool subdirs | `ai-profile-init <profile>` |
 | Switch active profile | `ai <profile>` (e.g., `ai personal`) |
+| Report active profile and current tool env vars | `ai` |
+| Reset active profile env | `ai --reset` |
 | Regenerate project `AGENTS.md` after editing `copilot-instructions.md` | `make sync-agents` (per project) |
 | Verify no drift (used by CI) | `make sync-agents-check` |
 

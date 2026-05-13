@@ -1,5 +1,7 @@
 # ai-dotfiles
 
+*Last updated: 2026-05-13*
+
 Personal AI Agent Framework dotfiles — skills, spec-workflows, prompts, and
 identity profiles for GitHub Copilot, Claude Code, and OpenAI Codex CLI.
 
@@ -33,8 +35,9 @@ ai-dotfiles/
 │   │   └── codex/          ← Pre-built Codex config (CODEX_HOME target)
 │   └── work/               ← Same shape as personal/
 ├── scripts/
-│   ├── ai-switch.sh        ← Exports CLAUDE_CONFIG_DIR / COPILOT_HOME / CODEX_HOME
+│   ├── ai-switch.sh        ← Switches active profile, persists env, links shared state
 │   └── ai-profile-init.sh  ← Renders profile tool subdirs (one-time per profile)
+├── Makefile                ← Entry-point wrapper; run `make help`
 ├── docs/
 │   ├── ai-agent-framework.md
 │   └── spec-workflow-guide.md
@@ -109,26 +112,38 @@ a non-default file (testing).
 After installing, run `source ~/.zshrc` (or open a new terminal) for
 the aliases to take effect.
 
+For Makefile wrappers around the scripts, run:
+
+```bash
+make help
+```
+
 ---
 
 ## ai-switch.sh
 
-Switch the active profile:
+Report, switch, or reset the active profile:
 
 ```bash
+ai            # report current profile, env vars, profiles, and usage
 ai personal   # personal identity
 ai work       # work identity
+ai --reset    # remove the active-profile block and unset tool env vars
 ```
 
-Running the command:
+Running `ai <profile>`:
 
 1. Validates `profiles/<profile>/` exists with initialized `claude/`, `copilot/`, `codex/` subdirs
-2. Sources `profiles/<profile>/profile.env` (sets `$AI_PROFILE`)
-3. Exports `CLAUDE_CONFIG_DIR`, `COPILOT_HOME`, `CODEX_HOME` pointing at the profile's tool subdirs
+2. Links user-level shared state from `$HOME/.{claude,copilot,codex}/` into the profile's tool subdirs, excluding profile-managed framework files and temp/backup names
+3. Sources `profiles/<profile>/profile.env` (sets `$AI_PROFILE`)
+4. Exports `CLAUDE_CONFIG_DIR`, `COPILOT_HOME`, `CODEX_HOME` pointing at the profile's tool subdirs
+5. Writes an idempotent `~/.zshrc` block between `# >>> ai-dotfiles active profile >>>` / `# <<< ai-dotfiles active profile <<<`
+6. Calls `launchctl setenv` for the three tool env vars when available, so newly-launched GUI apps can see the active profile
 
-No files are written; no symlinks created on switch. The pre-built profile
-dirs are the source of truth — populate them once per profile via
-`ai-profile-init`.
+The `~/.zshrc` active-profile block is separate from the alias block written
+by `ai-install.sh`. `ai --reset` removes only the active-profile block,
+calls `launchctl unsetenv` for the three tool vars when available, and
+unsets the vars in the current shell.
 
 ---
 
@@ -147,6 +162,10 @@ The script:
 1. Sources `profiles/<profile>/profile.env` to set `$AI_PROFILE`
 2. Renders `framework/templates/system/{claude/CLAUDE.md, copilot/copilot-instructions.md, codex/AGENTS.md}` via allowlisted `envsubst` (only `$AI_PROFILE`), appends `profiles/<profile>/preferences.md`, and writes to `profiles/<profile>/{claude,copilot,codex}/`
 3. Creates per-tool symlinks for `boundaries.md`, `skills/`, `prompts/`, `spec-workflows/`, `templates/` inside each tool subdir
+
+Shared user-level state such as auth, history, projects, and plugins is
+linked by `ai-switch.sh` on each successful switch, not by
+`ai-profile-init.sh`.
 
 ---
 
