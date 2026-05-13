@@ -208,7 +208,7 @@ _ai_is_profile_managed() {
   local name="$2"
 
   case "$name" in
-    boundaries.md|skills|prompts|spec-workflows|templates)
+    agents|boundaries.md|skills|prompts|spec-workflows|templates)
       return 0
       ;;
   esac
@@ -273,6 +273,51 @@ _ai_link_shared_state() {
   _ai_link_shared_state_for_tool codex "$profile_dir/codex"
 }
 
+_ai_reset_framework_links_for_tool() {
+  local profile_dir="$1"
+  local tool="$2"
+  local target_dir="$profile_dir/$tool"
+  local ref
+
+  for ref in spec-workflows prompts templates skills agents; do
+    if [ -d "$AI_DOTFILES/framework/$ref" ]; then
+      if [ -L "$target_dir/$ref" ]; then
+        rm -f "$target_dir/$ref"
+      elif [ -e "$target_dir/$ref" ]; then
+        _ai_err "framework link target exists and is not a symlink; skipping: $target_dir/$ref"
+        continue
+      fi
+      ln -sfn "$AI_DOTFILES/framework/$ref" "$target_dir/$ref"
+    fi
+  done
+
+  if [ -f "$AI_DOTFILES/framework/boundaries.md" ]; then
+    if [ -L "$target_dir/boundaries.md" ]; then
+      rm -f "$target_dir/boundaries.md"
+    elif [ -e "$target_dir/boundaries.md" ]; then
+      _ai_err "framework link target exists and is not a symlink; skipping: $target_dir/boundaries.md"
+      return 0
+    fi
+    ln -sfn "$AI_DOTFILES/framework/boundaries.md" "$target_dir/boundaries.md"
+  fi
+}
+
+_ai_reset_framework_links() {
+  local profile_dir
+  local tool
+
+  for profile_dir in "$AI_DOTFILES"/profiles/*; do
+    [ -d "$profile_dir" ] || continue
+    case "${profile_dir##*/}" in
+      *.example) continue ;;
+    esac
+    for tool in claude copilot codex; do
+      [ -d "$profile_dir/$tool" ] || continue
+      _ai_reset_framework_links_for_tool "$profile_dir" "$tool"
+    done
+  done
+}
+
 ai_switch_main() {
   local rc_file="${AI_SWITCH_RC_FILE:-$HOME/.zshrc}"
   local marker_start='# >>> ai-dotfiles active profile >>>'
@@ -332,6 +377,7 @@ ai_switch_main() {
 
   if [ "$profile" = "__RESET__" ]; then
     _ai_remove_active_block "$rc_file" "$marker_start" "$marker_end" || return $?
+    _ai_reset_framework_links
     _ai_launchctl_unsetenv CLAUDE_CONFIG_DIR
     _ai_launchctl_unsetenv COPILOT_HOME
     _ai_launchctl_unsetenv CODEX_HOME
@@ -363,6 +409,7 @@ ai_switch_main() {
       _ai_err "run: ai-profile-init $profile"
       return 4
     fi
+    _ai_reset_framework_links_for_tool "$profile_dir" "$tool"
   done
 
   _ai_link_shared_state "$profile_dir"
@@ -404,7 +451,7 @@ unset -f ai_switch_main _ai_err _ai_launchctl_setenv _ai_launchctl_unsetenv \
   _ai_var_value _ai_print_var _ai_active_profile_from_rc _ai_write_active_block \
   _ai_remove_active_block _ai_available_profiles _ai_report_state \
   _ai_is_profile_managed _ai_should_skip_shared_name _ai_link_shared_state_for_tool \
-  _ai_link_shared_state 2>/dev/null
+  _ai_link_shared_state _ai_reset_framework_links_for_tool _ai_reset_framework_links 2>/dev/null
 if [ "$_ai_sourced" = "1" ]; then
   unset _ai_sourced
   return $_ai_rc 2>/dev/null

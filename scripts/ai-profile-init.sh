@@ -110,12 +110,18 @@ link_framework() {
   local target_dir="$profile_dir/$tool"
   local ref
 
-  for ref in spec-workflows prompts templates skills; do
+  for ref in spec-workflows prompts templates skills agents; do
     if [ -d "$AI_DOTFILES/framework/$ref" ]; then
+      if [ -L "$target_dir/$ref" ]; then
+        rm -f "$target_dir/$ref"
+      fi
       ln -sfn "$AI_DOTFILES/framework/$ref" "$target_dir/$ref"
     fi
   done
   if [ -f "$AI_DOTFILES/framework/boundaries.md" ]; then
+    if [ -L "$target_dir/boundaries.md" ]; then
+      rm -f "$target_dir/boundaries.md"
+    fi
     ln -sfn "$AI_DOTFILES/framework/boundaries.md" "$target_dir/boundaries.md"
   fi
 }
