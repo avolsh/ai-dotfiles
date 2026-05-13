@@ -288,6 +288,43 @@ _ai_link_shared_state() {
   _ai_link_shared_state_for_tool codex "$profile_dir/codex"
 }
 
+# Claude Code derives its macOS Keychain service name from CLAUDE_CONFIG_DIR:
+#   unset     -> "Claude Code-credentials"
+#   set       -> "Claude Code-credentials-<sha256(CLAUDE_CONFIG_DIR-NFC)[0:8]>"
+# Without a matching entry the CLI prompts for /login on every profile
+# switch. Replicate the user's existing OAuth token into the profile-specific
+# service so the CLI stays authenticated. The Claude Desktop App is
+# unaffected because it injects the token directly into its CLI subprocess.
+_ai_sync_claude_keychain() {
+  local config_dir="$1"
+  local default_service="Claude Code-credentials"
+  local hash profile_service token existing
+
+  command -v security >/dev/null 2>&1 || return 0
+  command -v shasum   >/dev/null 2>&1 || return 0
+
+  hash="$(printf '%s' "$config_dir" | shasum -a 256 | cut -c1-8)"
+  profile_service="${default_service}-${hash}"
+
+  existing="$(security find-generic-password -s "$profile_service" -a "$USER" -w 2>/dev/null || true)"
+  token="$(security find-generic-password -s "$default_service" -a "$USER" -w 2>/dev/null || true)"
+
+  if [ -z "$token" ]; then
+    if [ -z "$existing" ]; then
+      _ai_err "no Claude OAuth token in Keychain (service '$default_service'); run 'claude /login' once to authenticate"
+    fi
+    return 0
+  fi
+
+  if [ "$existing" = "$token" ]; then
+    return 0
+  fi
+
+  if ! security add-generic-password -U -a "$USER" -s "$profile_service" -w "$token" >/dev/null 2>&1; then
+    _ai_err "failed to write Keychain entry '$profile_service'"
+  fi
+}
+
 _ai_reset_framework_links_for_tool() {
   local profile_dir="$1"
   local tool="$2"
@@ -432,6 +469,8 @@ ai_switch_main() {
   export COPILOT_HOME="$profile_dir/copilot"
   export CODEX_HOME="$profile_dir/codex"
 
+  _ai_sync_claude_keychain "$CLAUDE_CONFIG_DIR"
+
   local block_content
   block_content=$(cat <<EOF
 $marker_start
@@ -460,8 +499,8 @@ unset -f ai_switch_main _ai_err _ai_launchctl_setenv _ai_launchctl_unsetenv \
   _ai_var_value _ai_print_var _ai_active_profile_from_rc _ai_write_active_block \
   _ai_remove_active_block _ai_available_profiles _ai_report_state \
   _ai_is_profile_managed _ai_should_skip_shared_name _ai_link_shared_state_source \
-  _ai_link_shared_state_for_tool _ai_link_shared_state _ai_reset_framework_links_for_tool \
-  _ai_remove_profile_symlinks 2>/dev/null
+  _ai_link_shared_state_for_tool _ai_link_shared_state _ai_sync_claude_keychain \
+  _ai_reset_framework_links_for_tool _ai_remove_profile_symlinks 2>/dev/null
 if [ "$_ai_sourced" = "1" ]; then
   unset _ai_sourced
   return $_ai_rc 2>/dev/null
