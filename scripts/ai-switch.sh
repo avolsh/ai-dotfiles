@@ -279,43 +279,29 @@ _ai_reset_framework_links_for_tool() {
   local target_dir="$profile_dir/$tool"
   local ref
 
+  mkdir -p "$target_dir"
+
   for ref in spec-workflows prompts templates skills agents; do
     if [ -d "$AI_DOTFILES/framework/$ref" ]; then
-      if [ -L "$target_dir/$ref" ]; then
-        rm -f "$target_dir/$ref"
-      elif [ -e "$target_dir/$ref" ]; then
-        _ai_err "framework link target exists and is not a symlink; skipping: $target_dir/$ref"
-        continue
+      if [ -e "$target_dir/$ref" ] || [ -L "$target_dir/$ref" ]; then
+        rm -rf "$target_dir/$ref"
       fi
       ln -sfn "$AI_DOTFILES/framework/$ref" "$target_dir/$ref"
     fi
   done
 
   if [ -f "$AI_DOTFILES/framework/boundaries.md" ]; then
-    if [ -L "$target_dir/boundaries.md" ]; then
-      rm -f "$target_dir/boundaries.md"
-    elif [ -e "$target_dir/boundaries.md" ]; then
-      _ai_err "framework link target exists and is not a symlink; skipping: $target_dir/boundaries.md"
-      return 0
+    if [ -e "$target_dir/boundaries.md" ] || [ -L "$target_dir/boundaries.md" ]; then
+      rm -rf "$target_dir/boundaries.md"
     fi
     ln -sfn "$AI_DOTFILES/framework/boundaries.md" "$target_dir/boundaries.md"
   fi
 }
 
-_ai_reset_framework_links() {
-  local profile_dir
-  local tool
-
-  for profile_dir in "$AI_DOTFILES"/profiles/*; do
-    [ -d "$profile_dir" ] || continue
-    case "${profile_dir##*/}" in
-      *.example) continue ;;
-    esac
-    for tool in claude copilot codex; do
-      [ -d "$profile_dir/$tool" ] || continue
-      _ai_reset_framework_links_for_tool "$profile_dir" "$tool"
-    done
-  done
+_ai_remove_profile_symlinks() {
+  if [ -d "$AI_DOTFILES/profiles" ]; then
+    find "$AI_DOTFILES/profiles" -type l -exec rm -f {} +
+  fi
 }
 
 ai_switch_main() {
@@ -377,7 +363,7 @@ ai_switch_main() {
 
   if [ "$profile" = "__RESET__" ]; then
     _ai_remove_active_block "$rc_file" "$marker_start" "$marker_end" || return $?
-    _ai_reset_framework_links
+    _ai_remove_profile_symlinks
     _ai_launchctl_unsetenv CLAUDE_CONFIG_DIR
     _ai_launchctl_unsetenv COPILOT_HOME
     _ai_launchctl_unsetenv CODEX_HOME
@@ -451,7 +437,7 @@ unset -f ai_switch_main _ai_err _ai_launchctl_setenv _ai_launchctl_unsetenv \
   _ai_var_value _ai_print_var _ai_active_profile_from_rc _ai_write_active_block \
   _ai_remove_active_block _ai_available_profiles _ai_report_state \
   _ai_is_profile_managed _ai_should_skip_shared_name _ai_link_shared_state_for_tool \
-  _ai_link_shared_state _ai_reset_framework_links_for_tool _ai_reset_framework_links 2>/dev/null
+  _ai_link_shared_state _ai_reset_framework_links_for_tool _ai_remove_profile_symlinks 2>/dev/null
 if [ "$_ai_sourced" = "1" ]; then
   unset _ai_sourced
   return $_ai_rc 2>/dev/null

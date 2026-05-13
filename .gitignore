@@ -3,3 +3,12 @@
 
 keys/
 *.local.env
+
+claude/backups/
+claude/ide/
+claude/plugins/
+claude/projects/
+paste-cache/
+cache/
+logs/
+tmp/
