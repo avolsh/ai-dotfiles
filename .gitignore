@@ -1,6 +1,5 @@
 # ai-dotfiles/.gitignore
 # FR-11: keys/ and *.local.env MUST never be tracked.
-
 keys/
 *.local.env
 
