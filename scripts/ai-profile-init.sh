@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # scripts/ai-profile-init.sh
 #
-# Initialize (or re-initialize) a profile's tool subdirs by rendering
-# the system templates with the profile's identity and creating
-# framework symlinks. Run once per profile before the first
-# `ai <profile>` switch. Counterpart: scripts/ai-switch.sh.
+# Initialize (or re-initialize) a profile's tool subdirs by creating
+# framework symlinks. Run once per profile before the first `ai <profile>`
+# switch. Counterpart: scripts/ai-switch.sh.
 #
 # Usage:
 #   ai-profile-init <profile>
@@ -34,7 +33,6 @@ fi
 
 profile_dir="$AI_DOTFILES/profiles/$profile"
 profile_env="$profile_dir/profile.env"
-preferences="$profile_dir/preferences.md"
 
 if [ ! -d "$profile_dir" ]; then
   _err "profile directory not found: $profile_dir"
@@ -54,19 +52,13 @@ if [ -z "${AI_PROFILE:-}" ]; then
   exit 3
 fi
 
-if ! command -v envsubst >/dev/null 2>&1; then
-  _err "envsubst not on PATH (install gettext)"
-  exit 3
-fi
-
-# --- 2. Render each tool template into the profile's tool subdir ---
-render_tool() {
+# --- 2. Link each tool template into the profile's tool subdir ---
+link_tool_template() {
   local tool="$1"
   local filename="$2"
   local template="$AI_DOTFILES/framework/templates/system/$tool/$filename"
   local target_dir="$profile_dir/$tool"
   local target_file="$target_dir/$filename"
-  local tmp
 
   if [ ! -f "$template" ]; then
     _err "template missing: $template"
@@ -75,34 +67,17 @@ render_tool() {
 
   mkdir -p "$target_dir"
 
-  tmp="$(mktemp "${TMPDIR:-/tmp}/ai-profile-init.$tool.XXXXXX")"
-
-  # Allowlisted envsubst — only $AI_PROFILE is substituted.
-  if ! envsubst '$AI_PROFILE' < "$template" > "$tmp"; then
-    rm -f "$tmp"
-    _err "envsubst failed for $template"
-    return 3
+  if [ -e "$target_file" ] || [ -L "$target_file" ]; then
+    rm -rf "$target_file"
   fi
+  ln -sfn "$template" "$target_file"
 
-  # Append preferences.md if present.
-  if [ -f "$preferences" ]; then
-    printf '\n' >> "$tmp"
-    cat "$preferences" >> "$tmp"
-  fi
-
-  # Atomic write.
-  if ! mv "$tmp" "$target_file"; then
-    rm -f "$tmp"
-    _err "could not write $target_file"
-    return 3
-  fi
-
-  _log "rendered: $target_file"
+  _log "linked: $target_file"
 }
 
-render_tool claude  CLAUDE.md
-render_tool copilot copilot-instructions.md
-render_tool codex   AGENTS.md
+link_tool_template claude  CLAUDE.md
+link_tool_template copilot copilot-instructions.md
+link_tool_template codex   AGENTS.md
 
 # --- 3. Create framework symlinks inside each tool subdir ---
 link_framework() {

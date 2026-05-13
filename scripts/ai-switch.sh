@@ -277,24 +277,37 @@ _ai_reset_framework_links_for_tool() {
   local profile_dir="$1"
   local tool="$2"
   local target_dir="$profile_dir/$tool"
+  local instruction_name
+  local instruction_source
   local ref
 
   mkdir -p "$target_dir"
 
+  case "$tool" in
+    claude) instruction_name="CLAUDE.md" ;;
+    copilot) instruction_name="copilot-instructions.md" ;;
+    codex) instruction_name="AGENTS.md" ;;
+  esac
+
+  instruction_source="$AI_DOTFILES/framework/templates/system/$tool/$instruction_name"
+  if [ -f "$instruction_source" ]; then
+    if [ ! -e "$target_dir/$instruction_name" ] && [ ! -L "$target_dir/$instruction_name" ]; then
+      ln -s "$instruction_source" "$target_dir/$instruction_name"
+    fi
+  fi
+
   for ref in spec-workflows prompts templates skills agents; do
     if [ -d "$AI_DOTFILES/framework/$ref" ]; then
-      if [ -e "$target_dir/$ref" ] || [ -L "$target_dir/$ref" ]; then
-        rm -rf "$target_dir/$ref"
+      if [ ! -e "$target_dir/$ref" ] && [ ! -L "$target_dir/$ref" ]; then
+        ln -s "$AI_DOTFILES/framework/$ref" "$target_dir/$ref"
       fi
-      ln -sfn "$AI_DOTFILES/framework/$ref" "$target_dir/$ref"
     fi
   done
 
   if [ -f "$AI_DOTFILES/framework/boundaries.md" ]; then
-    if [ -e "$target_dir/boundaries.md" ] || [ -L "$target_dir/boundaries.md" ]; then
-      rm -rf "$target_dir/boundaries.md"
+    if [ ! -e "$target_dir/boundaries.md" ] && [ ! -L "$target_dir/boundaries.md" ]; then
+      ln -s "$AI_DOTFILES/framework/boundaries.md" "$target_dir/boundaries.md"
     fi
-    ln -sfn "$AI_DOTFILES/framework/boundaries.md" "$target_dir/boundaries.md"
   fi
 }
 
@@ -390,11 +403,6 @@ ai_switch_main() {
   # Verify each tool subdir is initialized.
   local tool
   for tool in claude copilot codex; do
-    if [ ! -d "$profile_dir/$tool" ]; then
-      _ai_err "tool subdir missing: $profile_dir/$tool"
-      _ai_err "run: ai-profile-init $profile"
-      return 4
-    fi
     _ai_reset_framework_links_for_tool "$profile_dir" "$tool"
   done
 
