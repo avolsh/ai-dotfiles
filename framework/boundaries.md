@@ -4,7 +4,7 @@
 
 > **System-scope** boundaries for all AI agents working in this workspace.
 > Each project MAY extend these with project-specific rules in
-> `<project>/.github/copilot/instructions/general.md` (or equivalent).
+> `<project>/.github/copilot-instructions.md` § Boundaries.
 > Project rules take precedence when there is a conflict.
 
 Three tiers, severity increasing from top to bottom.

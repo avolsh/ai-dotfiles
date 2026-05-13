@@ -3,9 +3,10 @@
 Personal AI Agent Framework dotfiles — skills, spec-workflows, prompts, and
 identity profiles for GitHub Copilot, Claude Code, and OpenAI Codex CLI.
 
-> **Keys are never committed.** API keys live in `keys/` (gitignored). The
-> tracked backend env files reference `keys/` paths; they never contain literal
-> key material.
+> **Auth credentials are the user's responsibility.** ai-dotfiles does not
+> set `ANTHROPIC_API_KEY`, `ANTHROPIC_AUTH_TOKEN`, or `ANTHROPIC_BASE_URL`.
+> Export them in your shell (`~/.zshrc` etc.). `keys/` is gitignored if you
+> prefer to keep local key files inside the dotfiles tree.
 
 ---
 
@@ -13,28 +14,31 @@ identity profiles for GitHub Copilot, Claude Code, and OpenAI Codex CLI.
 
 ```
 ai-dotfiles/
-├── framework/          ← Layer 1: single source of truth (tool-agnostic, identity-agnostic)
-│   ├── skills/         ← Reusable knowledge modules (agent-protocol, writing-specs, …)
-│   ├── spec-workflows/ ← Spec lifecycle, types, templates, questions
-│   ├── prompts/        ← Workflow trigger prompts ("create CR", "plan", …)
-│   ├── templates/      ← Bootstrap templates for new projects
-│   ├── tools/          ← Per-tool instruction templates (rendered into ~/.claude/ etc.)
-│   ├── upstream/       ← Upstream skill catalog placeholder (see upstream/README.md)
-│   └── boundaries.md   ← Rules: always do / ask first / never do
-├── profiles/           ← Layer 2: per-identity overlays
-│   ├── personal/       ← Active profile (profile.env, CLAUDE.md, preferences.md, …)
-│   └── work.example/   ← Stub profile — populate when needed
-├── backends/           ← Backend env files (auth-exclusive, unset-before-export)
-│   ├── local.env       ← Local LLM endpoint
-│   └── cloud-claude.env ← Anthropic cloud (reads API key from keys/)
+├── framework/              ← Tool-agnostic, identity-agnostic
+│   ├── skills/             ← Reusable knowledge modules
+│   ├── spec-workflows/     ← Spec lifecycle, types, templates, questions
+│   ├── prompts/            ← Workflow trigger prompts ("create CR", "plan", …)
+│   ├── templates/          ← Bootstrap templates
+│   │   ├── system/         ← Per-tool system templates (rendered by ai-profile-init)
+│   │   ├── workspace/      ← Workspace scaffold templates (used by ai-workspace)
+│   │   └── project/        ← Project scaffold templates (used by ai-project)
+│   ├── upstream/           ← Upstream skill catalog placeholder
+│   └── boundaries.md       ← Rules: always do / ask first / never do
+├── profiles/               ← Per-identity overlays
+│   ├── personal/
+│   │   ├── profile.env     ← AI_PROFILE
+│   │   ├── preferences.md  ← Identity content appended on render
+│   │   ├── claude/         ← Pre-built Claude Code config (CLAUDE_CONFIG_DIR target)
+│   │   ├── copilot/        ← Pre-built Copilot config (COPILOT_HOME target)
+│   │   └── codex/          ← Pre-built Codex config (CODEX_HOME target)
+│   └── work/               ← Same shape as personal/
 ├── scripts/
-│   ├── ai-switch.sh    ← Renders framework + profile → each tool's home directory
-│   └── sync-agents.sh  ← Regenerates profiles/personal/AGENTS.md (single-profile fork)
+│   ├── ai-switch.sh        ← Exports CLAUDE_CONFIG_DIR / COPILOT_HOME / CODEX_HOME
+│   └── ai-profile-init.sh  ← Renders profile tool subdirs (one-time per profile)
 ├── docs/
-│   ├── ai-agent-framework.md  ← Framework overview (what it is, how it's organized)
-│   └── spec-workflow-guide.md ← Four-status spec lifecycle walkthrough
-├── keys/               ← Gitignored: anthropic.key, *.local.env
-└── Makefile            ← sync-agents, sync-agents-check, help
+│   ├── ai-agent-framework.md
+│   └── spec-workflow-guide.md
+└── keys/                   ← Gitignored
 ```
 
 ---
@@ -45,27 +49,24 @@ ai-dotfiles/
 
 | Doc | What you'll learn | Time |
 |---|---|---|
-| [AI Agent Framework Overview](docs/ai-agent-framework.md) | What the framework is, how it's organized, what the AI can and can't do | 5 min |
-| [Spec Workflow Guide](docs/spec-workflow-guide.md) | The four-status lifecycle every change follows, with diagrams | 5 min |
+| [AI Agent Framework Overview](docs/ai-agent-framework.md) | What the framework is, how it's organized | 5 min |
+| [Spec Workflow Guide](docs/spec-workflow-guide.md) | The four-status lifecycle every change follows | 5 min |
 
 ### 2. Know the key files
 
-The framework renders into two layers — **system** (your tool home dirs) and
-**project** (each repo). Project rules extend the system layer and win on conflict.
+The framework loads into two layers — **system** (your active profile's tool
+subdirs) and **project** (each repo). Project rules extend the system layer
+and win on conflict.
 
 | File | Where | Read by | Purpose |
 |---|---|---|---|
-| `~/.claude/CLAUDE.md` | Tool home (rendered) | Claude Code | System-scope agent instructions |
-| `~/.codex/AGENTS.md` | Tool home (rendered) | Codex CLI | System-scope agent instructions |
-| `~/.copilot/AGENTS.md` | Tool home (rendered) | Copilot CLI | System-scope agent instructions |
+| `profiles/<profile>/claude/CLAUDE.md` | Active profile | Claude Code (via `CLAUDE_CONFIG_DIR`) | System-scope agent instructions |
+| `profiles/<profile>/copilot/copilot-instructions.md` | Active profile | Copilot (via `COPILOT_HOME`) | System-scope agent instructions |
+| `profiles/<profile>/codex/AGENTS.md` | Active profile | Codex CLI (via `CODEX_HOME`) | System-scope agent instructions |
 | `.github/copilot-instructions.md` | Each project | GitHub Copilot | Project rules — references `<system>/...` for framework |
 | `AGENTS.md` | Each project | OpenAI Codex CLI | Mechanical copy of `copilot-instructions.md`, no `@`-imports |
 | `CLAUDE.md` | Each project | Claude Code | Thin `@`-import file |
 | `docs/specs/active/` | Each project | humans / agents | Specs currently being worked on |
-
-> Edit `.github/copilot-instructions.md`, then run `make sync-agents`.
-> The CI gate (`agents-drift-check.yml`) fails any PR that leaves
-> `AGENTS.md` out of sync.
 
 ### 3. Start working
 
@@ -78,8 +79,6 @@ Trigger phrases below map 1:1 to `<system>/prompts/*.prompt.md`.
 | Fix a bug | `bug`, `triage`, `investigate issue` | AI investigates → writes bug spec → waits for approval |
 | Visualize architecture | `visualize`, `architecture` | AI adds Mermaid diagrams to current spec |
 | Plan an approved spec | `plan`, `break into tasks` | AI breaks the spec into vertical-slice tasks |
-| Add a new project | `bootstrap project`, `new project` | AI scans the repo → scaffolds framework files |
-| Refresh project framework | `update project framework`, `refresh docs` | AI re-bootstraps an existing project |
 | Approve & advance | `continue` | Approves the current task; AI starts the next single task |
 
 ### 4. Remember three things
@@ -91,65 +90,125 @@ Trigger phrases below map 1:1 to `<system>/prompts/*.prompt.md`.
 
 ---
 
+## Shell setup (run once)
+
+Install the managed alias block in `~/.zshrc`:
+
+```bash
+$AI_DOTFILES/scripts/ai-install.sh
+```
+
+The script writes (or refreshes) the block between markers
+`# >>> ai-dotfiles aliases >>>` / `# <<< ai-dotfiles aliases <<<`,
+exporting `AI_DOTFILES` and defining the four aliases (`ai`,
+`ai-profile-init`, `ai-workspace`, `ai-project`). It is idempotent —
+re-running with no input change is a no-op. Pass `--check` to verify
+the block is current without writing, or `--rc-file <path>` to target
+a non-default file (testing).
+
+After installing, run `source ~/.zshrc` (or open a new terminal) for
+the aliases to take effect.
+
+---
+
 ## ai-switch.sh
 
-Switch the active profile and backend in one command:
+Switch the active profile:
 
 ```bash
-ai personal local        # local LLM, personal identity
-ai personal cloud-claude # Anthropic cloud, personal identity
+ai personal   # personal identity
+ai work       # work identity
 ```
 
-These aliases are defined in `~/.zshrc` (appended by `ai-switch.sh` setup).
 Running the command:
 
-1. Sources `profiles/<profile>/profile.env` (identity-level non-secret vars: `AI_PROFILE`, `ANTHROPIC_MODEL`)
-2. Sources `backends/<backend>.env` (unsets all auth, then exports the backend's own auth vars)
-3. Renders `framework/tools/<tool>/template` via allowlisted `envsubst`, appends profile body and preferences, writes atomically to `~/.{claude,copilot,codex}/`
-4. Installs per-entry skill and agent symlinks under each tool home
-5. Installs tool-agnostic reference symlinks (`spec-workflows`, `prompts`, `templates`, `boundaries.md`)
-6. Cleans stale managed symlinks; preserves user-owned plain files
-7. Writes `.active-manifest` per tool home (no auth values)
-8. Prints: `✓ profile=... backend=... model=... skills=N agents=M`
+1. Validates `profiles/<profile>/` exists with initialized `claude/`, `copilot/`, `codex/` subdirs
+2. Sources `profiles/<profile>/profile.env` (sets `$AI_PROFILE`)
+3. Exports `CLAUDE_CONFIG_DIR`, `COPILOT_HOME`, `CODEX_HOME` pointing at the profile's tool subdirs
+
+No files are written; no symlinks created on switch. The pre-built profile
+dirs are the source of truth — populate them once per profile via
+`ai-profile-init`.
 
 ---
 
-## Profile / backend semantics
+## ai-profile-init.sh
 
-**Profiles** carry identity-level content only: `AI_PROFILE`, `ANTHROPIC_MODEL`,
-optional tone/style preferences, optional skill overlays. They never carry
-workspace or project rules (those belong in per-repo `.github/copilot-instructions.md`).
-They never carry auth credentials (those belong in backends).
-
-**Backends** carry the auth side: `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` (local)
-or `ANTHROPIC_API_KEY` (cloud). Every backend file begins with
-`unset ANTHROPIC_AUTH_TOKEN ANTHROPIC_API_KEY ANTHROPIC_BASE_URL` before
-re-exporting only its own vars — this guarantees no stale auth leaks between switches.
-
----
-
-## Keys — never committed
-
-`keys/` is gitignored. Create `keys/anthropic.key` containing your Anthropic API key:
+Initialize (or re-initialize) a profile's tool subdirs by rendering the
+system templates with the profile's identity and creating framework
+symlinks. Run once per profile before the first `ai <profile>` switch:
 
 ```bash
-echo "sk-ant-..." > "$AI_DOTFILES/keys/anthropic.key"
-chmod 600 "$AI_DOTFILES/keys/anthropic.key"
+ai-profile-init personal
 ```
 
-`backends/cloud-claude.env` reads the key via:
+The script:
+
+1. Sources `profiles/<profile>/profile.env` to set `$AI_PROFILE`
+2. Renders `framework/templates/system/{claude/CLAUDE.md, copilot/copilot-instructions.md, codex/AGENTS.md}` via allowlisted `envsubst` (only `$AI_PROFILE`), appends `profiles/<profile>/preferences.md`, and writes to `profiles/<profile>/{claude,copilot,codex}/`
+3. Creates per-tool symlinks for `boundaries.md`, `skills/`, `prompts/`, `spec-workflows/`, `templates/` inside each tool subdir
+
+---
+
+## ai-workspace.sh
+
+Scaffold the current directory as a new workspace root by copying every
+template from `framework/templates/workspace/` into the cwd, preserving
+directory structure. Existing files are skipped (never overwritten).
+Does NOT run `make sync-agents` — fill in placeholders first, then run
+it manually.
+
+```bash
+cd /path/to/new-workspace
+ai-workspace
+```
+
+The script copies all 6 workspace artifacts (`CLAUDE.md`, `AGENTS.md`,
+`Makefile`, `.github/copilot-instructions.md`,
+`.github/scripts/sync-agents.sh`, `docs/improvements-log.md`) and ensures
+`docs/` exists. Re-running on an already-scaffolded workspace is a no-op.
+
+---
+
+## ai-project.sh
+
+Scaffold the current directory as a new project repo by copying every
+template from `framework/templates/project/` into the cwd, preserving
+directory structure. Existing files are skipped (never overwritten).
+Does NOT run `make sync-agents` — fill in placeholders first, then run
+it manually.
+
+```bash
+cd /path/to/new-project
+ai-project
+```
+
+The script copies all 10 required artifacts (`CLAUDE.md`, `AGENTS.md`,
+`Makefile`, `.github/copilot-instructions.md`, `.github/scripts/sync-agents.sh`,
+`docs/README.md`, `docs/specs/{active,archived}/README.md`,
+`docs/architecture/module-map.md`, `docs/improvements-log.md`) and
+ensures `docs/` exists. Re-running on an already-scaffolded project is
+a no-op.
+
+---
+
+## Profile semantics
+
+Profiles carry identity-level content: `AI_PROFILE` (in `profile.env`) and
+optional tone/style preferences (in `preferences.md`). They do not carry
+workspace or project rules (those belong in per-repo
+`.github/copilot-instructions.md`) and they do not carry auth credentials
+(those belong in your shell env).
+
+---
+
+## Auth credentials — user-managed
+
+ai-dotfiles does not set authentication env vars. Configure them in
+`~/.zshrc` (or your shell config):
+
 ```bash
 export ANTHROPIC_API_KEY="$(cat "$AI_DOTFILES/keys/anthropic.key")"
 ```
 
-Never put a literal key in any tracked file.
-
----
-
-## Makefile
-
-```
-make sync-agents        # regenerate profiles/personal/AGENTS.md
-make sync-agents-check  # check for drift (CI use)
-make help               # list targets
-```
+`keys/` is gitignored. Never put a literal key in any tracked file.

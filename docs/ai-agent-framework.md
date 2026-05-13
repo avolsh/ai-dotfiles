@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-05-07*
+*Last updated: 2026-05-12*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -29,13 +29,20 @@ ai-dotfiles/
 │   ├── spec-workflows/            ← The spec lifecycle (stages, templates, questions)
 │   ├── skills/                    ← Reusable knowledge modules
 │   ├── prompts/                   ← Workflow triggers ("create CR", "plan", etc.)
-│   └── tools/                     ← Per-tool instruction templates (rendered by ai-switch.sh)
+│   └── templates/                 ← Bootstrap templates
+│       ├── system/                ← Per-tool system templates (rendered by ai-profile-init)
+│       ├── workspace/             ← Workspace scaffold templates (used by ai-workspace)
+│       └── project/               ← Project scaffold templates (used by ai-project)
 ├── profiles/
-│   └── personal/                  ← Identity-level prefs and body fragments
-├── backends/                      ← Backend env files (local, cloud-claude)
+│   └── personal/                  ← Identity-level prefs + pre-built tool subdirs
+│       ├── profile.env
+│       ├── preferences.md
+│       ├── claude/                ← Pre-built — CLAUDE_CONFIG_DIR target
+│       ├── copilot/               ← Pre-built — COPILOT_HOME target
+│       └── codex/                 ← Pre-built — CODEX_HOME target
 ├── scripts/
-│   ├── ai-switch.sh               ← Renders framework templates → ~/.claude/ ~/.copilot/ ~/.codex/
-│   └── sync-agents.sh             ← Regenerates profiles/personal/AGENTS.md
+│   ├── ai-switch.sh               ← Exports CLAUDE_CONFIG_DIR/COPILOT_HOME/CODEX_HOME
+│   └── ai-profile-init.sh         ← Renders profile tool subdirs (one-time per profile)
 ├── docs/
 │   ├── ai-agent-framework.md      ← This document
 │   └── spec-workflow-guide.md     ← Four-status lifecycle walkthrough
@@ -45,8 +52,7 @@ Each project repo:
 ├── .github/copilot-instructions.md  ← Project rules (references <system>/... for framework)
 ├── AGENTS.md                         ← Generated copy (Codex), no @-imports
 ├── CLAUDE.md                         ← @-import (Claude Code)
-├── .github/copilot/instructions/general.md ← Per-filetype rules and project-scope boundaries
-├── scripts/sync-agents.sh            ← Project-local regeneration script
+├── .github/scripts/sync-agents.sh    ← Project-local regeneration script
 └── docs/specs/active/                ← In-flight specs
 ```
 
@@ -60,9 +66,10 @@ Each agent reads a different file but the content is the same:
 | **Claude Code** | `CLAUDE.md` | Resolves `@.github/copilot-instructions.md` recursively |
 | **OpenAI Codex CLI** | `AGENTS.md` | Mechanical copy (no `@`-import support) |
 
-Drift between sources is prevented by `make sync-agents` and a CI gate
-(`agents-drift-check.yml`). Edit `.github/copilot-instructions.md`,
-run `make sync-agents`, never edit `AGENTS.md` by hand.
+Drift between sources is prevented at the project level by
+`make sync-agents` (which invokes `.github/scripts/sync-agents.sh`).
+Edit `.github/copilot-instructions.md`, run `make sync-agents`, never
+edit `AGENTS.md` by hand.
 
 ## Two-scope model
 
@@ -71,7 +78,7 @@ with system rules.
 
 | Scope | What it covers | Location |
 |---|---|---|
-| **System** | Framework skills, prompts, spec templates, boundaries — rendered by `ai-switch.sh` | `~/.{claude,copilot,codex}/` |
+| **System** | Framework skills, prompts, spec templates, boundaries — pre-built per profile, addressed via `CLAUDE_CONFIG_DIR` / `COPILOT_HOME` / `CODEX_HOME` | `profiles/<profile>/{claude,copilot,codex}/` |
 | **Project** | Tech-stack rules, project skills, coding conventions | `.github/copilot/` inside each project |
 
 ## Skills — what the AI knows
@@ -127,11 +134,10 @@ hidden debt.
 
 | Action | Command |
 |---|---|
-| Switch active profile + backend | `ai personal local` or `ai personal cloud-claude` |
-| Regenerate `AGENTS.md` after editing `copilot-instructions.md` | `make sync-agents` (per project) |
+| Initialize / re-initialize a profile's tool subdirs | `ai-profile-init <profile>` |
+| Switch active profile | `ai <profile>` (e.g., `ai personal`) |
+| Regenerate project `AGENTS.md` after editing `copilot-instructions.md` | `make sync-agents` (per project) |
 | Verify no drift (used by CI) | `make sync-agents-check` |
-| Verify markdown links resolve (used by CI) | `make check-md-links` |
-| Full CI gate locally | `make agents-drift-check` |
 
 ## Key principles
 
