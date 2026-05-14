@@ -1,6 +1,8 @@
 # Spec Lifecycle
 
-*Last updated: 2026-04-29*
+*Last updated: 2026-05-14*
+
+Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
 
 ## Front-matter schema
 
@@ -81,7 +83,9 @@ update the table, ask for re-approval.
    record the outcome under `## Split Decision` in every affected spec.
 10. A spec with unmet `depends-on:` MUST stay at `specify` (never flip to
     `plan`) until all listed siblings reach `done`.
-11. **Baseline closure rule and Summary refresh.** Any spec that changes
+11. **Never** request the requirements gate without completing the Split check; record the outcome under `## Split Decision` first.
+12. **Never** bundle independently-testable features into one spec — split per [`splitting-rules.md § 2`](../skills/writing-specs/references/splitting-rules.md).
+13. **Baseline closure rule and Summary refresh.** Any spec that changes
     baseline behaviour in a feature with an existing
     `<project>/docs/requirements/<feature>.md` file MUST update that
     file in the same change before flipping to `done`. Baselines updated
@@ -97,6 +101,22 @@ update the table, ask for re-approval.
     refresh `## Summary` before flipping to `done` so Goal, Scope, and
     Out of scope reflect post-closure state. See the seed example at
     `tobevisit-content/docs/requirements/place-catalog-enrichment.md`.
+
+## Visualize sub-step (Specify)
+
+Run inside Specify before the requirements gate when **any** apply:
+
+- Risk is `medium` or `high` (CR / IMP).
+- Adds, removes, or reshapes a bounded context.
+- Changes data flow between contexts or services.
+- Changes a schema (database, type/interface, API contract).
+- Adds or reorders a pipeline step.
+
+Skip only when all are false. Record in `## Architecture` as a single line: `Skipped — <reason>`.
+
+## Split sub-step (Specify)
+
+Run on **every** CR / IMP / BUG after FRs + ACs, before the requirements gate. Never skipped; outcome may be *"kept as one spec"* per [`splitting-rules.md § 4`](../skills/writing-specs/references/splitting-rules.md). Record under `## Split Decision`. Triggers: [`§ 2`](../skills/writing-specs/references/splitting-rules.md) (Specify), [`§ 3`](../skills/writing-specs/references/splitting-rules.md) (Plan-stage safety net).
 
 ## File naming
 

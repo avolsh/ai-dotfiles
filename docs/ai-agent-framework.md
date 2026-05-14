@@ -129,6 +129,18 @@ The four statuses are tracked in the spec front-matter; `archived/` is a
 [Spec Workflow Guide](spec-workflow-guide.md) for the full walkthrough
 with diagrams.
 
+### Spec types
+
+| Type | Prefix | Use when |
+|---|---|---|
+| **Change Request** | `CR-` | New feature, pipeline step, schema change |
+| **Bug** | `BUG-` | Defect fix, incorrect behavior |
+| **Improvement** | `IMP-` | Non-functional enhancement, refactor, performance |
+| **Research** | `RES-` | Spike, investigation, proof of concept *(future)* |
+
+Templates, per-type questions, and per-stage context lists live in
+[`framework/spec-workflows/spec-types.md`](../framework/spec-workflows/spec-types.md).
+
 ## Process improvements
 
 Every project keeps a `docs/improvements-log.md`. When the AI (or you)

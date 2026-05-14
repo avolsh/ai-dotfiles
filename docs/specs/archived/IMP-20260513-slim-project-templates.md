@@ -2,7 +2,7 @@
 id: IMP-20260513-slim-project-templates
 type: IMP
 date: 2026-05-13
-status: plan
+status: done
 owner: avolsh
 risk: low
 affected-repos:
@@ -153,10 +153,10 @@ Kept as one sibling spec — single template family with parallel internal struc
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
-| G1 | Create `docs/project-bootstrap-guide.md` from authoring guidance currently inlined in the project copilot-instructions template (FR-7). | `docs/project-bootstrap-guide.md` (new) | `framework/templates/project/.github/copilot-instructions.md` *(pre-slim source)*; `docs/ai-agent-framework.md` | — | writing-docs, bootstrapping-project | default | ⬜ todo |
-| G2 | Slim project `copilot-instructions.md` template to ≤25 lines — keep Boundaries + Workflows trigger map + placeholders; drop catalog/resolution/non-Copilot prose (FR-1, FR-2, FR-3). | `framework/templates/project/.github/copilot-instructions.md` | `docs/project-bootstrap-guide.md` *(G1)*; `docs/ai-agent-framework.md`; `framework/templates/system/claude/CLAUDE.md` *(slim shape reference)* | G1 | writing-docs, bootstrapping-project | deep | ⬜ todo |
-| G3 | Slim `framework/templates/project/AGENTS.md` to near-passthrough ≤8 lines (FR-4). | `framework/templates/project/AGENTS.md` | `framework/templates/project/.github/copilot-instructions.md` *(G2)* | G2 | writing-docs | default | ⬜ todo |
-| G4 | Audit project docs/ scaffolding for duplicates with framework `docs/`; relocate any duplicate prose (FR-6). | `framework/templates/project/docs/README.md`, `framework/templates/project/docs/architecture/module-map.md`, `framework/templates/project/docs/improvements-log.md`, `framework/templates/project/docs/specs/active/README.md`, `framework/templates/project/docs/specs/archived/README.md` | `docs/` *(all relevant framework docs for comparison)* | — | writing-docs | default | ⬜ todo |
+| G1 | Create `docs/project-bootstrap-guide.md` from authoring guidance currently inlined in the project copilot-instructions template (FR-7). | `docs/project-bootstrap-guide.md` (new) | `framework/templates/project/.github/copilot-instructions.md` *(pre-slim source)*; `docs/ai-agent-framework.md` | — | writing-docs, bootstrapping-project | default | ✅ done |
+| G2 | Slim project `copilot-instructions.md` template to ≤25 lines — keep Boundaries + Workflows trigger map + placeholders; drop catalog/resolution/non-Copilot prose (FR-1, FR-2, FR-3). | `framework/templates/project/.github/copilot-instructions.md` | `docs/project-bootstrap-guide.md` *(G1)*; `docs/ai-agent-framework.md`; `framework/templates/system/claude/CLAUDE.md` *(slim shape reference)* | G1 | writing-docs, bootstrapping-project | deep | ✅ done |
+| G3 | Slim `framework/templates/project/AGENTS.md` to near-passthrough ≤8 lines (FR-4). | `framework/templates/project/AGENTS.md` | `framework/templates/project/.github/copilot-instructions.md` *(G2)* | G2 | writing-docs | default | ✅ done |
+| G4 | Audit project docs/ scaffolding for duplicates with framework `docs/`; relocate any duplicate prose (FR-6). | `framework/templates/project/docs/README.md`, `framework/templates/project/docs/architecture/module-map.md`, `framework/templates/project/docs/improvements-log.md`, `framework/templates/project/docs/specs/active/README.md`, `framework/templates/project/docs/specs/archived/README.md` | `docs/` *(all relevant framework docs for comparison)* | — | writing-docs | default | ✅ done (no duplicates found; 0% reduction) |
 
 ## Agent instructions
 

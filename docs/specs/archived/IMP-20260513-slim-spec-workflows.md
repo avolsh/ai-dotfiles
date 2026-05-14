@@ -2,7 +2,7 @@
 id: IMP-20260513-slim-spec-workflows
 type: IMP
 date: 2026-05-13
-status: plan
+status: done
 owner: avolsh
 risk: low
 affected-repos:
@@ -30,7 +30,7 @@ siblings:
 
 # IMP-20260513-slim-spec-workflows
 
-*Last updated: 2026-05-13*
+*Last updated: 2026-05-14*
 
 ## Summary
 
@@ -140,11 +140,11 @@ Kept as one sibling spec — per `splitting-rules.md § 2` this layer is a coher
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
-| E1 | Migrate `framework/spec-workflows/adr-conventions.md` to `docs/adr-conventions.md`; delete the framework copy (FR-4). | `framework/spec-workflows/adr-conventions.md` (deleted), `docs/adr-conventions.md` (new) | — | — | writing-docs | default | ⬜ todo |
-| E2 | Consolidate anti-skip rules + Visualize sub-step trigger rules + Split sub-step pointers into `spec-lifecycle.md` as single canonical source (FR-1). | `framework/spec-workflows/spec-lifecycle.md`, `framework/spec-workflows/README.md` | `framework/spec-workflows/README.md` *(pre-slim source)*; `framework/skills/writing-specs/SKILL.md`; `framework/templates/system/claude/CLAUDE.md` | — | writing-specs, writing-docs | deep | ⬜ todo |
-| E3 | Verify `spec-types.md` is machine-lookup only; relocate any prose paragraphs found (FR-3). | `framework/spec-workflows/spec-types.md` | — | — | writing-docs | default | ⬜ todo |
-| E4 | Slim `README.md` to ≤25-line TOC pointing at lifecycle, types, templates/, questions/, docs/adr-conventions.md (FR-2). | `framework/spec-workflows/README.md` | `framework/spec-workflows/spec-lifecycle.md` *(E2)*; `framework/spec-workflows/spec-types.md` *(E3)* | E1, E2, E3 | writing-docs | default | ⬜ todo |
-| E5 | Update workspace-wide cross-references that pointed at `spec-workflows/adr-conventions.md` to point at `docs/adr-conventions.md` (FR-5). | `framework/` *(grep + update; all files containing the old path)* | — | E1 | writing-docs | default | ⬜ todo |
+| E1 | Migrate `framework/spec-workflows/adr-conventions.md` to `docs/adr-conventions.md`; delete the framework copy (FR-4). | `framework/spec-workflows/adr-conventions.md` (deleted), `docs/adr-conventions.md` (new) | — | — | writing-docs | default | ✅ done |
+| E2 | Consolidate anti-skip rules + Visualize sub-step trigger rules + Split sub-step pointers into `spec-lifecycle.md` as single canonical source (FR-1). | `framework/spec-workflows/spec-lifecycle.md`, `framework/spec-workflows/README.md` | `framework/spec-workflows/README.md` *(pre-slim source)*; `framework/skills/writing-specs/SKILL.md`; `framework/templates/system/claude/CLAUDE.md` | — | writing-specs, writing-docs | deep | ✅ done |
+| E3 | Verify `spec-types.md` is machine-lookup only; relocate any prose paragraphs found (FR-3). | `framework/spec-workflows/spec-types.md` | — | — | writing-docs | default | ✅ done |
+| E4 | Slim `README.md` to ≤25-line TOC pointing at lifecycle, types, templates/, questions/, docs/adr-conventions.md (FR-2). | `framework/spec-workflows/README.md` | `framework/spec-workflows/spec-lifecycle.md` *(E2)*; `framework/spec-workflows/spec-types.md` *(E3)* | E1, E2, E3 | writing-docs | default | ✅ done |
+| E5 | Update workspace-wide cross-references that pointed at `spec-workflows/adr-conventions.md` to point at `docs/adr-conventions.md` (FR-5). | `framework/` *(grep + update; all files containing the old path)* | — | E1 | writing-docs | default | ✅ done |
 
 ## Agent instructions
 
@@ -161,3 +161,30 @@ Per `<system>/skills/agent-protocol/SKILL.md`.
 
 - Closure order with siblings: this spec consolidates lifecycle content INTO `spec-lifecycle.md`; siblings B (skill bodies) and C (prompts) REMOVE lifecycle content from their files and point at `spec-lifecycle.md`. There is no hard ordering constraint — either side can land first — but reviewing in this order makes the diff clearest: E first (absorption), then B/C (removal).
 - ADR authors will follow a new path (`docs/adr-conventions.md`) — communicate the move in the closure notes.
+
+## Closure (2026-05-14)
+
+**Per-file outcomes:**
+
+| File | Before | After | Δ |
+|---|---:|---:|---|
+| `framework/spec-workflows/README.md` | 116 | 11 | ≈90% reduction (≤25 target ✓) |
+| `framework/spec-workflows/spec-lifecycle.md` | 129 | 149 | +15% (≤150 cap ✓; tripwire 180 not approached) |
+| `framework/spec-workflows/spec-types.md` | 61 | 59 | small reduction (≤61 target ✓) |
+| `framework/spec-workflows/adr-conventions.md` | 42 | **0** (deleted) | migrated to `docs/adr-conventions.md` |
+| `docs/adr-conventions.md` (new) | — | 44 | new docs/ topic page |
+| **Framework layer total** | 348 | 219 | **≈37% reduction** (vs. ~40% planned) |
+
+**AC evidence:**
+
+- **AC-1 (FR-1):** `spec-lifecycle.md` holds the canonical anti-skip rules (1–5, 11, 12), Visualize sub-step triggers, and Split sub-step pointers; the slimmed `README.md` only cross-links. Sibling-owned files (skill bodies, prompts, system + spec templates, questions) still match the broad grep — explicitly scoped to siblings IMP-A/B/C/D per § Rollout. B and C already archived.
+- **AC-2 (FR-2):** `wc -l framework/spec-workflows/README.md` → 11 ≤ 25; body is title + Last-updated + TOC table only.
+- **AC-3 (FR-3):** `awk 'length($0) > 80 && !/^#/ && !/^\|/' framework/spec-workflows/spec-types.md` → 0 matches.
+- **AC-4 (FR-4):** `ls framework/spec-workflows/adr-conventions.md docs/adr-conventions.md` → first absent, second present with `*Last updated: 2026-05-14*` + one-line purpose statement.
+- **AC-5 (FR-5):** workspace-wide grep for `spec-workflows/adr-conventions` (excluding this spec and archived siblings) → 0 matches; programmatic walk of every link in `framework/spec-workflows/*.md` → all resolve.
+
+**Divergences:**
+
+- Last-updated lines used **2026-05-14** instead of the spec's literal **2026-05-13**, per the agent-protocol doc-freshness rule ("update `Last updated` on every modified doc"). Applies to `docs/adr-conventions.md` (AC-4 wording), the spec itself, and all touched `framework/spec-workflows/*.md` files.
+- The detailed Specify-sub-step **workflow flowchart** that lived in the old `README.md` was **removed**, not relocated. The proposed-improvement text said "All prose moves to `spec-lifecycle.md` or to `docs/`", but the diagram would have pushed `spec-lifecycle.md` past its 150-line cap (already at 149). The Visualize/Split rules it depicted are now authoritative in `spec-lifecycle.md`; the simpler `stateDiagram-v2` already in `spec-lifecycle.md` covers the status flow. Approved at closure.
+- The README's prior **Stage summary** table and **"When the user types 'create spec'"** routing table were dropped — the first overlaps `spec-lifecycle.md`'s Status-transitions table; the second is the canonical content of the system templates' Workflows section (sibling IMP-A).

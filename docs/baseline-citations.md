@@ -1,9 +1,10 @@
 # Baseline Citations
 
-*Last updated: 2026-04-29*
+*Last updated: 2026-05-14*
 
-How to read, write, and cite **per-feature requirements baselines** under
-`<project>/docs/requirements/`. Origin spec:
+How to read, write, and cite **per-feature requirements baselines** under `<project>/docs/requirements/`: file structure, ID convention, verification pointers, citation format, current-state authority, ownership, and anti-patterns.
+
+Origin spec:
 `tobevisit-content/docs/specs/archived/IMP-20260428-requirements-baseline-for-specify.md`.
 
 ---
@@ -46,7 +47,7 @@ keyword: `MUST`, `MUST NOT`, `SHOULD`, `MAY`. Every entry is
 addressable by a heading slug or an explicit ID.
 
 Seed example:
-[`tobevisit-content/docs/requirements/place-catalog-enrichment.md`](../../../../../src/github.com/tobeverse/tobevisit-content/docs/requirements/place-catalog-enrichment.md).
+[`tobevisit-content/docs/requirements/place-catalog-enrichment.md`](../../../src/github.com/tobeverse/tobevisit-content/docs/requirements/place-catalog-enrichment.md).
 
 ---
 
@@ -81,7 +82,7 @@ FR and Invariant entries MAY end with an optional test pointer:
 
 Existing baselines MAY omit `Verified by:` entries. Future baselines and
 baselines updated under
-[`spec-lifecycle.md` Rule 11](../../../spec-workflows/spec-lifecycle.md)
+[`spec-lifecycle.md` Rule 11](../framework/spec-workflows/spec-lifecycle.md)
 SHOULD include the suffix when a real test exists. Authors MUST omit the
 suffix rather than inventing a test path when no test exists.
 
@@ -129,7 +130,7 @@ even when the baseline body is unchanged after re-checking `src`.
 | Closure | Spec author | If the spec changed baseline behavior, update the touched `docs/requirements/<feature>.md` in the same change; cite the diff in `## Closure Evidence`. May seed a brand-new baseline file when introducing a feature that will likely be touched again. |
 
 The closure rule is enforced by:
-[`spec-lifecycle.md` Rule 11](../../../spec-workflows/spec-lifecycle.md)
+[`spec-lifecycle.md` Rule 11](../framework/spec-workflows/spec-lifecycle.md)
 (workspace) and each project's `.github/copilot/instructions/general.md`
 (project boundary).
 

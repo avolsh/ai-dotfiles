@@ -1,6 +1,10 @@
 # ADR Conventions
 
-*Last updated: 2026-04-20*
+*Last updated: 2026-05-14*
+
+Naming convention, status values, and minimal template for Architecture Decision Records. Consulted only when an ADR is being authored or amended.
+
+---
 
 ## Location & naming
 
@@ -39,4 +43,3 @@ What was decided.
 ## Consequences
 What follows from the decision.
 ```
-

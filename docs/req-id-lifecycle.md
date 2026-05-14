@@ -1,10 +1,12 @@
 # REQ-ID Lifecycle
 
-*Last updated: 2026-04-29*
+*Last updated: 2026-05-14*
 
-Stable numeric IDs (`REQ-<feature-prefix>-NNN`) are optional in
-requirements baselines. When a baseline uses them, follow this lifecycle
-so future CR / IMP / BUG specs can cite requirements without ambiguity.
+Lifecycle rules for stable numeric IDs (`REQ-<feature-prefix>-NNN`) inside per-feature requirements baselines: numbering, deletion, supersession, cross-baseline citation, and citation safety.
+
+Stable numeric IDs are optional in requirements baselines. When a baseline
+uses them, follow this lifecycle so future CR / IMP / BUG specs can cite
+requirements without ambiguity.
 
 ## Numbering
 

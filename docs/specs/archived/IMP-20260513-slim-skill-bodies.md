@@ -2,7 +2,7 @@
 id: IMP-20260513-slim-skill-bodies
 type: IMP
 date: 2026-05-13
-status: plan
+status: done
 owner: avolsh
 risk: low
 affected-repos:
@@ -41,7 +41,7 @@ siblings:
 
 # IMP-20260513-slim-skill-bodies
 
-*Last updated: 2026-05-13*
+*Last updated: 2026-05-14*
 
 ## Summary
 
@@ -160,12 +160,12 @@ Split into: `IMP-20260513-slim-system-templates`, `IMP-20260513-slim-framework-p
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
-| B1 | Create topic-organized `docs/` files from prose-shaped `writing-specs/references/*.md`. | `docs/spec-asking-questions.md` (new), `docs/spec-format.md` (new), `docs/baseline-citations.md` (new), `docs/req-id-lifecycle.md` (new), `docs/acceptance-criteria-patterns.md` (new) | `framework/skills/writing-specs/references/` *(all 7 files; prose extraction)* | — | writing-docs | default | ⬜ todo |
-| B2 | Carve `bounded-autonomy-rules.md` and `splitting-rules.md` — keep machine-lookup tables/IDs in `framework/`; move rationale prose to `docs/`. | `framework/skills/writing-specs/references/bounded-autonomy-rules.md`, `framework/skills/writing-specs/references/splitting-rules.md`, `docs/bounded-autonomy.md` (new), `docs/splitting-specs.md` (new) | `framework/spec-workflows/spec-lifecycle.md` | — | writing-docs, writing-specs | deep | ⬜ todo |
-| B3 | Move `protocol-reference.md` prose to `docs/agent-protocol.md`; slim `agent-protocol/SKILL.md` to shape. | `framework/skills/agent-protocol/SKILL.md`, `framework/skills/agent-protocol/references/protocol-reference.md` (deleted), `docs/agent-protocol.md` (new) | `framework/boundaries.md`; `framework/spec-workflows/spec-lifecycle.md` | — | writing-docs | deep | ⬜ todo |
-| B4 | Slim `writing-specs/SKILL.md` to shape; verify cross-references to B1/B2 outputs resolve. | `framework/skills/writing-specs/SKILL.md` | `docs/spec-asking-questions.md`, `docs/spec-format.md`, `docs/bounded-autonomy.md`, `docs/splitting-specs.md` *(B1/B2 outputs)* | B1, B2 | writing-docs, writing-specs | default | ⬜ todo |
-| B5 | Slim `writing-docs/SKILL.md`; migrate glossary-template prose to `docs/writing-glossary.md`. | `framework/skills/writing-docs/SKILL.md`, `framework/skills/writing-docs/glossary-template.md` (deleted), `framework/skills/writing-docs/references/glossary-template.md` (deleted), `docs/writing-glossary.md` (new) | — | — | writing-docs | default | ⬜ todo |
-| B6 | Slim `bootstrapping-project/SKILL.md` (verify `scaffold-manifest.md` stays machine-lookup) and `model-selection/SKILL.md`. | `framework/skills/bootstrapping-project/SKILL.md`, `framework/skills/bootstrapping-project/references/scaffold-manifest.md`, `framework/skills/model-selection/SKILL.md` | — | — | writing-docs | default | ⬜ todo |
+| B1 | Create topic-organized `docs/` files from prose-shaped `writing-specs/references/*.md`. | `docs/spec-asking-questions.md` (new), `docs/spec-format.md` (new), `docs/baseline-citations.md` (new), `docs/req-id-lifecycle.md` (new), `docs/acceptance-criteria-patterns.md` (new) | `framework/skills/writing-specs/references/` *(all 7 files; prose extraction)* | — | writing-docs | default | ✅ done |
+| B2 | Carve `bounded-autonomy-rules.md` and `splitting-rules.md` — keep machine-lookup tables/IDs in `framework/`; move rationale prose to `docs/`. | `framework/skills/writing-specs/references/bounded-autonomy-rules.md`, `framework/skills/writing-specs/references/splitting-rules.md`, `docs/bounded-autonomy.md` (new), `docs/splitting-specs.md` (new) | `framework/spec-workflows/spec-lifecycle.md` | — | writing-docs, writing-specs | deep | ✅ done |
+| B3 | Move `protocol-reference.md` prose to `docs/agent-protocol.md`; slim `agent-protocol/SKILL.md` to shape. | `framework/skills/agent-protocol/SKILL.md`, `framework/skills/agent-protocol/references/protocol-reference.md` (deleted), `docs/agent-protocol.md` (new) | `framework/boundaries.md`; `framework/spec-workflows/spec-lifecycle.md` | — | writing-docs | deep | ✅ done |
+| B4 | Slim `writing-specs/SKILL.md` to shape; verify cross-references to B1/B2 outputs resolve. | `framework/skills/writing-specs/SKILL.md`, `docs/writing-specs.md` (new), 5 prose `references/*.md` deleted | `docs/spec-asking-questions.md`, `docs/spec-format.md`, `docs/bounded-autonomy.md`, `docs/splitting-specs.md` *(B1/B2 outputs)* | B1, B2 | writing-docs, writing-specs | default | ✅ done |
+| B5 | Slim `writing-docs/SKILL.md`; migrate glossary-template prose to `docs/writing-glossary.md`. | `framework/skills/writing-docs/SKILL.md`, `framework/skills/writing-docs/glossary-template.md` (deleted), `framework/skills/writing-docs/references/glossary-template.md` (deleted), `docs/writing-glossary.md` (new), `docs/writing-docs.md` (new) | — | — | writing-docs | default | ✅ done |
+| B6 | Slim `bootstrapping-project/SKILL.md` (verify `scaffold-manifest.md` stays machine-lookup) and `model-selection/SKILL.md`. | `framework/skills/bootstrapping-project/SKILL.md`, `framework/skills/bootstrapping-project/references/scaffold-manifest.md`, `framework/skills/model-selection/SKILL.md`, `docs/bootstrapping-project.md` (new), `docs/model-selection.md` (new) | — | — | writing-docs | default | ✅ done |
 
 ## Agent instructions
 
@@ -181,3 +181,34 @@ Per `<system>/skills/agent-protocol/SKILL.md`.
 
 - Plan-stage task ordering MUST sequence: (1) create `docs/` topic files, (2) slim SKILL.md bodies to point at them, (3) delete the migrated `references/*.md` prose files. Skipping step 1 leaves dangling references during the slim.
 - `IMP-20260513-slim-framework-prompts` depends on this spec — keep that closure ordering.
+
+## Closure Evidence
+
+Closed 2026-05-14.
+
+**AC-1 (SKILL.md line budget, FR-1/FR-2):** `wc -l framework/skills/*/SKILL.md` (excluding `.system/`):
+
+| SKILL.md | Pre | Post | Reduction | Target | Pass |
+|---|---|---|---|---|---|
+| agent-protocol | 292 | 24 | 91.8% | ≥89% | ✓ |
+| writing-specs | 175 | 30 | 82.9% | ≥82% | ✓ |
+| bootstrapping-project | 181 | 25 | 86.2% | ≥83% | ✓ |
+| writing-docs | 119 | 24 | 79.8% | ≥79% | ✓ |
+| model-selection | 107 | 19 | 82.2% | ≥80% (≤30 lines) | ✓ |
+
+All ≤35 lines (FR-1). Body shape: `## When to use` + `## References` only (FR-2).
+
+**AC-2 (Frontmatter preserved, FR-3):** `name`, `description`, and `source` (writing-specs only) byte-identical to pre-slim. Verified by visual diff against `git show HEAD~:<path>` for each file.
+
+**AC-3 (Prose moved to docs/, FR-4/FR-5/FR-7):** 13 new files under `docs/` — `spec-asking-questions.md`, `spec-format.md`, `baseline-citations.md`, `req-id-lifecycle.md`, `acceptance-criteria-patterns.md`, `bounded-autonomy.md`, `splitting-specs.md`, `agent-protocol.md`, `writing-glossary.md`, `writing-specs.md`, `writing-docs.md`, `bootstrapping-project.md`, `model-selection.md`. Each carries an H1, a `*Last updated: 2026-05-14*` line, and a purpose statement immediately below. `find framework/skills -name "*.md" ! -path "*/.system/*"` reports max prose file size of 30 lines (SKILL.md); the 3 retained references files are machine-lookup tables.
+
+**AC-4 (Machine-lookup retained, FR-6):** `framework/skills/writing-specs/references/bounded-autonomy-rules.md` (52 lines, 16 table rows + 5 scored questions); `framework/skills/writing-specs/references/splitting-rules.md` (64 lines, 20 table rows — §1 Definitions / §2 T1–T6 / §3 P1–P3 / §4 E1–E5); `framework/skills/bootstrapping-project/references/scaffold-manifest.md` (62 lines, 28 table rows — required projects + workspace + recommended). All rationale prose moved out; what remains is structured tables with brief surrounding pointer lines only.
+
+**AC-5 (No dangling cross-references, FR-8):** All 23 markdown links in the 5 slimmed SKILL.md files verified by `test -e` resolution against the actual files at HEAD.
+
+**Deleted prose reference files:**
+- `framework/skills/writing-specs/references/{questions-technique,spec-format-guide,baseline-citations,req-id-lifecycle,acceptance-criteria-patterns}.md`
+- `framework/skills/agent-protocol/references/protocol-reference.md` (and empty `references/` dir)
+- `framework/skills/writing-docs/glossary-template.md` and `framework/skills/writing-docs/references/glossary-template.md` (and empty `references/` dir)
+
+**Sibling unblocked:** `IMP-20260513-slim-framework-prompts` (depends on this spec) is now free to advance to plan/in-progress per its own gate.

@@ -1,9 +1,8 @@
-# Spec Format Guide
+# Spec Format
 
-*Last updated: 2026-04-20*
+*Last updated: 2026-05-14*
 
-Quick reference for spec sections. For templates, see
-[`<system>/spec-workflows/templates/`](../../../spec-workflows/templates/).
+Quick reference for spec sections, requirement keywords, acceptance criteria, and the review checklist. For templates, see [`framework/spec-workflows/templates/`](../framework/spec-workflows/templates/).
 
 ---
 

@@ -1,16 +1,8 @@
-<!--
-NOT A TEMPLATE.
+# <project-name>
 
-AGENTS.md is generated mechanically from `.github/copilot-instructions.md`
-by `.github/scripts/sync-agents.sh` (the project-local copy of the canonical
-script shipped at `<system>/templates/project/.github/scripts/sync-agents.sh`).
+*Last updated: YYYY-MM-DD*
 
-Do NOT render this file into a scaffolded project. The bootstrap workflow
-emits AGENTS.md by running `make sync-agents` after the source
-`.github/copilot-instructions.md` and `.github/scripts/sync-agents.sh` are
-in place.
-
-Codex requires self-contained content (no `@`-imports), which the canonical
-script guarantees by emitting the banner lines plus a byte-identical copy
-of the source.
--->
+Generated copy of `.github/copilot-instructions.md` via `make sync-agents`
+(`.github/scripts/sync-agents.sh`). Do not edit by hand. Codex requires
+self-contained content; the script emits a byte-identical copy with no
+`@`-imports.

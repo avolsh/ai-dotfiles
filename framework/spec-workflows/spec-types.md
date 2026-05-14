@@ -1,6 +1,6 @@
 # Spec Types
 
-*Last updated: 2026-05-11*
+*Last updated: 2026-05-14*
 
 ## Type catalog
 
@@ -56,6 +56,4 @@ These files are loaded at **every** stage, regardless of type:
 - `<system>/boundaries.md` — non-negotiable rules governing all work.
 - `<system>/skills/agent-protocol/SKILL.md` — if the task is non-trivial.
 - `<system>/skills/writing-specs/SKILL.md` — when editing any spec file.
-
-Project-scope skills (if listed in the spec's `skills` front-matter field) are
-also loaded at every stage and resolved project-first via the two-scope model.
+- Project-scope skills in the spec's `skills` field — project-first lookup.

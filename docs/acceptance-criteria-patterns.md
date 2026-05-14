@@ -1,9 +1,8 @@
 # Acceptance Criteria Patterns
 
-*Last updated: 2026-04-20*
+*Last updated: 2026-05-14*
 
-Patterns for writing Given/When/Then acceptance criteria. Adapt to your
-domain — these are starting points, not prescriptions.
+Patterns for writing Given/When/Then acceptance criteria — structure, core patterns, common mistakes, and a coverage checklist. Adapt to your domain; these are starting points, not prescriptions.
 
 ---
 

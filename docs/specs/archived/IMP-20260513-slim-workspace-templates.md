@@ -2,7 +2,7 @@
 id: IMP-20260513-slim-workspace-templates
 type: IMP
 date: 2026-05-13
-status: plan
+status: done
 owner: avolsh
 risk: low
 affected-repos:
@@ -12,7 +12,9 @@ affected-docs:
   - framework/templates/workspace/AGENTS.md
   - framework/templates/workspace/CLAUDE.md
   - framework/templates/workspace/docs/improvements-log.md
+  - framework/templates/project/docs/improvements-log.md
   - docs/workspace-bootstrap-guide.md
+  - docs/improvements-log-format.md
 affected-code: []
 skills:
   - writing-specs
@@ -149,10 +151,10 @@ Kept as one sibling spec — single template family. Per `splitting-rules.md § 
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
-| H1 | Create `docs/workspace-bootstrap-guide.md` from authoring guidance currently inlined in the workspace copilot-instructions template (FR-7). | `docs/workspace-bootstrap-guide.md` (new) | `framework/templates/workspace/.github/copilot-instructions.md` *(pre-slim source)*; `docs/ai-agent-framework.md` | — | writing-docs, bootstrapping-project | default | ⬜ todo |
-| H2 | Slim workspace `copilot-instructions.md` template to ≤20 lines — keep Projects + Project routing + Shared safety + Cross-repo coordination; drop AI-agent-framework prose (FR-1, FR-2, FR-3). | `framework/templates/workspace/.github/copilot-instructions.md` | `docs/workspace-bootstrap-guide.md` *(H1)*; `docs/ai-agent-framework.md`; `framework/templates/system/claude/CLAUDE.md` *(slim shape reference)* | H1 | writing-docs, bootstrapping-project | deep | ⬜ todo |
-| H3 | Slim `framework/templates/workspace/AGENTS.md` to near-passthrough ≤8 lines (FR-4). | `framework/templates/workspace/AGENTS.md` | `framework/templates/workspace/.github/copilot-instructions.md` *(H2)* | H2 | writing-docs | default | ⬜ todo |
-| H4 | Dedup-check workspace `docs/improvements-log.md` against project equivalent; if duplicated, create `docs/improvements-log-format.md` and slim both (FR-6). | `framework/templates/workspace/docs/improvements-log.md`, `framework/templates/project/docs/improvements-log.md`, `docs/improvements-log-format.md` (new if needed) | — | G4 *(cross-sibling sync if project file also touched)* | writing-docs | default | ⬜ todo |
+| H1 | Create `docs/workspace-bootstrap-guide.md` from authoring guidance currently inlined in the workspace copilot-instructions template (FR-7). | `docs/workspace-bootstrap-guide.md` (new) | `framework/templates/workspace/.github/copilot-instructions.md` *(pre-slim source)*; `docs/ai-agent-framework.md` | — | writing-docs, bootstrapping-project | default | ✅ done |
+| H2 | Slim workspace `copilot-instructions.md` template to ≤20 lines — keep Projects + Project routing + Shared safety + Cross-repo coordination; drop AI-agent-framework prose (FR-1, FR-2, FR-3). | `framework/templates/workspace/.github/copilot-instructions.md` | `docs/workspace-bootstrap-guide.md` *(H1)*; `docs/ai-agent-framework.md`; `framework/templates/system/claude/CLAUDE.md` *(slim shape reference)* | H1 | writing-docs, bootstrapping-project | deep | ✅ done |
+| H3 | Slim `framework/templates/workspace/AGENTS.md` to near-passthrough ≤8 lines (FR-4). | `framework/templates/workspace/AGENTS.md` | `framework/templates/workspace/.github/copilot-instructions.md` *(H2)* | H2 | writing-docs | default | ✅ done |
+| H4 | Dedup-check workspace `docs/improvements-log.md` against project equivalent; if duplicated, create `docs/improvements-log-format.md` and slim both (FR-6). | `framework/templates/workspace/docs/improvements-log.md`, `framework/templates/project/docs/improvements-log.md`, `docs/improvements-log-format.md` (new if needed) | — | G4 *(cross-sibling sync if project file also touched)* | writing-docs | default | ✅ done |
 
 ## Agent instructions
 

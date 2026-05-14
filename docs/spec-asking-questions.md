@@ -1,8 +1,8 @@
-# Questions Technique
+# Asking Questions During Specify
 
-*Last updated: 2026-03-23*
+*Last updated: 2026-05-14*
 
-How to ask effective clarifying questions during the Specify step.
+How to ask effective clarifying questions during the Specify step of a spec.
 
 ## Principles
 
@@ -27,4 +27,3 @@ How to ask effective clarifying questions during the Specify step.
 | Risk | Medium/high risk | "What happens if the AI provider returns malformed JSON?" |
 | Testing | Complex logic | "What are the key edge cases to test?" |
 | Dependencies | Multi-context | "Does this depend on CR-20260306 being complete?" |
-

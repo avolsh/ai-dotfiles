@@ -1,18 +1,8 @@
 # Bounded Autonomy Rules
 
-*Last updated: 2026-04-20*
+*Last updated: 2026-05-14*
 
-Decision framework for when an agent should stop and ask vs. continue
-autonomously during spec-driven work.
-
----
-
-## Core principle
-
-**Autonomy is earned by clarity.** Clear spec = low risk = continue.
-Ambiguous spec = high risk = stop and ask.
-
----
+Machine-lookup tables for the autonomy-vs-stop decision during spec-driven work. Rationale, scope-creep detection, breaking-change protocol, security escalation list, and escalation format live in [`docs/bounded-autonomy.md`](../../../../docs/bounded-autonomy.md).
 
 ## Decision matrix
 
@@ -27,11 +17,9 @@ Ambiguous spec = high risk = stop and ask.
 | Bug found unrelated to spec | **STOP** — file separate issue |
 | Spec says N/A but you disagree | **STOP** — ask the author |
 
----
+## Ambiguity score
 
-## Ambiguity scoring
-
-For each requirement, ask these five questions:
+For each requirement, sum the weights for each "Yes":
 
 1. Can I write a test right now? (No = +20%)
 2. Multiple valid interpretations? (Yes = +20%)
@@ -45,53 +33,6 @@ For each requirement, ask these five questions:
 | 16–30% | Continue with caution. Flag in PR. |
 | 31–50% | STOP. Ask one specific question. |
 | 51%+ | STOP. Spec is incomplete — request revision. |
-
----
-
-## Scope creep detection
-
-Scope creep = implementing functionality not in the spec. Includes:
-
-- Adding features the spec doesn't mention
-- Handling edge cases the spec explicitly excluded
-- Refactoring unrelated code "while you're in there"
-- Building infrastructure for future features
-
-**Response:** stop, check Out of Scope, file a note if not mentioned,
-update spec FIRST if approved, then implement.
-
----
-
-## Breaking changes
-
-Always STOP for: endpoint removed, required field added to request,
-field removed from response, status/error code changed, non-nullable
-column added, enum value removed, behavior change for existing input.
-
-Protocol: identify → escalate → propose migration path → document.
-
----
-
-## Security escalation
-
-Always escalate changes touching: authentication, authorization,
-encryption/hashing, PII handling, input validation, rate limiting,
-CORS/CSP, file uploads, query construction, deserialization, redirect
-URLs, secrets.
-
----
-
-## Escalation format
-
-When you must stop, post:
-
-- **Blocked on:** requirement ID
-- **Question:** specific, answerable question
-- **Options considered:** A and B with pros/cons
-- **My recommendation:** with reasoning
-- **Impact of waiting:** what is blocked
-
----
 
 ## Quick reference
 

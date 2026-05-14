@@ -1,4 +1,4 @@
-.PHONY: help install install-check profile-init reset project workspace links-check check
+.PHONY: help install install-check profile-init reset project workspace links-check validate-specs check
 
 help:
 	@echo "Targets:"
@@ -9,7 +9,8 @@ help:
 	@echo "  project                    Scaffold current dir as a project repo"
 	@echo "  workspace                  Scaffold current dir as a workspace root"
 	@echo "  links-check                Verify markdown link integrity"
-	@echo "  check                      Run all checks (links-check + install-check)"
+	@echo "  validate-specs             Validate spec corpus (front-matter, deps, naming, etc.)"
+	@echo "  check                      Run all checks (links-check + install-check + validate-specs)"
 	@echo ""
 	@echo "Source-only (cannot be a Make target):"
 	@echo "  source ./scripts/ai-switch.sh <profile>"
@@ -39,4 +40,7 @@ workspace:
 links-check:
 	./framework/scripts/check-md-links.sh
 
-check: links-check install-check
+validate-specs:
+	python3 ./scripts/validate-specs.py
+
+check: links-check install-check validate-specs

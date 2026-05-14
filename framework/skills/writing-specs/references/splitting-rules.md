@@ -1,10 +1,12 @@
 # Splitting Rules
 
-*Last updated: 2026-04-29*
+*Last updated: 2026-05-14*
 
-When and how to split a spec into multiple autonomous specs. The check
-runs twice: once during **Specify** against FR clusters, and once during
-**Plan** as a safety net if decomposition reveals missed signals.
+Machine-lookup tables for the spec-split decision: definitions (§1), Specify-stage triggers (§2 T1–T6), Plan-stage safety net (§3 P1–P3), and keep-as-one exceptions (§4 E1–E5). Cite these IDs from specs under `## Split Decision`. Procedure and worked examples live in [`docs/splitting-specs.md`](../../../../docs/splitting-specs.md).
+
+The check runs twice: once during **Specify** against FR clusters, and
+once during **Plan** as a safety net if decomposition reveals missed
+signals.
 
 ## § 1 Definitions
 
@@ -60,47 +62,3 @@ Record the exception used under `## Split Decision` in the spec.
 | E3 | Rollback requires atomic revert of all FRs | Splitting breaks the rollback contract |
 | E4 | One cluster is a trivial extension (≤1 FR, ≤1 file) of another | Not worth the spec overhead |
 | E5 | Documentation corpus | All tasks ship documentation files under a single shared index, share a single closure metric, and share a single conformance-pass; splitting forces three-way coordination of artifacts that share no live state. Apply only when the spec ships zero behavioural code change. |
-
-## § 5 How to split
-
-1. Identify the natural seam — usually a port, a use case boundary, or a
-   bounded context edge.
-2. Each sibling spec MUST be autonomous per § 1 at its own Specify gate.
-3. Create one file per sibling in `<project>/docs/specs/active/` with
-   the same date prefix and distinct kebab titles.
-4. Cross-link in front-matter:
-
-   ```yaml
-   siblings:
-     - <sibling-spec-id>
-   depends-on:
-     - <prerequisite-spec-id>    # omit if independent
-   ```
-
-5. The first-unblocked sibling advances to Plan first; others stay at
-   `specify` until `depends-on:` entries reach `done`.
-6. Record the decision in each spec under `## Split Decision`:
-   - *Split into: `<sibling-ids>`. This spec owns FRs `<N, M>`.*
-
-## § 6 Examples
-
-A spec that adds a new entity (place-catalog context) AND a new pipeline
-step (content-generation context) AND a new UI component (tobevisit-web)
-— T2 + T3 fire:
-
-- Split into 3 specs: one per context/repo.
-- `depends-on:` chain: entity → pipeline → UI.
-
-A spec that modifies 3 steps in the same pipeline, all writing the same
-shared output — E1 applies:
-
-- Keep as one spec. Record: *Kept as one spec — E1 shared data-write path.*
-
-A CR bundling "fetch photos from 3 providers" + "AI vision filter" +
-"upload to R2" + "orchestration use case":
-
-- T1 fires (provider adapters, AI filter, storage each independently
-  testable with mocks).
-- Split into two specs: infrastructure (adapters + storage + domain
-  model) and pipeline (use case + step wiring). Infrastructure has no
-  `depends-on:`; pipeline `depends-on:` infrastructure.

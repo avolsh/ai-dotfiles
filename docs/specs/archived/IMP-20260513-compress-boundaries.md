@@ -2,7 +2,7 @@
 id: IMP-20260513-compress-boundaries
 type: IMP
 date: 2026-05-13
-status: plan
+status: done
 owner: avolsh
 risk: medium
 affected-repos:
@@ -26,7 +26,7 @@ siblings:
 
 # IMP-20260513-compress-boundaries
 
-*Last updated: 2026-05-13*
+*Last updated: 2026-05-14*
 
 ## Summary
 
@@ -125,8 +125,8 @@ Kept as one sibling spec — single-file compression with a single, well-defined
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
-| F1 | Compress `framework/boundaries.md` prose; preserve all 28 rules semantically; produce a rule-by-rule before/after diff for closure evidence (FR-1, FR-2, FR-3). | `framework/boundaries.md` | `framework/boundaries.md` *(pre-slim)* | — | writing-docs | deep | ⬜ todo |
-| F2 | Verify cross-references resolve; verify rule counts (14/5/9); verify three-tier + Escalation structure intact (FR-4, FR-5). | `framework/boundaries.md` *(verification only)* | `framework/spec-workflows/spec-lifecycle.md`; `framework/skills/agent-protocol/SKILL.md`; `framework/skills/writing-specs/references/bounded-autonomy-rules.md` | F1 | writing-docs | default | ⬜ todo |
+| F1 | Compress `framework/boundaries.md` prose; preserve all 28 rules semantically; produce a rule-by-rule before/after diff for closure evidence (FR-1, FR-2, FR-3). | `framework/boundaries.md` | `framework/boundaries.md` *(pre-slim)* | — | writing-docs | deep | ☑ done |
+| F2 | Verify cross-references resolve; verify rule counts (14/5/9); verify three-tier + Escalation structure intact (FR-4, FR-5). | `framework/boundaries.md` *(verification only)* | `framework/spec-workflows/spec-lifecycle.md`; `framework/skills/agent-protocol/SKILL.md`; `framework/skills/writing-specs/references/bounded-autonomy-rules.md` | F1 | writing-docs | default | ☑ done |
 
 ## Agent instructions
 

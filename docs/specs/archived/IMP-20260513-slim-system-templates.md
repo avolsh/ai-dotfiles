@@ -2,7 +2,7 @@
 id: IMP-20260513-slim-system-templates
 type: IMP
 date: 2026-05-13
-status: plan
+status: done
 owner: avolsh
 risk: low
 affected-repos:
@@ -144,11 +144,11 @@ Split into: `IMP-20260513-slim-skill-bodies`, `IMP-20260513-slim-framework-promp
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
-| A1 | Verify/backfill `docs/ai-agent-framework.md` so it is authoritative for the two-scope model, skills catalog, spec-type table, and non-Copilot agent notes (FR-6). | `docs/ai-agent-framework.md` | `framework/templates/system/claude/CLAUDE.md` *(pre-slim source)*; `framework/spec-workflows/spec-types.md` | — | writing-docs | default | ⬜ todo |
-| A2 | Create `docs/writing-skills.md` from authoring guidance currently inlined in `_skill-template/SKILL.md` (FR-8). | `docs/writing-skills.md` (new) | `framework/templates/system/_skill-template/SKILL.md` | — | writing-docs | default | ⬜ todo |
-| A3 | Slim `_skill-template/SKILL.md` to canonical slimmed-skill shape — frontmatter + `## When to use` + `## References` (FR-7). | `framework/templates/system/_skill-template/SKILL.md` | `docs/writing-skills.md` *(A2 output)* | A2 | writing-docs | default | ⬜ todo |
-| A4 | Slim `framework/templates/system/claude/CLAUDE.md` to ≤20 lines — title, `*Active profile:*`, `@boundaries.md`, workflow trigger map (header + 5 rows), 1-2 pointer lines (FR-1, FR-2, FR-3, FR-4). | `framework/templates/system/claude/CLAUDE.md` | `docs/ai-agent-framework.md` *(A1 output)*; `framework/templates/system/claude/CLAUDE.md` *(pre-slim)*; `framework/boundaries.md` | A1 | bootstrapping-project, writing-docs | deep | ⬜ todo |
-| A5 | Mirror A4 into `AGENTS.md` and `copilot-instructions.md`; verify byte-identity sync gate passes (FR-5). | `framework/templates/system/codex/AGENTS.md`, `framework/templates/system/copilot/copilot-instructions.md` | `framework/templates/system/claude/CLAUDE.md` *(A4 output)*; `framework/scripts/test/` *(all 5 gate scripts; sync verification)* | A4 | bootstrapping-project | default | ⬜ todo |
+| A1 | Verify/backfill `docs/ai-agent-framework.md` so it is authoritative for the two-scope model, skills catalog, spec-type table, and non-Copilot agent notes (FR-6). | `docs/ai-agent-framework.md` | `framework/templates/system/claude/CLAUDE.md` *(pre-slim source)*; `framework/spec-workflows/spec-types.md` | — | writing-docs | default | ✅ done |
+| A2 | Create `docs/writing-skills.md` from authoring guidance currently inlined in `_skill-template/SKILL.md` (FR-8). | `docs/writing-skills.md` (new) | `framework/templates/system/_skill-template/SKILL.md` | — | writing-docs | default | ✅ done |
+| A3 | Slim `_skill-template/SKILL.md` to canonical slimmed-skill shape — frontmatter + `## When to use` + `## References` (FR-7). | `framework/templates/system/_skill-template/SKILL.md` | `docs/writing-skills.md` *(A2 output)* | A2 | writing-docs | default | ✅ done |
+| A4 | Slim `framework/templates/system/claude/CLAUDE.md` to ≤20 lines — title, `*Active profile:*`, `@boundaries.md`, workflow trigger map (header + 5 rows), 1-2 pointer lines (FR-1, FR-2, FR-3, FR-4). | `framework/templates/system/claude/CLAUDE.md` | `docs/ai-agent-framework.md` *(A1 output)*; `framework/templates/system/claude/CLAUDE.md` *(pre-slim)*; `framework/boundaries.md` | A1 | bootstrapping-project, writing-docs | deep | ✅ done |
+| A5 | Mirror A4 into `AGENTS.md` and `copilot-instructions.md`; verify byte-identity sync gate passes (FR-5). | `framework/templates/system/codex/AGENTS.md`, `framework/templates/system/copilot/copilot-instructions.md` | `framework/templates/system/claude/CLAUDE.md` *(A4 output)*; `framework/scripts/test/` *(all 5 gate scripts; sync verification)* | A4 | bootstrapping-project | default | ✅ done |
 
 ## Agent instructions
 

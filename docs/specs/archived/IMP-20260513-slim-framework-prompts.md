@@ -2,7 +2,7 @@
 id: IMP-20260513-slim-framework-prompts
 type: IMP
 date: 2026-05-13
-status: plan
+status: done
 owner: avolsh
 risk: low
 affected-repos:
@@ -30,7 +30,7 @@ depends-on:
 
 # IMP-20260513-slim-framework-prompts
 
-*Last updated: 2026-05-13*
+*Last updated: 2026-05-14*
 
 ## Summary
 
@@ -124,11 +124,11 @@ Split into: `IMP-20260513-slim-system-templates`, `IMP-20260513-slim-skill-bodie
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
-| C1 | Slim `create-spec.prompt.md` — remove inlined lifecycle/split/RFC prose; cross-references point at slimmed SKILL.md + `docs/`. | `framework/prompts/create-spec.prompt.md` | `framework/skills/writing-specs/SKILL.md` *(slimmed by B)*; `framework/spec-workflows/spec-lifecycle.md`; `docs/spec-asking-questions.md` | — | writing-specs | default | ⬜ todo |
-| C2 | Slim `bug-triage.prompt.md`. | `framework/prompts/bug-triage.prompt.md` | `framework/skills/writing-specs/SKILL.md` *(slimmed)*; `framework/spec-workflows/spec-lifecycle.md` | C1 | writing-specs | default | ⬜ todo |
-| C3 | Slim `plan-spec.prompt.md`. | `framework/prompts/plan-spec.prompt.md` | `framework/skills/writing-specs/SKILL.md`, `framework/skills/model-selection/SKILL.md` *(both slimmed)*; `framework/spec-workflows/spec-lifecycle.md` | C1 | writing-specs | default | ⬜ todo |
-| C4 | Slim `visualize-spec.prompt.md`. | `framework/prompts/visualize-spec.prompt.md` | `framework/skills/writing-specs/SKILL.md` *(slimmed)*; `framework/spec-workflows/spec-lifecycle.md` | C1 | writing-specs | default | ⬜ todo |
-| C5 | Verify all cross-references resolve; grep evidence for no inlined skill/lifecycle prose remaining (FR-3, FR-4). | `framework/prompts/` *(all 4 prompts; verification only)* | `framework/skills/`, `framework/spec-workflows/`, `docs/` | C1, C2, C3, C4 | writing-specs | default | ⬜ todo |
+| C1 | Slim `create-spec.prompt.md` — remove inlined lifecycle/split/RFC prose; cross-references point at slimmed SKILL.md + `docs/`. | `framework/prompts/create-spec.prompt.md` | `framework/skills/writing-specs/SKILL.md` *(slimmed by B)*; `framework/spec-workflows/spec-lifecycle.md`; `docs/spec-asking-questions.md` | — | writing-specs | default | ✅ done |
+| C2 | Slim `bug-triage.prompt.md`. | `framework/prompts/bug-triage.prompt.md` | `framework/skills/writing-specs/SKILL.md` *(slimmed)*; `framework/spec-workflows/spec-lifecycle.md` | C1 | writing-specs | default | ✅ done |
+| C3 | Slim `plan-spec.prompt.md`. | `framework/prompts/plan-spec.prompt.md` | `framework/skills/writing-specs/SKILL.md`, `framework/skills/model-selection/SKILL.md` *(both slimmed)*; `framework/spec-workflows/spec-lifecycle.md` | C1 | writing-specs | default | ✅ done |
+| C4 | Slim `visualize-spec.prompt.md`. | `framework/prompts/visualize-spec.prompt.md` | `framework/skills/writing-specs/SKILL.md` *(slimmed)*; `framework/spec-workflows/spec-lifecycle.md` | C1 | writing-specs | default | ✅ done |
+| C5 | Verify all cross-references resolve; grep evidence for no inlined skill/lifecycle prose remaining (FR-3, FR-4). | `framework/prompts/` *(all 4 prompts; verification only)* | `framework/skills/`, `framework/spec-workflows/`, `docs/` | C1, C2, C3, C4 | writing-specs | default | ✅ done |
 
 ## Agent instructions
 
@@ -143,3 +143,26 @@ Per `<system>/skills/agent-protocol/SKILL.md`.
 
 - Closure of `IMP-20260513-slim-skill-bodies` MUST land before this spec's Plan stage starts; otherwise the cross-references this slim relies on do not yet exist.
 - No downstream-project coordination needed.
+
+## Closure Evidence
+
+Closed 2026-05-14. `IMP-20260513-slim-skill-bodies` (the `depends-on:` sibling) closed earlier the same day.
+
+**AC-1 (Line budget, FR-1):** `wc -l framework/prompts/*.prompt.md`:
+
+| Prompt | Pre | Post | Reduction | Target | Pass |
+|---|---|---|---|---|---|
+| create-spec | 132 | 26 | 80.3% | ≤26 (≥80%) | ✓ |
+| bug-triage | 100 | 20 | 80.0% | ≤20 (≥80%) | ✓ |
+| plan-spec | 110 | 22 | 80.0% | ≤22 (≥80%) | ✓ |
+| visualize-spec | 94 | 18 | 80.85% | ≤19 (≥80%) | ✓ |
+
+All ≤30 lines; all ≥80% individual reduction. Body shape (FR-2): frontmatter + `#skill:` directives + one-paragraph intro + brief Preconditions (≤3 lines) + ≤6 numbered action steps + `## Hard rules`.
+
+**AC-2 (No inlined skill/lifecycle prose, FR-3):** Lifecycle stage explanations, RFC-2119 keyword tables, split-rule rationale, and writing-style rules all replaced with markdown-link cross-references to the canonical sources slimmed in `IMP-20260513-slim-skill-bodies`: `framework/skills/<name>/SKILL.md`, `docs/<topic>.md`, `framework/skills/writing-specs/references/splitting-rules.md`, `framework/spec-workflows/spec-lifecycle.md`, `framework/spec-workflows/README.md`. No paragraph longer than one line is duplicated; verified by inspection — only one-line intro per prompt + per-step one-line imperatives.
+
+**AC-3 (No dangling links, FR-4):** 36 markdown links across the 4 slimmed prompts, all resolved against HEAD via `test -e` from each prompt's directory. 0 missing.
+
+**AC-4 (Frontmatter description preserved, FR-5):** `description` field byte-identical to pre-slim HEAD for all 4 prompts (verified by `git show HEAD:<path>` diff).
+
+**Sibling unblock:** None. This spec was the only one with a `depends-on:` chain in the slim-* sibling set.
