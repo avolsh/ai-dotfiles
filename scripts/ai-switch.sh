@@ -433,9 +433,23 @@ _ai_restore_shared_state_for_tool() {
     fi
 
     # The Claude CLI's per-user config sits at ~/.claude.json, not inside ~/.claude/.
+    # IMPORTANT: never fall back to mv-f over ~/.claude.json. The profile copy
+    # can be a tiny "firstStartTime"-only stub the CLI seeded after the symlink
+    # was replaced by an atomic-rename write, and mv-f silently nukes the real
+    # 29 KB config (project history, MCP setup, onboarding state). Instead, on
+    # merge failure, stash the profile copy beside the home file and warn so
+    # the user can inspect and merge manually.
     if [ "$tool" = "claude" ] && [ "$name" = ".claude.json" ]; then
-      _ai_merge_json_into "$entry" "$HOME/.claude.json" && rm -f "$entry" \
-        || _ai_restore_path "$entry" "$HOME/.claude.json"
+      if _ai_merge_json_into "$entry" "$HOME/.claude.json"; then
+        rm -f "$entry"
+      else
+        local stash="$HOME/.claude.json.unmerged.$(date +%s)"
+        if mv "$entry" "$stash" 2>/dev/null; then
+          _ai_err "merge into $HOME/.claude.json failed; profile copy stashed at $stash"
+        else
+          _ai_err "merge into $HOME/.claude.json failed; profile copy left at $entry"
+        fi
+      fi
       continue
     fi
 
