@@ -2,7 +2,7 @@
 id: IMP-20260514-trivial-lane
 type: IMP
 date: 2026-05-14
-status: specify
+status: done
 owner: avolsh
 risk: medium
 affected-repos:
@@ -191,7 +191,15 @@ Kept as one spec. § 2 trigger T4 (FR clusters depend on different data entities
 
 ## Tasks
 
-Pending — Plan stage only.
+> **Before starting Task T1, set status: in-progress in the front-matter above.**
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| T1 | Extend the lifecycle front-matter schema so `risk:` accepts `trivial` (CR/IMP) and `severity:` accepts `trivial` (BUG), and author the new `§ Trivial lane` section in `spec-lifecycle.md` defining eligibility criteria (≤2 affected files, single repo, no schema/boundary/prompt change, no `depends-on:`), the combined `specify+plan` gate format (one-line goal, ≤3 questions, one AC, one task row), and the short-circuited status sequence `specify+plan → in-progress → done`. Mirror-note the lane's CR/BUG/IMP applicability in `spec-types.md` and the combined-gate format in `docs/spec-format.md`. This task establishes the canonical surface every later task references. Satisfies FR-1, FR-2; closes AC-1, AC-2. | `framework/spec-workflows/spec-lifecycle.md`, `framework/spec-workflows/spec-types.md`, `docs/spec-format.md` | `framework/boundaries.md`, `docs/specs/archived/IMP-20260514-framework-subagents.md`, `docs/spec-workflow-guide.md` | — | writing-docs, writing-specs | deep | ☑ done |
+| T2 | Create `framework/spec-workflows/questions/trivial-questions.md` with exactly 3 numbered questions covering (a) scope ≤2 files, (b) no schema/boundary/prompt change, (c) one-AC sufficient — wording aligned with the canonical eligibility list authored in T1. Add a "Trivial-lane shortcut" HTML comment block to each of the three templates (CR/BUG/IMP) describing how to elect the lane without polluting the default body. Satisfies FR-3, FR-4; closes AC-3, AC-4. | `framework/spec-workflows/questions/trivial-questions.md` *(new)*, `framework/spec-workflows/templates/CR-TEMPLATE.md`, `framework/spec-workflows/templates/BUG-TEMPLATE.md`, `framework/spec-workflows/templates/IMP-TEMPLATE.md` | `framework/spec-workflows/spec-lifecycle.md`, `framework/spec-workflows/questions/cr-questions.md`, `framework/spec-workflows/questions/bug-questions.md`, `framework/spec-workflows/questions/imp-questions.md` | T1 | writing-docs, writing-specs | default | ☑ done |
+| T3 | Update `boundaries.md § Never do #2` to clarify the trivial lane is NOT a Specify skip (Specify still runs, combined with Plan) — semantic-equivalent body edit that preserves the rule's anchor target so `make lint-rules` from sibling IMP-20260514-dedup-rule-statements still passes. Add a "Trivial lane" subsection to `docs/spec-workflow-guide.md` with one complete worked one-file example walking the spec from birth to closure. Satisfies FR-6, FR-7; closes AC-6, AC-7. | `framework/boundaries.md`, `docs/spec-workflow-guide.md` | `framework/spec-workflows/spec-lifecycle.md`, `docs/specs/archived/IMP-20260514-dedup-rule-statements.md` | T1 | writing-docs | default | ☑ done |
+| T4 | Extend `scripts/validate-specs.py` (built in sibling IMP-20260514-spec-validator) to enforce the trivial-lane eligibility rules when `risk: trivial` or `severity: trivial` is set: assert `len(affected-code) + len(affected-docs) ≤ 2`, single `affected-repos`, no `depends-on:`, and surface markers for schema/boundary/prompt change. On violation, exit non-zero and emit a finding instructing the user to drop trivial and re-run Specify. Verify with a fixture spec carrying 3 `affected-code:` entries (per AC-5). Satisfies FR-5; closes AC-5. | `scripts/validate-specs.py` | `framework/spec-workflows/spec-lifecycle.md`, `docs/specs/archived/IMP-20260514-spec-validator.md` | T1 | writing-specs | default | ☑ done |
+| T5 | Closure-evidence task. (a) Grep `docs/specs/archived/` to prove no archived spec was retroactively reclassified to `risk: trivial` or `severity: trivial` (AC-8). (b) Pick a real one-line change (e.g., a doc typo) and walk it end-to-end as a `risk: trivial` spec using the new lane, recording wall-clock gate times for both the combined gate and the Closure gate. Document total ≤10 min and the ≥66% reduction vs. the 30-min baseline in this spec's Closure Evidence section (AC-9). No production files modified — verification only. Satisfies FR-8; closes AC-8, AC-9. | `docs/specs/active/IMP-20260514-trivial-lane.md` | `docs/specs/archived/`, `framework/spec-workflows/spec-lifecycle.md`, `docs/spec-workflow-guide.md` | T1, T2, T3, T4 | writing-specs | default | ☑ done |
 
 ## Agent instructions
 

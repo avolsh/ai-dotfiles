@@ -3,6 +3,12 @@
 keys/
 *.local.env
 
+# RES (Research / Spike / POC) lane — transient artifacts under sandbox.
+# Per IMP-20260514-research-lane FR-10: notebook checkpoints, dataset
+# dumps, scratch outputs in `research/<spec-id>/.tmp/` MUST NOT be committed.
+research/*/.tmp/
+research/**/.tmp/
+
 **/skills/.system/*
 **/skills/.system/.*
 

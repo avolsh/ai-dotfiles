@@ -2,7 +2,7 @@
 id: IMP-20260514-framework-subagents
 type: IMP
 date: 2026-05-14
-status: specify
+status: done
 owner: avolsh
 risk: high
 affected-repos:
@@ -173,7 +173,17 @@ Kept as one spec. § 2 trigger T1 (≥2 independently testable FR clusters) fire
 
 ## Tasks
 
-Pending — Plan stage only.
+> **Before starting Task S1, set `status: in-progress` in the front-matter above.**
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| S1 | Baseline measurement (FR-5): run the existing Specify walk-through (`create-spec.prompt.md` with 3 typical questions) on a throwaway CR in `tobevisit-docs`; record main-context token count to `tests/subagents-baseline.md`. **This MUST happen before any framework/agents/ or prompt edits — the baseline captures pre-change behavior.** | `tests/subagents-baseline.md` *(new)* | `framework/prompts/create-spec.prompt.md` *(current HEAD)*; `tobevisit-docs/.github/copilot-instructions.md` *(target project)* | — | writing-specs | deep | ☑ done |
+| S2 | Agent contract definition + README (FR-2, FR-3): design the YAML front-matter schema for sub-agents (`name`, `description`, `model-suggestion`, `tools-allowed`, body) and write `framework/agents/README.md` documenting the contract: delegation mechanism, fallback for tools without sub-agent support (Copilot/Codex), front-matter schema reference, an inline example. | `framework/agents/README.md` *(new)* | `framework/skills/*/SKILL.md` *(precedent for front-matter shape)*; `docs/agent-protocol.md` | S1 | writing-docs | deep | ☑ done |
+| S3 | Sub-agents batch 1 — Specify-stage (FR-1, FR-2): `framework/agents/spec-author.md` (drafts spec body from question answers) and `framework/agents/splitter.md` (runs Split check, produces `## Split Decision` block). Each is one markdown file with YAML front-matter + system-prompt body (preconditions, expected output, error modes). | `framework/agents/spec-author.md` *(new)*; `framework/agents/splitter.md` *(new)* | `framework/skills/writing-specs/SKILL.md`; `framework/skills/writing-specs/references/splitting-rules.md`; `framework/spec-workflows/templates/*.md` | S2 | writing-specs | deep | ☑ done |
+| S4 | Sub-agents batch 2 — Plan-stage + Task (FR-1, FR-2): `framework/agents/task-planner.md` (decomposes approved spec into vertical-slice tasks) and `framework/agents/precedent-finder.md` (finds nearest precedent files for a task's Files column). | `framework/agents/task-planner.md` *(new)*; `framework/agents/precedent-finder.md` *(new)* | `framework/skills/model-selection/SKILL.md`; `docs/agent-protocol.md`; `framework/spec-workflows/templates/*.md` | S2 | writing-specs | deep | ☑ done |
+| S5 | Wire prompts to delegate (FR-4): edit all 4 `framework/prompts/*.prompt.md` — add a delegation block referencing the appropriate sub-agent + a fallback paragraph for tools without sub-agent support. Prompts remain functional under non-Claude harnesses (Copilot, Codex) via the fallback. | `framework/prompts/bug-triage.prompt.md`; `framework/prompts/create-spec.prompt.md`; `framework/prompts/plan-spec.prompt.md`; `framework/prompts/visualize-spec.prompt.md` | agents from S3+S4; `docs/rule-canonical-map.md` *(from sibling IMP for anchor links)* | S3; S4 | writing-docs | default | ☑ done |
+| S6 | Validator + lint extensions (FR-6, FR-7): extend `scripts/validate-specs.py` with a check class for agent front-matter shape (each `framework/agents/*.md` has `name`, `description`, `model-suggestion`, `tools-allowed`); extend `scripts/lint-rules.py` so any inline restatement of an agent's contract outside `framework/agents/` is flagged. Fixtures for both. | `scripts/validate-specs.py`; `scripts/lint-rules.py` | `framework/agents/*.md` post-S3+S4 | S4 | writing-specs | default | ☑ done |
+| S7 | Target measurement + closure (FR-5, AC-4): run the new (delegating) flow on the same throwaway CR from S1; record main-context token count to `tests/subagents-target.md`; confirm ≥30% reduction vs. S1 baseline; docs updates: `docs/ai-agent-framework.md § Sub-agents` (new section), `docs/agent-protocol.md § delegation contract` (new subsection). | `tests/subagents-target.md` *(new)*; `docs/ai-agent-framework.md`; `docs/agent-protocol.md` | `tests/subagents-baseline.md` *(from S1)* | S5; S6 | writing-docs | deep | ☑ done |
 
 ## Agent instructions
 

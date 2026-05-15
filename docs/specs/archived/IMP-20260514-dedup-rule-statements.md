@@ -2,7 +2,7 @@
 id: IMP-20260514-dedup-rule-statements
 type: IMP
 date: 2026-05-14
-status: specify
+status: done
 owner: avolsh
 risk: medium
 affected-repos:
@@ -151,7 +151,16 @@ Kept as one spec. § 1 independent testability: rule-dedup and canonical-templat
 
 ## Tasks
 
-Pending — Plan stage only.
+> **Before starting Task D1, set `status: in-progress` in the front-matter above.**
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| D1 | Audit pass: grep all rule duplicates across `framework/**` and `docs/**`; produce `docs/rule-canonical-map.md` with columns `rule | canonical-location | linking-sites`. Inventory only — no rule edits. (FR-2) | `docs/rule-canonical-map.md` *(new)* | `framework/boundaries.md`; `framework/spec-workflows/spec-lifecycle.md`; `framework/skills/**/*.md`; `framework/prompts/*.md`; `docs/agent-protocol.md` | — | writing-docs | deep | ☑ done |
+| D2 | Add HTML anchors (`<a id="..."/>`) to every canonical rule statement in `boundaries.md` and `spec-lifecycle.md`. Anchor-only edits — rule text unchanged. Validator must stay green. (FR-1, anchor scaffolding) | `framework/boundaries.md`; `framework/spec-workflows/spec-lifecycle.md` | `docs/rule-canonical-map.md` | D1 | writing-docs | default | ☑ done |
+| D3 | Replace verbatim duplicates in `framework/prompts/*.prompt.md` and `framework/skills/writing-specs/SKILL.md` with one-line anchor links from D2 (FR-1). Semantic-equivalence summary captured in Closure Evidence. | `framework/prompts/*.prompt.md`; `framework/skills/writing-specs/SKILL.md` | `docs/rule-canonical-map.md`; canonical files from D2 | D2 | writing-docs | deep | ☑ done |
+| D4 | `make lint-rules` (FR-5): create `scripts/lint-rules.py` (stdlib only, mirrors validate-specs.py conventions); parses canonical-map and greps verbatim appearances in non-canonical files; non-zero exit on drift; hook into `make sync-agents-check`. Fixture: deliberate-duplicate violation test. | `scripts/lint-rules.py` *(new)*; `Makefile` | `docs/rule-canonical-map.md`; framework files post-D3; `scripts/validate-specs.py` *(precedent)* | D3 | writing-specs | default | ☑ done |
+| D5 | Canonical-template generator (FR-3, FR-4): `framework/templates/system/_canonical.md` + `scripts/generate-system-templates.sh` → emit `templates/system/{claude,copilot,codex}/*`. `make sync-system-templates`; idempotent no-op on clean tree. Switch the three rendered files to "generated, do not edit" headers. | `framework/templates/system/_canonical.md` *(new)*; `scripts/generate-system-templates.sh` *(new)*; `framework/templates/system/{claude,copilot,codex}/*` *(switched to generated)*; `Makefile` | existing `framework/templates/system/{claude,copilot,codex}/*` *(pre-rewrite, captured as baseline before edits)* | D2 | writing-docs | default | ☑ done |
+| D6 | Closure pass (FR-6, FR-7): rule-by-rule before/after summary in Closure Evidence; run `make validate-specs && make lint-rules && make sync-system-templates` — all green; verify `boundaries.md` rule counts (14/5/9 from IMP-20260513-compress-boundaries) preserved. | all previously edited files *(verify only)* | D1 snapshot; HEAD post-D2-D5 | D4; D5 | writing-docs | default | ☑ done |
 
 ## Agent instructions
 
