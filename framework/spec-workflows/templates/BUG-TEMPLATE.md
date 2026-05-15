@@ -15,6 +15,16 @@ skills:
 model-suggestion: default
 # Optional fields (cites-reqs, siblings) — see docs/spec-templates-guide.md § Front-matter optional fields.
 ---
+<!--
+Trivial-lane shortcut: if this BUG touches ≤2 files, single repo, no schema/boundary/prompt change,
+no depends-on:, and verifies with one AC (plus the standard "Reproduce & write failing test" task) —
+you may elect `severity: trivial` to collapse Specify+Plan into one combined gate. Full eligibility,
+combined-gate body shape, and lane rules:
+  framework/spec-workflows/spec-lifecycle.md#trivial-lane
+Questions to ask (exactly 3, single round):
+  framework/spec-workflows/questions/trivial-questions.md
+If unsure — don't elect. Standard track is the safe default.
+-->
 # BUG-YYYYMMDD-<title>
 *Last updated: YYYY-MM-DD*
 ## Summary

@@ -1,0 +1,40 @@
+name: validate-specs
+
+# Spec-corpus validator. Runs on every push and pull request. Blocks
+# merge when red. See IMP-20260514-spec-validator (archived) for the
+# eight check classes and `scripts/validate-specs.py` for the source.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+# Cancel in-flight runs when a new commit lands on the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate-specs:
+    name: validate-specs
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          # 3.11+ matches the script docstring (tomllib available;
+          # `str | None` PEP 604 hints supported). Validator uses
+          # stdlib only — no `pip install` step required.
+          python-version: "3.11"
+
+      - name: Validate spec corpus
+        run: make validate-specs

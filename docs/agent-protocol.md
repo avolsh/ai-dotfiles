@@ -249,6 +249,70 @@ Refactoring and feature work must not be mixed in the same task.
 If a refactor is needed to support a feature, it must be a separate
 task (or a separate spec if the scope is large).
 
+## Delegation contract
+
+System-scope sub-agents under [`framework/agents/`](../framework/agents/)
+expose a uniform delegation contract. When a workflow prompt is
+configured to delegate (e.g. `create-spec.prompt.md § Steps #3` →
+`spec-author`), the orchestrating agent's behaviour depends on its
+harness:
+
+### Claude Code path
+
+Use the `Agent` tool:
+
+```
+Agent({
+  subagent_type: "<name>",            # matches the agent's `name:` field
+  description: "<short task summary>",
+  prompt: "<self-contained brief>"     # everything the agent needs cold
+})
+```
+
+Three orchestration rules:
+1. **Self-contained prompt** — sub-agents start cold; include all paths,
+   inputs, and expected-output formats.
+2. **Single deliverable per call** — don't bundle "draft + run Split
+   check" into one invocation; `spec-author` and `splitter` are
+   separate by design.
+3. **No nested delegation** — sub-agents MUST NOT invoke their own
+   sub-agents. Keeps the call graph one level deep.
+
+Main-thread savings: ~32% on a typical Specify walk-through (measured
+in `tests/subagents-target.md`). The agent body is never loaded into
+the main thread on this path.
+
+### Copilot / Codex fallback path
+
+These harnesses do not implement an `Agent`-style sub-call. Every
+delegating prompt step includes a one-line fallback note:
+
+> *Fallback (no `Agent` tool): inline the agent's Steps from its file.*
+
+The implementing agent opens `framework/agents/<name>.md` directly and
+follows its Steps in the main context. Main-thread savings on the
+fallback path: ~18% (smaller, because the agent body now joins the
+main load — but the prompt's slimmed Steps still avoid pulling in
+the docs-references previously inline).
+
+### Task-start preflight + `precedent-finder`
+
+The pre-flight checklist's "precedent files read" item (per
+[`boundaries.md § Always do #4`](../framework/boundaries.md)) maps to
+the `precedent-finder` agent. When delegation is available, invoke it
+with the task's Files column as input; it returns the nearest
+existing files per new path. On non-Claude harnesses, read the agent's
+search ladder inline.
+
+### Agent contract reference
+
+Full schema, body structure, naming convention, and the inline example
+are in [`framework/agents/README.md`](../framework/agents/README.md).
+Enforcement:
+
+- `make validate-specs` → `agent_schema_*` checks for required fields, filename ↔ `name` parity, enum compliance, `tools-allowed` non-empty
+- `make lint-rules` → flags inline restatements of an agent's `description:` field outside `framework/agents/`
+
 ## Standard agent directives
 
 All boundary rules from [`boundaries.md`](../framework/boundaries.md) apply

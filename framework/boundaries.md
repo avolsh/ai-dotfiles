@@ -2,6 +2,8 @@
 
 *Last updated: 2026-05-14*
 
+<!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R9). Other framework files link to these anchors rather than restate the rules. -->
+
 > **System-scope** rules for all AI agents. Projects MAY extend via their `.github/copilot-instructions.md` § Boundaries; project rules win on conflict. Three tiers, severity increases top to bottom.
 
 ## Always do
@@ -15,8 +17,8 @@
 7. **Run build and test** per the project's `AGENTS.md` § Build and Run before posting "The Bottom Line".
 8. **Write all file output in English.** Chat may use any language, but filesystem content (specs, docs, code comments, commit messages, `.github/` files) MUST be English.
 9. **Post "The Bottom Line"** in the canonical format ([`skills/agent-protocol/SKILL.md`](skills/agent-protocol/SKILL.md#the-bottom-line--canonical-format)) and wait for explicit human approval before the next task.
-10. **Update `*Last updated: YYYY-MM-DD*`** on every modified doc.
-11. **Update task row status in-place** as each task completes.
+10. <a id="last-updated-stamp"></a>**Update `*Last updated: YYYY-MM-DD*`** on every modified doc.
+11. <a id="task-row-status-in-place"></a>**Update task row status in-place** as each task completes.
 12. **Update the project's `module-map.md`** if the task added, removed, or renamed bounded contexts, key files, or workflow steps.
 13. **Log process improvements immediately** to the project's `docs/improvements-log.md` — do not defer.
 14. **Verify pipeline output** when the task touches a workflow step.
@@ -32,11 +34,11 @@
 ## Never do
 
 1. **Never** commit `.env`, `.env.local`, `.dev.vars`, or hardcoded secrets of any kind.
-2. **Never** skip the Specify stage — even a trivial bug needs confirmed understanding via the question round.
-3. **Never** write a `## Tasks` table while `status` is `specify`.
-4. **Never** flip a spec's status without the preceding human gate ([`spec-workflows/spec-lifecycle.md § Rules`](spec-workflows/spec-lifecycle.md#rules)).
+2. <a id="never-skip-specify"></a>**Never** skip the Specify stage — even a trivial bug needs confirmed understanding via the question round. The Trivial lane ([`spec-lifecycle.md § Trivial lane`](spec-workflows/spec-lifecycle.md#trivial-lane)) is NOT a skip: Specify still runs, just combined with Plan into a single gate (≤3 questions instead of ≤10).
+3. **Never** populate `## Tasks` before Plan — canonical rule at [`spec-lifecycle.md § Rules #2`](spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify).
+4. **Never** flip a spec's status without the preceding human gate — three specific cases at [`spec-lifecycle.md § Rules #3-#5`](spec-workflows/spec-lifecycle.md#never-flip-without-gate).
 5. **Never** mix refactoring and feature work in the same task — extract into a separate task (or IMP spec) if scope is large.
-6. **Never** treat "continue" as approval for multiple tasks; it means the **next single task only**.
+6. <a id="continue-single-task-only"></a>**Never** treat "continue" as approval for multiple tasks; it means the **next single task only**.
 7. **Never** rerun build/tests without code changes — analyze the existing output first. Flaky-test retries don't count as progress.
 8. **Never** amend or force-push published commits unless the user explicitly asks.
 9. **Never** gold-plate beyond the spec. "While I was in there, I also added…" is untested, unreviewed code.

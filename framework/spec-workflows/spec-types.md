@@ -9,7 +9,7 @@
 | **Change Request** | `CR-` | [`templates/CR-TEMPLATE.md`](templates/CR-TEMPLATE.md) | [`questions/cr-questions.md`](questions/cr-questions.md) | New feature, pipeline step, schema change |
 | **Bug** | `BUG-` | [`templates/BUG-TEMPLATE.md`](templates/BUG-TEMPLATE.md) | [`questions/bug-questions.md`](questions/bug-questions.md) | Defect fix, incorrect behavior |
 | **Improvement** | `IMP-` | [`templates/IMP-TEMPLATE.md`](templates/IMP-TEMPLATE.md) | [`questions/imp-questions.md`](questions/imp-questions.md) | Non-functional enhancement, refactor, performance |
-| **Research** | `RES-` | *(future)* | *(future)* | Spike, investigation, proof of concept |
+| **Research** | `RES-` | [`templates/RES-TEMPLATE.md`](templates/RES-TEMPLATE.md) | [`questions/res-questions.md`](questions/res-questions.md) | Spike, investigation, proof of concept, vibe-coding; iterative `specify ⇄ in-progress` loop — see [`spec-lifecycle.md § RES exception`](spec-lifecycle.md#res-exception) |
 
 ## Per-type differences
 
@@ -57,3 +57,11 @@ These files are loaded at **every** stage, regardless of type:
 - `<system>/skills/agent-protocol/SKILL.md` — if the task is non-trivial.
 - `<system>/skills/writing-specs/SKILL.md` — when editing any spec file.
 - Project-scope skills in the spec's `skills` field — project-first lookup.
+
+## Trivial lane (applicable to CR / BUG / IMP)
+
+CR, BUG, and IMP specs MAY elect into the **Trivial lane** via `risk: trivial` (CR/IMP) or `severity: trivial` (BUG). The lane collapses Specify + Plan into a single combined gate when the change is small enough (≤2 affected files, single repo, no schema/boundary/prompt change, no `depends-on:`). The Closure gate is unchanged.
+
+See [`spec-lifecycle.md § Trivial lane`](spec-lifecycle.md#trivial-lane) for the full eligibility list, combined-gate format, and lane-specific rules. The Specify question round shrinks to the 3 questions in [`questions/trivial-questions.md`](questions/trivial-questions.md).
+
+RES specs do NOT support the Trivial lane — research work is iterative by nature and the lane's "ship and done" shape conflicts with the RES `specify ⇄ in-progress` loop.

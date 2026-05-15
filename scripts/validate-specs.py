@@ -208,8 +208,8 @@ def discover_specs(root: Path) -> tuple[list[Spec], list[Finding]]:
 # Schema enums + patterns (per spec-lifecycle.md § Front-matter schema).
 _TYPE_ENUM = {"CR", "BUG", "IMP", "RES"}
 _STATUS_ENUM = {"specify", "plan", "in-progress", "done"}
-_RISK_ENUM = {"low", "medium", "high"}
-_SEVERITY_ENUM = {"low", "medium", "high", "critical"}
+_RISK_ENUM = {"low", "medium", "high", "trivial"}
+_SEVERITY_ENUM = {"low", "medium", "high", "critical", "trivial"}
 _MODEL_ENUM = {"fast", "default", "deep"}
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -742,6 +742,286 @@ def check_english_only(specs: Iterable[Spec]) -> list[Finding]:
     return findings
 
 
+# Path substrings that disqualify a spec from the Trivial lane.
+# Mirrors `spec-lifecycle.md § Trivial lane` rules #4 (schema), #6 (prompts),
+# and #7 (boundaries). Substring match — catches both system-scope and
+# project-scope variants (e.g. workspace `.github/copilot-instructions.md`
+# AND `tobevisit-content/.github/copilot-instructions.md`).
+_TRIVIAL_FORBIDDEN_PATH_MARKERS = (
+    "framework/boundaries.md",                     # rule #7 — system boundaries
+    ".github/copilot-instructions.md",             # rule #7 — project boundaries
+    "framework/prompts/",                          # rule #6 — system AI prompts
+    ".github/copilot/prompts/",                    # rule #6 — project AI prompts
+    "framework/spec-workflows/spec-lifecycle.md",  # rule #4 — front-matter schema
+    "docs/requirements/",                          # rule #4 — baselines
+)
+
+
+def check_trivial_lane_eligibility(specs: Iterable[Spec]) -> list[Finding]:
+    """When `risk: trivial` (CR/IMP) or `severity: trivial` (BUG), enforce
+    eligibility per `spec-lifecycle.md § Trivial lane` (added by
+    IMP-20260514-trivial-lane Task T1).
+
+    Mechanically enforced rules:
+      * #1 affected-code + affected-docs total ≤ 2 files
+      * #2 exactly one entry in affected-repos
+      * #3 no depends-on:
+      * #4/#6/#7 no path under affected-* touches a forbidden marker
+        (boundaries / prompts / lifecycle schema / baselines)
+
+    NOT mechanically enforced (human judgment at gate):
+      * #5 "no new bounded context" — too context-dependent for static
+        checking; surfaces at the combined gate via question-round Q1.
+
+    Every finding ends with the same fix instruction: "Drop `trivial` and
+    re-run Specify on the standard track." Authors get an unambiguous
+    signal that there's no path forward except the standard track.
+    """
+    findings: list[Finding] = []
+    for spec in specs:
+        fm = spec.front_matter
+        risk = fm.get("risk")
+        severity = fm.get("severity")
+        is_trivial = (risk == "trivial") or (severity == "trivial")
+        if not is_trivial:
+            continue
+        line = spec.front_matter_end_line or 1
+        fix_hint = "Drop `trivial` and re-run Specify on the standard track."
+
+        # #1 — ≤2 affected files total
+        ac = fm.get("affected-code") if isinstance(fm.get("affected-code"), list) else []
+        ad = fm.get("affected-docs") if isinstance(fm.get("affected-docs"), list) else []
+        total = len(ac) + len(ad)
+        if total > 2:
+            findings.append(
+                Finding(
+                    spec.path,
+                    line,
+                    "trivial_eligibility_files",
+                    f"trivial spec touches {total} files "
+                    f"({len(ac)} affected-code + {len(ad)} affected-docs); "
+                    f"≤2 required. {fix_hint}",
+                )
+            )
+
+        # #2 — single repo
+        ar = fm.get("affected-repos")
+        if isinstance(ar, list) and len(ar) > 1:
+            findings.append(
+                Finding(
+                    spec.path,
+                    line,
+                    "trivial_eligibility_repos",
+                    f"trivial spec lists {len(ar)} affected-repos; "
+                    f"exactly 1 required. {fix_hint}",
+                )
+            )
+
+        # #3 — no depends-on
+        deps = fm.get("depends-on")
+        if isinstance(deps, list) and deps:
+            findings.append(
+                Finding(
+                    spec.path,
+                    line,
+                    "trivial_eligibility_depends_on",
+                    f"trivial spec has depends-on: {deps!r}; "
+                    f"the lane requires autonomous specs. {fix_hint}",
+                )
+            )
+
+        # #4/#6/#7 — forbidden-path markers
+        for path in list(ac) + list(ad):
+            if not isinstance(path, str):
+                continue
+            for marker in _TRIVIAL_FORBIDDEN_PATH_MARKERS:
+                if marker in path:
+                    findings.append(
+                        Finding(
+                            spec.path,
+                            line,
+                            "trivial_eligibility_forbidden_path",
+                            f"trivial spec touches {path!r} which contains "
+                            f"{marker!r} — boundaries / prompts / schema / "
+                            f"baselines changes are excluded from the lane. "
+                            f"{fix_hint}",
+                        )
+                    )
+                    break  # one marker per path is enough
+
+    return findings
+
+
+# Per IMP-20260514-research-lane FR-7/8/9/10 — RES-only checks.
+# Kill-criteria shape detectors: each regex matches one of the three
+# canonical shapes. A valid kill-criteria string matches exactly one.
+_RES_KILL_CRITERIA_SHAPES: dict[str, "re.Pattern[str]"] = {
+    # Word-boundary at start, no boundary at end: matches plural and
+    # base forms uniformly (`hours`, `hour`, `days`, `day`, etc.).
+    "time-box": re.compile(
+        r"\b(hour|hr|day|min|minute|week|by\s+\d{4}-\d{2}-\d{2})",
+        re.IGNORECASE,
+    ),
+    "token-budget": re.compile(r"\btoken", re.IGNORECASE),
+    "iteration-count": re.compile(
+        r"\b(backflip|iteration|round|loop)",
+        re.IGNORECASE,
+    ),
+}
+
+# Valid RES outcomes at status=done. `promoted-to-<spec-id>` is matched
+# separately and the referenced spec-id MUST resolve.
+_RES_OUTCOME_TERMINAL = {"confirmed", "refuted", "inconclusive"}
+_RES_PROMOTED_RE = re.compile(r"^promoted-to-(.+)$")
+
+
+def check_res_eligibility(specs: Iterable[Spec]) -> list[Finding]:
+    """RES-only validation per spec-lifecycle.md § RES exception:
+      * `hypothesis:` non-empty
+      * `kill-criteria:` matches exactly one shape (time-box, token-budget,
+        iteration-count) — mixed shapes are unenforceable
+      * `code-location:` is NOT inside `src/` of any repo
+      * at `status: done`, `outcome:` is in {confirmed, refuted,
+        inconclusive, promoted-to-<spec-id>} and any promotion target resolves
+    """
+    specs_list = list(specs)
+    all_spec_ids = {
+        spec.front_matter.get("id")
+        for spec in specs_list
+        if isinstance(spec.front_matter.get("id"), str)
+    }
+
+    findings: list[Finding] = []
+    for spec in specs_list:
+        fm = spec.front_matter
+        if fm.get("type") != "RES":
+            continue
+        line = spec.front_matter_end_line or 1
+
+        # 1. hypothesis non-empty
+        hyp = fm.get("hypothesis")
+        if not isinstance(hyp, str) or not hyp.strip():
+            findings.append(
+                Finding(
+                    spec.path,
+                    line,
+                    "res_hypothesis_empty",
+                    "RES spec has empty or missing `hypothesis:` field",
+                )
+            )
+
+        # 2. kill-criteria single shape
+        kc = fm.get("kill-criteria")
+        if not isinstance(kc, str) or not kc.strip():
+            findings.append(
+                Finding(
+                    spec.path,
+                    line,
+                    "res_kill_criteria_missing",
+                    "RES spec missing `kill-criteria:` field",
+                )
+            )
+        else:
+            matched = [
+                name
+                for name, rx in _RES_KILL_CRITERIA_SHAPES.items()
+                if rx.search(kc)
+            ]
+            if not matched:
+                findings.append(
+                    Finding(
+                        spec.path,
+                        line,
+                        "res_kill_criteria_unknown_shape",
+                        f"kill-criteria={kc!r} does not match any known shape "
+                        f"(time-box, token-budget, iteration-count)",
+                    )
+                )
+            elif len(matched) > 1:
+                findings.append(
+                    Finding(
+                        spec.path,
+                        line,
+                        "res_kill_criteria_mixed_shape",
+                        f"kill-criteria={kc!r} matches multiple shapes "
+                        f"{matched}; pick one shape — mixed criteria are "
+                        f"unenforceable",
+                    )
+                )
+
+        # 3. code-location outside src/
+        cl = fm.get("code-location")
+        if not isinstance(cl, str) or not cl.strip():
+            findings.append(
+                Finding(
+                    spec.path,
+                    line,
+                    "res_code_location_missing",
+                    "RES spec missing `code-location:` field",
+                )
+            )
+        else:
+            # Match `src/` or `src/...` as a path segment. Substring of `src`
+            # alone (e.g. "research/srcfoo/") is not flagged — path-segment
+            # boundary matters.
+            parts = cl.strip("/").split("/")
+            if "src" in parts:
+                findings.append(
+                    Finding(
+                        spec.path,
+                        line,
+                        "res_code_location_in_src",
+                        f"code-location={cl!r} contains a 'src/' path segment; "
+                        f"RES sandboxes MUST live outside src/",
+                    )
+                )
+
+        # 4. outcome at done
+        if fm.get("status") == "done":
+            outcome = fm.get("outcome")
+            if not isinstance(outcome, str) or not outcome.strip():
+                findings.append(
+                    Finding(
+                        spec.path,
+                        line,
+                        "res_outcome_missing_at_done",
+                        "RES spec at status=done has empty or missing "
+                        "`outcome:` field",
+                    )
+                )
+            else:
+                outcome_str = outcome.strip()
+                if outcome_str in _RES_OUTCOME_TERMINAL:
+                    pass  # valid terminal outcome
+                else:
+                    m = _RES_PROMOTED_RE.match(outcome_str)
+                    if m:
+                        referenced = m.group(1)
+                        if referenced not in all_spec_ids:
+                            findings.append(
+                                Finding(
+                                    spec.path,
+                                    line,
+                                    "res_outcome_dangling_promotion",
+                                    f"outcome={outcome_str!r} references "
+                                    f"unknown spec id: {referenced!r}",
+                                )
+                            )
+                    else:
+                        findings.append(
+                            Finding(
+                                spec.path,
+                                line,
+                                "res_outcome_invalid",
+                                f"outcome={outcome_str!r} not in "
+                                "{confirmed, refuted, inconclusive, "
+                                "promoted-to-<spec-id>}",
+                            )
+                        )
+
+    return findings
+
+
 CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_front_matter_schema,
     check_filename_id_parity,
@@ -751,7 +1031,127 @@ CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_link_integrity,
     check_english_only,
     check_status_invariants,
+    check_trivial_lane_eligibility,
+    check_res_eligibility,
 ]
+
+
+# ---------------------------------------------------------------------------
+# Agent corpus (framework/agents/*.md) — discovery + schema check
+# Added by IMP-20260514-framework-subagents Task S6 (FR-6).
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Agent:
+    """A framework sub-agent definition. Lives under framework/agents/."""
+
+    path: Path
+    front_matter: dict[str, object]
+    body: str
+    front_matter_end_line: int
+
+
+_AGENT_REQUIRED_FIELDS = ("name", "description", "model-suggestion", "tools-allowed")
+
+
+def discover_agents(root: Path) -> tuple[list[Agent], list[Finding]]:
+    """Load every *.md under framework/agents/, EXCEPT README.md.
+
+    README.md is the contract document, not an agent definition. Its
+    schema-example placeholder values (e.g. `name: <kebab-case-id>`) would
+    otherwise fail the schema check.
+    """
+    agents: list[Agent] = []
+    findings: list[Finding] = []
+    d = root / "framework" / "agents"
+    if not d.is_dir():
+        return agents, findings
+    for path in sorted(d.glob("*.md")):
+        if path.name == "README.md":
+            continue
+        text = path.read_text(encoding="utf-8")
+        fm, body, end_line, parse_findings = _parse_front_matter(text, path)
+        findings.extend(parse_findings)
+        agents.append(
+            Agent(
+                path=path,
+                front_matter=fm,
+                body=body,
+                front_matter_end_line=end_line,
+            )
+        )
+    return agents, findings
+
+
+def check_agent_front_matter(agents: Iterable[Agent]) -> list[Finding]:
+    """Enforce the agent contract per `framework/agents/README.md`:
+      * All four required fields present (name, description,
+        model-suggestion, tools-allowed).
+      * `name` MUST equal the filename stem.
+      * `model-suggestion` in {fast, default, deep}.
+      * `tools-allowed` is a non-empty list.
+    """
+    findings: list[Finding] = []
+    for agent in agents:
+        fm = agent.front_matter
+        line = agent.front_matter_end_line or 1
+
+        for field in _AGENT_REQUIRED_FIELDS:
+            if field not in fm:
+                findings.append(
+                    Finding(
+                        agent.path,
+                        line,
+                        "agent_schema_missing_field",
+                        f"required field '{field}' missing",
+                    )
+                )
+
+        expected_name = agent.path.stem
+        if "name" in fm and fm["name"] != expected_name:
+            findings.append(
+                Finding(
+                    agent.path,
+                    line,
+                    "agent_filename_name_parity",
+                    f"name={fm['name']!r} does not match filename stem {expected_name!r}",
+                )
+            )
+
+        if "model-suggestion" in fm and fm["model-suggestion"] not in _MODEL_ENUM:
+            findings.append(
+                Finding(
+                    agent.path,
+                    line,
+                    "agent_schema_enum",
+                    f"model-suggestion={fm['model-suggestion']!r} "
+                    f"not in {sorted(_MODEL_ENUM)}",
+                )
+            )
+
+        if "tools-allowed" in fm:
+            ta = fm["tools-allowed"]
+            if not isinstance(ta, list):
+                findings.append(
+                    Finding(
+                        agent.path,
+                        line,
+                        "agent_schema_type",
+                        f"tools-allowed must be a list, got {type(ta).__name__}",
+                    )
+                )
+            elif not ta:
+                findings.append(
+                    Finding(
+                        agent.path,
+                        line,
+                        "agent_schema_empty",
+                        "tools-allowed must be non-empty",
+                    )
+                )
+
+    return findings
 
 
 # ---------------------------------------------------------------------------
@@ -763,23 +1163,28 @@ def main(argv: list[str]) -> int:
     here = Path(__file__).resolve().parent
     root = find_repo_root(here)
     specs, discovery_findings = discover_specs(root)
+    agents, agent_discovery_findings = discover_agents(root)
 
     findings: list[Finding] = list(discovery_findings)
+    findings.extend(agent_discovery_findings)
     for check in CHECK_REGISTRY:
         findings.extend(check(specs))
+    findings.extend(check_agent_front_matter(agents))
 
     for f in findings:
         print(f.render(root))
 
+    total_checks = len(CHECK_REGISTRY) + 1  # +1 for check_agent_front_matter
     if findings:
         print(
-            f"\nvalidate-specs: {len(findings)} finding(s) across {len(specs)} spec(s).",
+            f"\nvalidate-specs: {len(findings)} finding(s) across "
+            f"{len(specs)} spec(s) + {len(agents)} agent(s).",
             file=sys.stderr,
         )
         return 1
     print(
-        f"validate-specs: OK ({len(specs)} spec(s); "
-        f"{len(CHECK_REGISTRY)} check(s) registered).",
+        f"validate-specs: OK ({len(specs)} spec(s); {len(agents)} agent(s); "
+        f"{total_checks} check(s) registered).",
         file=sys.stderr,
     )
     return 0

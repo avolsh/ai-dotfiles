@@ -72,6 +72,50 @@ until all listed prerequisites reach `done`.
 
 ---
 
+### RES-only front-matter fields
+
+When `type: RES`, four additional front-matter fields are required (see [`spec-lifecycle.md § RES exception`](../framework/spec-workflows/spec-lifecycle.md#res-exception) for the canonical contract). These fields are RES-only; the validator MUST NOT require them on CR/BUG/IMP.
+
+```yaml
+hypothesis: <One sentence. Concrete, falsifiable claim being tested.>
+kill-criteria: <Single shape — time-box OR token-budget OR iteration-count. Mixing shapes is rejected by `make validate-specs`.>
+code-location: research/<spec-id>/   # default; MUST be outside every repo's src/
+outcome:                              # left blank at Specify; filled at status: done
+                                      # one of: confirmed | refuted | inconclusive | promoted-to-<spec-id>
+```
+
+Constraints enforced by `scripts/validate-specs.py`:
+
+| Field | Constraint |
+|---|---|
+| `hypothesis:` | non-empty string |
+| `kill-criteria:` | matches exactly one shape (time-box: `hour`/`day`/`min`/`week`/`by YYYY-MM-DD`; token-budget: contains `token`; iteration-count: `backflip`/`iteration`/`round`/`loop`) |
+| `code-location:` | no `src` path segment (e.g. `src/...`, `.../src/...` both rejected) |
+| `outcome:` at `status: done` | in `{confirmed, refuted, inconclusive, promoted-to-<spec-id>}`; if `promoted-to-<id>` the referenced spec MUST exist in `docs/specs/active/` or `docs/specs/archived/` |
+
+RES specs do NOT carry `risk:` or `severity:` — risk is bounded by `kill-criteria:` instead.
+
+### `## Iteration Log` section (RES only)
+
+RES specs add an `## Iteration Log` H2 section between `## Kill Criteria` and `## Decision`. Each `in-progress → specify` backflip MUST add one row before resuming `in-progress`:
+
+```markdown
+## Iteration Log
+
+| # | Date | Cause | Decision |
+|---|---|---|---|
+| 1 | 2026-05-20 | Vector-search benchmark missed MRR@10 target on cold mix | Narrowed hypothesis: limit to high-traffic cities |
+| 2 | 2026-05-21 | Cold-mix sample size too small (n=12) | Expand to n=200, re-run |
+```
+
+Row format:
+- **#** — sequential index starting at 1
+- **Date** — `YYYY-MM-DD` of the backflip
+- **Cause** — one-line reason the loop returned to specify
+- **Decision** — what changed in the spec on this iteration
+
+The validator reports backflips without a corresponding row as drift (best-effort static check; see `scripts/validate-specs.py` for the current heuristic).
+
 ## `## Cost Estimate`
 
 Filled at Specify and refreshed at Plan against the approved task count.

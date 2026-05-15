@@ -8,7 +8,7 @@ Documentation conventions for the framework and projects: core rules, markdown f
 
 ## Core rules
 
-1. **Update `*Last updated: YYYY-MM-DD*` on every modified doc.**
+1. **Stamp freshness** — see [`boundaries.md § Always do #10`](../framework/boundaries.md#last-updated-stamp).
 2. **Link, don't duplicate** — reference existing docs instead of copying.
 3. **Tables over narrative** where structure is clear.
 4. **Diagrams over long descriptions** — use Mermaid (`flowchart`,

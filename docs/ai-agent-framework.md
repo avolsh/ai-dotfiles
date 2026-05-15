@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-05-13*
+*Last updated: 2026-05-14*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -103,6 +103,32 @@ not all at once.
 Projects can add their own skills (e.g., `testing-with-jest`,
 `building-ddd-contexts`, `running-pipeline-steps`).
 
+## Sub-agents — delegated stage workers
+
+While skills are knowledge the main thread loads, **sub-agents** are
+workers the main thread *delegates to*. Each agent runs in its own
+context with its own tool allowlist; the orchestrating prompt keeps
+only the agent's structured output. Net effect: main-context token
+load drops by ~32% on a typical Specify walk-through (measured —
+`tests/subagents-target.md`).
+
+| Agent | Stage | Model | Delegated from |
+|---|---|---|---|
+| `spec-author` | Specify | deep | `create-spec.prompt.md § Steps #3` |
+| `splitter` | Specify | deep | `create-spec.prompt.md § Steps #4` |
+| `task-planner` | Plan | deep | `plan-spec.prompt.md § Steps #3` |
+| `precedent-finder` | Task-start | default | invoked by the preflight checklist |
+
+The contract — front-matter schema, body structure, delegation flow,
+fallback for non-Claude harnesses — lives at
+[`framework/agents/README.md`](../framework/agents/README.md). Delegation
+mechanics + Copilot/Codex fallback live at
+[`docs/agent-protocol.md § Delegation contract`](agent-protocol.md#delegation-contract).
+
+`make validate-specs` enforces the agent front-matter schema;
+`make lint-rules` flags inline restatements of any agent's contract
+outside `framework/agents/`.
+
 ## Boundaries — what the AI must NOT do
 
 Three tiers of rules, from gentle to absolute:
@@ -159,6 +185,7 @@ hidden debt.
 | Reset active profile env | `ai --reset` |
 | Regenerate project `AGENTS.md` after editing `copilot-instructions.md` | `make sync-agents` (per project) |
 | Verify no drift (used by CI) | `make sync-agents-check` |
+| Validate spec corpus (front-matter, deps, naming, freshness, links, English-only, status invariants) | `make validate-specs` |
 
 ## Key principles
 

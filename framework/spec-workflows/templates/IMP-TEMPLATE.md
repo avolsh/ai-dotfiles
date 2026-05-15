@@ -17,6 +17,15 @@ skills:
 model-suggestion: default
 # Optional fields (cites-reqs, siblings, depends-on) — see docs/spec-templates-guide.md § Front-matter optional fields.
 ---
+<!--
+Trivial-lane shortcut: if this IMP touches ≤2 files, single repo, no schema/boundary/prompt change,
+no depends-on:, and verifies with one AC — you may elect `risk: trivial` to collapse Specify+Plan
+into one combined gate. Full eligibility, combined-gate body shape, and lane rules:
+  framework/spec-workflows/spec-lifecycle.md#trivial-lane
+Questions to ask (exactly 3, single round):
+  framework/spec-workflows/questions/trivial-questions.md
+If unsure — don't elect. Standard track is the safe default.
+-->
 # IMP-YYYYMMDD-<title>
 *Last updated: YYYY-MM-DD*
 ## Summary

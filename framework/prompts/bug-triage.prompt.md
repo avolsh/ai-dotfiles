@@ -17,4 +17,4 @@ Specify stage for a BUG — reproduction-first questions; mandatory "reproduce w
 5. **Gate** — post per-spec summary (ID + path, severity + blast radius, suspected root cause, similar code paths, `cites-reqs:` or net-new justification). Wait for explicit approval; hand off to [`plan-spec.prompt.md`](plan-spec.prompt.md).
 
 ## Hard rules
-- Task 1 of any BUG plan = "Reproduce & write failing test"; fix lands Task 2+. `status` stays `specify` until plan approval. Never bundle independent defects (Q2 mandatory each round). Never request the gate without `## Split Decision` filled in every spec.
+- Task 1 of any BUG plan = "Reproduce & write failing test"; fix lands Task 2+. `status` stays `specify` until plan approval. Never bundle independent defects (Q2 mandatory each round). No requirements gate without `## Split Decision` filled in this spec + all siblings — see [`spec-lifecycle.md § Rules #9`](../spec-workflows/spec-lifecycle.md#split-check-mandatory).
