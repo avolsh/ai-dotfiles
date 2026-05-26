@@ -1,6 +1,6 @@
 # Boundaries
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-26*
 
 <!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R9). Other framework files link to these anchors rather than restate the rules. -->
 
@@ -9,7 +9,7 @@
 
 ## Always do
 
-1. **Read the project's `.github/copilot-instructions.md` (or AGENTS.md) first** — project-scope authority.
+1. **Read the project's `.github/copilot-instructions.md` first** — project-scope authority. `AGENTS.md` is a generated copy (via `make sync-agents`); never edit it directly. Harnesses that read only `AGENTS.md` (e.g. Codex) get byte-identical content.
 2. **Ensure `CLAUDE.md` and `AGENTS.md` exist** at every project root and the workspace root; if missing, create them
    via the scaffold manifest before any other work.
 3. **Follow the spec workflow** — no coding until `in-progress`. See [
@@ -18,11 +18,11 @@
    first edit in each task.
 5. **Load all task skills before coding** — resolve project-first, then workspace (two-scope lookup).
 6. **Include tests in the same task** as feature or fix logic; never defer to a follow-up task or spec.
-7. **Run build and test** per the project's `AGENTS.md` § Build and Run before posting "The Bottom Line".
+7. **Run build and test** per the project's `.github/copilot-instructions.md` § Build and Run before posting "The Bottom Line".
 8. **Write all file output in English.** Chat may use any language, but filesystem content (specs, docs, code comments,
    commit messages, `.github/` files) MUST be English.
 9. **Post "The Bottom Line"** in the canonical format ([
-   `skills/agent-protocol/SKILL.md`](skills/agent-protocol/SKILL.md#the-bottom-line--canonical-format)) and wait for
+   `docs/agent-protocol.md § Bottom Line`](../docs/agent-protocol.md#the-bottom-line--canonical-format)) and wait for
    explicit human approval before the next task.
 10. <a id="last-updated-stamp"></a>**Update `*Last updated: YYYY-MM-DD*`** on every modified doc.
 11. <a id="task-row-status-in-place"></a>**Update task row status in-place** as each task completes.
@@ -53,12 +53,32 @@
    `spec-lifecycle.md § Rules #3-#5`](spec-workflows/spec-lifecycle.md#never-flip-without-gate).
 5. **Never** mix refactoring and feature work in the same task — extract into a separate task (or IMP spec) if scope is
    large.
-6. <a id="continue-single-task-only"></a>**Never** treat "continue" as approval for multiple tasks; it means the **next
-   single task only**.
+6. <a id="continue-single-task-only"></a>**Never** treat a one-word affirmation as approval for multiple tasks or
+   gates. "continue", "next", "go", "ok", "yes", "proceed", "👍", or any equivalent single-word/emoji acknowledgment
+   approves the **immediately preceding task or gate only** — never a sequence. If a human wants multiple tasks
+   approved at once, require an explicit list.
 7. **Never** rerun build/tests without code changes — analyze the existing output first. Flaky-test retries don't count
    as progress.
-8. **Never** amend or force-push published commits unless the user explicitly asks.
+8. **Never** rewrite, amend, squash, reorder, or force-push *any* commit unless the user explicitly asks for that
+   commit (or range) by ID. Applies to local and remote commits alike — detecting "published" reliably requires an
+   upstream branch and a recent fetch, both of which may be absent. When in doubt, ask first; the cost of asking is
+   tiny next to the cost of overwriting work.
 9. **Never** gold-plate beyond the spec. "While I was in there, I also added…" is untested, unreviewed code.
+
+## When to consult `docs/agent-protocol.md`
+
+The full operating protocol — path prefixes, two-scope model, context-loading order with token budgets, preflight /
+task-start / post-task checklists, Bottom Line format, doc-update matrix, output conventions, controlled refactoring,
+and on-demand references (determinism, schema sync, doc freshness, skills audit) — lives at
+[`docs/agent-protocol.md`](../docs/agent-protocol.md). Load it when:
+
+- Starting any spec-driven task (CR / BUG / IMP / RES).
+- You need the context-loading order before reading anything else.
+- Before any file edit (preflight + task-start hard gate).
+- After any task (post-task checklist + canonical Bottom Line).
+- Working in a multi-project workspace (two-scope skill / boundary lookup).
+- Resolving deep relative paths (use the `<system>/`, `<project>/`, `<workspace>/` prefixes).
+- On-demand: AI batch determinism, schema-code sync, doc freshness audit, skills audit.
 
 ## Escalation protocol
 

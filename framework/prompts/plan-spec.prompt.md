@@ -3,7 +3,6 @@ description: "Plan stage — decompose an approved spec into vertical-slice task
 ---
 #skill:writing-specs
 #skill:model-selection
-#skill:agent-protocol
 
 Plan stage — decompose approved requirements into vertical-slice tasks. Lifecycle: [`spec-lifecycle.md`](../spec-workflows/spec-lifecycle.md). Task and writing-style rules: [`docs/writing-specs.md § Plan stage`](../../docs/writing-specs.md#plan-stage-detail).
 

@@ -26,7 +26,6 @@ Files inspected (all rule-bearing files in scope):
 | `framework/prompts/plan-spec.prompt.md` | 23 | § Hard rules (4) |
 | `framework/prompts/visualize-spec.prompt.md` | 19 | § Hard rules (4) |
 | `framework/skills/writing-specs/SKILL.md` | 30 | (References only; no rule restatements) |
-| `framework/skills/agent-protocol/SKILL.md` | 24 | (References only; no rule restatements) |
 | `framework/skills/writing-specs/references/bounded-autonomy-rules.md` | 52 | § Decision matrix + § Ambiguity score (canonical; not duplicated) |
 | `framework/skills/writing-specs/references/splitting-rules.md` | 64 | §1-§4 (canonical; cited heavily but not restated) |
 

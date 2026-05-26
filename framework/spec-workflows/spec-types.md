@@ -1,6 +1,6 @@
 # Spec Types
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-26*
 
 ## Type catalog
 
@@ -23,11 +23,22 @@
 
 ## Context to load per stage
 
+Each stage may delegate work to sub-agents — see [`<system>/agents/README.md`](../agents/README.md). Specify delegates
+to [`spec-author`](../agents/spec-author.md) (draft) + [`splitter`](../agents/splitter.md) (Split check); Plan delegates
+to [`task-planner`](../agents/task-planner.md); Task delegates to [`precedent-finder`](../agents/precedent-finder.md)
+when locating precedent files. Fallback (harnesses without sub-agent support): inline the agent's body and follow its
+Steps in the main context.
+
+Workspace docs are loaded when the spec touches them — beyond `module-map.md`, this includes
+`<project>/docs/architecture/` (ADRs, design notes), `<project>/docs/requirements/<feature>.md` baselines per
+[Rule 13 baseline discovery](spec-lifecycle.md#rules), and the workspace `CLAUDE.md` project map when work spans
+projects.
+
 ### CR — Change Request
 
 | Stage | Load |
 |---|---|
-| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/imp-questions.md`](questions/imp-questions.md), project `docs/architecture/module-map.md` |
+| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/cr-questions.md`](questions/cr-questions.md), project `docs/architecture/module-map.md`, matching `docs/requirements/<feature>.md` baselines (if any) |
 | Visualize (sub-step) | The spec, project architecture overview, relevant reference schemas |
 | Plan | The spec, `<system>/skills/model-selection/SKILL.md`, skill `SKILL.md` files for every skill in front-matter |
 | Task | The spec, `<system>/boundaries.md`, project boundaries (if any), required skill `SKILL.md` files, target code from task's "Files" column + nearest precedent |
@@ -36,7 +47,7 @@
 
 | Stage | Load |
 |---|---|
-| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/bug-questions.md`](questions/bug-questions.md), project `docs/architecture/module-map.md` |
+| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/bug-questions.md`](questions/bug-questions.md), project `docs/architecture/module-map.md`, matching `docs/requirements/<feature>.md` baseline (if any) |
 | Plan | The spec, `<system>/skills/model-selection/SKILL.md` |
 | Task | The spec, `<system>/boundaries.md`, project boundaries (if any), target code, failing test scaffold |
 
@@ -44,7 +55,7 @@
 
 | Stage | Load |
 |---|---|
-| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/cr-questions.md`](questions/cr-questions.md), project `docs/architecture/module-map.md` |
+| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/imp-questions.md`](questions/imp-questions.md), project `docs/architecture/module-map.md`, matching `docs/requirements/<feature>.md` baselines (if any) |
 | Visualize (if triggered) | Same as CR |
 | Plan | Same as CR |
 | Task | Same as CR |
@@ -53,15 +64,19 @@
 
 These files are loaded at **every** stage, regardless of type:
 
-- `<system>/boundaries.md` — non-negotiable rules governing all work.
-- `<system>/skills/agent-protocol/SKILL.md` — if the task is non-trivial.
+- `<system>/boundaries.md` — non-negotiable rules governing all work. Includes the "When to consult
+  `docs/agent-protocol.md`" trigger list, so loading boundaries gives you the protocol entry points without
+  preloading the full reference doc.
+
+## Conditionally loaded
+
 - `<system>/skills/writing-specs/SKILL.md` — when editing any spec file.
-- Project-scope skills in the spec's `skills` field — project-first lookup.
+- `<system>/skills/model-selection/SKILL.md` — at Plan stage to pick model tier per task.
+- `<system>/docs/agent-protocol.md` — when any trigger in boundaries § "When to consult" fires.
+- Project-scope skills in the spec's `skills` field — project-first lookup (see two-scope model in
+  [`docs/agent-protocol.md`](../../docs/agent-protocol.md)).
 
 ## Trivial lane (applicable to CR / BUG / IMP)
 
-CR, BUG, and IMP specs MAY elect into the **Trivial lane** via `risk: trivial` (CR/IMP) or `severity: trivial` (BUG). The lane collapses Specify + Plan into a single combined gate when the change is small enough (≤2 affected files, single repo, no schema/boundary/prompt change, no `depends-on:`). The Closure gate is unchanged.
-
-See [`spec-lifecycle.md § Trivial lane`](spec-lifecycle.md#trivial-lane) for the full eligibility list, combined-gate format, and lane-specific rules. The Specify question round shrinks to the 3 questions in [`questions/trivial-questions.md`](questions/trivial-questions.md).
-
-RES specs do NOT support the Trivial lane — research work is iterative by nature and the lane's "ship and done" shape conflicts with the RES `specify ⇄ in-progress` loop.
+CR/BUG/IMP may elect the Trivial lane (`risk: trivial` or `severity: trivial`). RES does not support the Trivial
+lane. Full rules: [`spec-lifecycle.md § Trivial lane`](spec-lifecycle.md#trivial-lane).

@@ -64,7 +64,7 @@ Then <expected outcome>
 ## Tasks
 Pending — Plan stage only. Task 1 is always "Reproduce & write failing test".
 ## Agent instructions
-Per `<system>/skills/agent-protocol/SKILL.md`.
+Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 ## Docs updates required
 - <path> — <what changes, if any>
 ## Rollout / migration notes

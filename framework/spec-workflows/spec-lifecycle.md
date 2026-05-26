@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-26*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -104,13 +104,24 @@ for the full rule set and Iteration Log mandate.
     `Last src verified` row in the baseline's header info to the
     closure date, even when the baseline body is unchanged. The Closure
     Evidence row for the affected AC MUST cite the diff (path +
-    summary). When the spec introduces baseline behaviour for a feature
-    that has no baseline file yet, the closure MAY seed a new file under
-    `docs/requirements/` -- recommended when the feature will likely be
-    touched again. If the spec's scope changed between Plan and closure,
+    summary). If the spec's scope changed between Plan and closure,
     refresh `## Summary` before flipping to `done` so Goal, Scope, and
-    Out of scope reflect post-closure state. See the seed example at
-    `tobevisit-content/docs/requirements/place-catalog-enrichment.md`.
+    Out of scope reflect post-closure state.
+
+    **Baseline discovery (Plan stage).** Before flipping to `plan`, scan
+    `<project>/docs/requirements/` for files whose feature name matches the
+    spec's scope. Any match MUST be listed under `affected-docs:` in
+    front-matter. This ensures the closure rule above is enforceable —
+    you cannot update a baseline you didn't know existed.
+
+    **Seeding new baselines.** When the spec introduces baseline behaviour
+    for a feature that has no baseline file yet, the closure MUST seed a
+    new file under `<project>/docs/requirements/<feature>.md` when **any**
+    of these apply: (a) the spec is a CR introducing a user-facing
+    feature; (b) ACs include observable behavior likely to be reasserted
+    in future specs; (c) the feature crosses bounded contexts. Otherwise
+    seeding is OPTIONAL. The schema for the new file lives at
+    [`docs/baseline-citations.md`](../../docs/baseline-citations.md).
 
 ## RES exception <a id="res-exception"></a>
 

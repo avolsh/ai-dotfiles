@@ -57,7 +57,7 @@ Then <outcome>
 ## Tasks
 Pending — Plan stage only.
 ## Agent instructions
-Per `<system>/skills/agent-protocol/SKILL.md`.
+Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 ## Docs updates required
 - <path> — <what changes>
 ## Rollout / migration notes

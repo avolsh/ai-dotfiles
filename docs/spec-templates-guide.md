@@ -230,8 +230,8 @@ replace the placeholder with the approved task table per
 
 ## `## Agent instructions` content
 
-The slimmed templates point at `<system>/skills/agent-protocol/SKILL.md`
-rather than inlining the rules. The pointer expands to:
+The slimmed templates point at `<system>/boundaries.md` and
+`<system>/docs/agent-protocol.md` rather than inlining the rules. The pointer expands to:
 
 **Before each task — post in chat (mandatory before any edit):**
 

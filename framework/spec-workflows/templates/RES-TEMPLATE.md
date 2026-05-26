@@ -89,7 +89,7 @@ Pending — Plan stage only. Tasks for RES specs are typically light
 ("set up sandbox", "run experiment N", "record findings"); the heavy
 lifting is in the loop itself, not the task list.
 ## Agent instructions
-Per `<system>/skills/agent-protocol/SKILL.md`. RES specs additionally
+Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`. RES specs additionally
 honor the `## Iteration Log` mandate from
 [`spec-lifecycle.md § RES exception`](../spec-lifecycle.md#res-exception):
 every `in-progress → specify` backflip MUST add a row before resuming

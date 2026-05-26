@@ -2,7 +2,6 @@
 description: "Specify stage — create a RES spec for research / spike / POC / vibe-coding work"
 ---
 #skill:writing-specs
-#skill:agent-protocol
 
 Specify stage for RES — iterative research/spike/POC/vibe-coding lane. Hard gate at the end — do not write `## Tasks`. Lifecycle + gate semantics: [`spec-lifecycle.md § RES exception`](../spec-workflows/spec-lifecycle.md#res-exception). For CR/IMP, use [`create-spec.prompt.md`](create-spec.prompt.md); for BUG, use [`bug-triage.prompt.md`](bug-triage.prompt.md).
 

@@ -2,7 +2,6 @@
 description: "Specify stage — create a CR or IMP spec with requirements"
 ---
 #skill:writing-specs
-#skill:agent-protocol
 
 Specify stage for CR / IMP. Hard gate at the end — do not write `## Tasks`. Lifecycle + gate semantics: [`spec-lifecycle.md`](../spec-workflows/spec-lifecycle.md). For bugs, use [`bug-triage.prompt.md`](bug-triage.prompt.md).
 

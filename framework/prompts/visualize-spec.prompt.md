@@ -2,7 +2,6 @@
 description: "Visualize sub-step — populate the spec's Architecture section with Mermaid diagrams"
 ---
 #skill:writing-specs
-#skill:agent-protocol
 Visualize sub-step inside Specify — spec stays at `status: specify` throughout. Populate `## Architecture` with Mermaid, then hand back to [`create-spec.prompt.md`](create-spec.prompt.md) for the requirements gate. Lifecycle: [`spec-lifecycle.md`](../spec-workflows/spec-lifecycle.md).
 
 ## Preconditions

@@ -2,7 +2,6 @@
 description: "Specify stage for a BUG — reproduce and document the defect"
 ---
 #skill:writing-specs
-#skill:agent-protocol
 
 Specify stage for a BUG — reproduction-first questions; mandatory "reproduce with failing test" first task. Lifecycle: [`spec-lifecycle.md`](../spec-workflows/spec-lifecycle.md). New features → [`create-spec.prompt.md`](create-spec.prompt.md).
 
