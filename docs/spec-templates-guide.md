@@ -261,6 +261,6 @@ Templates used to inline ~30 lines of HTML-comment explainers per file
 `## Agent instructions` block. The comments lived nowhere else canonical,
 which made them load-bearing — but they pushed every authored spec to
 inherit a noisy template baseline. Per
-[`IMP-20260513-slim-spec-templates`](specs/active/IMP-20260513-slim-spec-templates.md),
+[`IMP-20260513-slim-spec-templates`](specs/archived/IMP-20260513-slim-spec-templates.md),
 the explainers moved here so authored specs start from a small
 skeleton and reach for the guide only when a section is non-obvious.
