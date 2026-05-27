@@ -1,6 +1,6 @@
 # Scaffold Manifest
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-27*
 
 Manifest of artifacts the `bootstrapping-project` skill scaffolds. Walkthroughs, rationale, and rules live in [`docs/bootstrapping-project.md`](../../../../docs/bootstrapping-project.md). Placeholders use `<angle-brackets>` — replace every one before writing.
 
@@ -56,7 +56,7 @@ If neither a project nor a workspace root has `CLAUDE.md` / `AGENTS.md`, agents 
 |---|---|
 | `docs/architecture/system-overview.md` | High-level diagram and data flow |
 | `docs/architecture/code-conventions.md` | Linting, naming, file layout |
-| `docs/requirements/README.md` | Per-feature requirements baselines (FRs, invariants, NFRs, OS, current-state authority). See [`docs/baseline-citations.md`](../../../../docs/baseline-citations.md). |
+| `docs/domain/README.md` | Per-feature domain baselines (FRs, invariants, NFRs, OS, current-state authority). See [`docs/baseline-citations.md`](../../../../docs/baseline-citations.md). |
 | `.github/copilot/instructions/<filetype>.md` | Copilot `applyTo`-filtered per-filetype instructions (`typescript.md`, `tests.md`, `docs.md`). |
 | `.github/copilot/skills/<name>/SKILL.md` | Project-scope skills |
 | `.github/copilot/prompts/<name>.prompt.md` | Project-scope workflow prompts |

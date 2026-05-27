@@ -1,8 +1,8 @@
 # Baseline Citations
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-27*
 
-How to read, write, and cite **per-feature requirements baselines** under `<project>/docs/requirements/`: file structure, ID convention, verification pointers, citation format, current-state authority, ownership, and anti-patterns.
+How to read, write, and cite **per-feature domain baselines** under `<project>/docs/domain/`: file structure, ID convention, verification pointers, citation format, current-state authority, ownership, and anti-patterns.
 
 Origin spec:
 `tobevisit-content/docs/specs/archived/IMP-20260428-requirements-baseline-for-specify.md`.
@@ -47,7 +47,7 @@ keyword: `MUST`, `MUST NOT`, `SHOULD`, `MAY`. Every entry is
 addressable by a heading slug or an explicit ID.
 
 Seed example:
-[`tobevisit-content/docs/requirements/place-catalog-enrichment.md`](../../../src/github.com/tobeverse/tobevisit-content/docs/requirements/place-catalog-enrichment.md).
+[`tobevisit-content/docs/domain/place-catalog-enrichment.md`](../../../src/github.com/tobeverse/tobevisit-content/docs/domain/place-catalog-enrichment.md).
 
 ---
 
@@ -93,9 +93,9 @@ suffix rather than inventing a test path when no test exists.
 In a CR/IMP/BUG front-matter:
 
 ```yaml
-cites-reqs:
-  - REQ-PCE-005                                            # numeric ID
-  - requirements/place-catalog-enrichment.md#invariants    # path-anchor
+domain-refs:
+  - REQ-PCE-005                                       # numeric ID
+  - domain/place-catalog-enrichment.md#invariants     # path-anchor
 ```
 
 Both forms are accepted; mix freely.
@@ -109,7 +109,7 @@ feature, no existing baseline REQ-IDs"*.
 
 ## Current-state authority
 
-Requirements baselines are authoritative current-state documents.
+Domain baselines are authoritative current-state documents.
 At closure, any changed baseline MUST describe the system after the
 spec's changes are applied -- not desired future behaviour. Future
 CR/IMP/BUG Specify stages treat cited baselines as the starting point
@@ -126,8 +126,8 @@ even when the baseline body is unchanged after re-checking `src`.
 
 | When | Who | What |
 |---|---|---|
-| Specify stage | Spec author | Read the relevant baseline (Step 1 of `create-spec.prompt.md`); cite the touched REQ-IDs in `cites-reqs:`; ask the situational REQ-touch question. |
-| Closure | Spec author | If the spec changed baseline behavior, update the touched `docs/requirements/<feature>.md` in the same change; cite the diff in `## Closure Evidence`. May seed a brand-new baseline file when introducing a feature that will likely be touched again. |
+| Specify stage | Spec author | Read the relevant baseline (Step 1 of `create-spec.prompt.md`); cite the touched REQ-IDs in `domain-refs:`; ask the situational REQ-touch question. |
+| Closure | Spec author | If the spec changed baseline behavior, update the touched `docs/domain/<feature>.md` in the same change; cite the diff in `## Closure Evidence`. May seed a brand-new baseline file when introducing a feature that will likely be touched again. |
 
 The closure rule is enforced by:
 [`spec-lifecycle.md` Rule 11](../framework/spec-workflows/spec-lifecycle.md)
@@ -153,6 +153,6 @@ The closure rule is enforced by:
 - **One baseline per pipeline step** — too fine; cross-step features
   lose their natural home.
 - **Citing without changing** — if the spec doesn't actually touch a
-  REQ-ID, leave it out of `cites-reqs:`.
+  REQ-ID, leave it out of `domain-refs:`.
 - **Restating code in the baseline** — capture *behaviour rules*, not
   type definitions or data shapes (those belong in `docs/reference/`).

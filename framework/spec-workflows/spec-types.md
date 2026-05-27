@@ -1,6 +1,6 @@
 # Spec Types
 
-*Last updated: 2026-05-26*
+*Last updated: 2026-05-27*
 
 ## Type catalog
 
@@ -30,7 +30,7 @@ when locating precedent files. Fallback (harnesses without sub-agent support): i
 Steps in the main context.
 
 Workspace docs are loaded when the spec touches them — beyond `module-map.md`, this includes
-`<project>/docs/architecture/` (ADRs, design notes), `<project>/docs/requirements/<feature>.md` baselines per
+`<project>/docs/architecture/` (ADRs, design notes), `<project>/docs/domain/<feature>.md` baselines per
 [Rule 13 baseline discovery](spec-lifecycle.md#rules), and the workspace `CLAUDE.md` project map when work spans
 projects.
 
@@ -38,7 +38,7 @@ projects.
 
 | Stage | Load |
 |---|---|
-| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/cr-questions.md`](questions/cr-questions.md), project `docs/architecture/module-map.md`, matching `docs/requirements/<feature>.md` baselines (if any) |
+| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/cr-questions.md`](questions/cr-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baselines (if any) |
 | Visualize (sub-step) | The spec, project architecture overview, relevant reference schemas |
 | Plan | The spec, `<system>/skills/model-selection/SKILL.md`, skill `SKILL.md` files for every skill in front-matter |
 | Task | The spec, `<system>/boundaries.md`, project boundaries (if any), required skill `SKILL.md` files, target code from task's "Files" column + nearest precedent |
@@ -47,7 +47,7 @@ projects.
 
 | Stage | Load |
 |---|---|
-| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/bug-questions.md`](questions/bug-questions.md), project `docs/architecture/module-map.md`, matching `docs/requirements/<feature>.md` baseline (if any) |
+| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/bug-questions.md`](questions/bug-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baseline (if any) |
 | Plan | The spec, `<system>/skills/model-selection/SKILL.md` |
 | Task | The spec, `<system>/boundaries.md`, project boundaries (if any), target code, failing test scaffold |
 
@@ -55,7 +55,7 @@ projects.
 
 | Stage | Load |
 |---|---|
-| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/imp-questions.md`](questions/imp-questions.md), project `docs/architecture/module-map.md`, matching `docs/requirements/<feature>.md` baselines (if any) |
+| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/imp-questions.md`](questions/imp-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baselines (if any) |
 | Visualize (if triggered) | Same as CR |
 | Plan | Same as CR |
 | Task | Same as CR |

@@ -1,6 +1,6 @@
 # Trivial-lane Standard Questions
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-27*
 
 During the **combined `specify+plan` gate** for a Trivial-lane spec
 (`risk: trivial` or `severity: trivial`), the agent asks exactly **3
@@ -29,8 +29,8 @@ content shape, status sequence — lives at
    need a third file even for a hand-wave — this change is not trivial.
 
 2. **No schema, boundary, or prompt change.** Does the change touch any
-   of: front-matter schema, baseline / requirements docs under
-   `docs/requirements/`, type / API contracts, AI prompts under
+   of: front-matter schema, baseline / domain docs under
+   `docs/domain/`, type / API contracts, AI prompts under
    `framework/prompts/` or project `.github/copilot/prompts/`,
    `framework/boundaries.md`, or any project's
    `.github/copilot-instructions.md § Boundaries` section? If yes to any

@@ -1,8 +1,8 @@
 # Writing Docs
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-27*
 
-Documentation conventions for the framework and projects: core rules, markdown formatting standards, doc-type playbook (glossary, requirements, reference schemas, how-to runbooks, architecture, ADRs), freshness rules, and anti-patterns. Per-type deep dives live in the linked docs.
+Documentation conventions for the framework and projects: core rules, markdown formatting standards, doc-type playbook (glossary, domain, reference schemas, how-to runbooks, architecture, decisions), freshness rules, and anti-patterns. Per-type deep dives live in the linked docs.
 
 ---
 
@@ -52,13 +52,13 @@ Documentation conventions for the framework and projects: core rules, markdown f
 - When adding a new domain entity, create a matching glossary file.
 - Update `docs/glossary/README.md` index.
 
-### Requirements (`docs/requirements/`)
+### Domain (`docs/domain/`)
 
 - Canonical guide: [`baseline-citations.md`](baseline-citations.md) and
   [`req-id-lifecycle.md`](req-id-lifecycle.md).
 - One file per logical small feature; narrower than a bounded context,
   broader than a single implementation detail.
-- Baselines describe current post-closure state for functional
+- Domain baselines describe current post-closure state for functional
   requirements, invariants, non-functional requirements, and out of
   scope items. When a closing spec changes baseline behaviour, update
   the file and bump its `Last src verified` row.
@@ -80,9 +80,9 @@ Documentation conventions for the framework and projects: core rules, markdown f
 - System design, code conventions, module map.
 - Mermaid diagrams recommended for context maps and data flows.
 
-### ADRs (`docs/adr/`)
+### Decisions (`docs/decisions/`)
 
-- Architecture Decision Records.
+- Architecture Decision Records (filenames keep the `ADR-NNNN-` prefix).
 - Follow conventions in [`adr-conventions.md`](adr-conventions.md).
 
 ---

@@ -15,7 +15,7 @@ skills:
   - writing-specs
   - <project-skill>
 model-suggestion: default
-# Optional fields (cites-reqs, siblings, depends-on) — see docs/spec-templates-guide.md § Front-matter optional fields.
+# Optional fields (domain-refs, siblings, depends-on) — see docs/spec-templates-guide.md § Front-matter optional fields.
 ---
 <!--
 Trivial-lane shortcut: if this IMP touches ≤2 files, single repo, no schema/boundary/prompt change,

@@ -1,6 +1,6 @@
 # REQ-ID Lifecycle
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-27*
 
 Lifecycle rules for stable numeric IDs (`REQ-<feature-prefix>-NNN`) inside per-feature requirements baselines: numbering, deletion, supersession, cross-baseline citation, and citation safety.
 
@@ -61,7 +61,7 @@ Use a path-anchor citation when the foreign baseline has no numeric ID.
 
 ## Citation Safety
 
-- Specs MAY cite numeric IDs or path anchors in `cites-reqs:`.
+- Specs MAY cite numeric IDs or path anchors in `domain-refs:`.
 - Specs MUST NOT cite deleted IDs except when explaining supersession or
   migration history.
 - Specs SHOULD cite the replacement ID after supersession.

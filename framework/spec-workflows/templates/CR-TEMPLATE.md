@@ -15,7 +15,7 @@ skills:
   - writing-specs
   - <project-skill>
 model-suggestion: default
-# Optional fields (cites-reqs, siblings, depends-on) — see docs/spec-templates-guide.md § Front-matter optional fields.
+# Optional fields (domain-refs, siblings, depends-on) — see docs/spec-templates-guide.md § Front-matter optional fields.
 ---
 <!--
 Trivial-lane shortcut: if this CR touches ≤2 files, single repo, no schema/boundary/prompt change,
@@ -40,7 +40,7 @@ If unsure — don't elect. Standard track is the safe default.
 | Human attention | <N gates>: <gate list>; <min/gate> |
 | Re-Specify tripwire | <condition(s) that force re-Specify> |
 ## Problem Statement
-<What problem does this solve? Evidence: current behavior, pain point, user report, or metric. If `cites-reqs:` is omitted, justify in one line.>
+<What problem does this solve? Evidence: current behavior, pain point, user report, or metric. If `domain-refs:` is omitted, justify in one line.>
 ## Requirements
 - FR-1: The system MUST ...
 ## Acceptance Criteria

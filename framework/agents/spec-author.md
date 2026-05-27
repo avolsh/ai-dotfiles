@@ -13,7 +13,7 @@ inputs:
   - owner: "GitHub handle for the front-matter owner field"
   - question_answers: "for CR/IMP, the ≤10 answers from the Specify question round (CR Q1+Q2 or IMP Q1+Q2 mandatory); for RES, the exactly-5 answers from res-questions.md"
   - architecture_status: "either a one-line `Skipped — <reason>` OR a hand-off note that Visualize sub-step is required next"
-  - baselines: "optional list of <project>/docs/requirements/<feature>.md paths to cite via cites-reqs front-matter field"
+  - baselines: "optional list of <project>/docs/domain/<feature>.md paths to cite via domain-refs front-matter field"
 outputs:
   - spec_path: "POSIX path of the newly-written spec file"
   - fr_count: "integer count of FRs written"
@@ -62,8 +62,8 @@ run the Split check (the `splitter` agent owns that), or write tasks
 - `architecture_status` — either `Skipped — <reason>` (paste into `## Architecture`)
   OR a hand-off note that Visualize is required next (in which case write
   `Pending — Visualize sub-step` and return control after the rest is filled).
-- `baselines` — optional list of `<project>/docs/requirements/<feature>.md` paths.
-  When provided, set front-matter `cites-reqs:` to the corresponding REQ-IDs;
+- `baselines` — optional list of `<project>/docs/domain/<feature>.md` paths.
+  When provided, set front-matter `domain-refs:` to the corresponding REQ-IDs;
   when omitted, include the one-line "no baselines" justification in `## Summary`.
 
 ## Steps
@@ -80,7 +80,7 @@ run the Split check (the `splitter` agent owns that), or write tasks
    - `risk: low|medium|high` for CR/IMP, derived from question_answers (default `low`, escalate to `medium` if scope crosses bounded contexts or schemas, `high` if it adds a new bounded context)
    - `affected-repos`, `affected-docs`, `affected-code`, `skills`, `model-suggestion` (default `default` per [`docs/model-selection.md`](../../docs/model-selection.md))
    - `siblings:` / `depends-on:` only if the orchestrating prompt passes them (left to splitter)
-   - `cites-reqs:` from `baselines` if provided
+   - `domain-refs:` from `baselines` if provided
 5. **Fill `## Summary`** — Goal (one sentence), Scope (one short paragraph), Out of scope (one sentence). Drawn from Q1's answer.
 6. **Fill `## Cost Estimate`** — token range (estimate by spec body size), gate count, re-Specify tripwire conditions distilled from the answers.
 7. **Fill `## Problem Statement`** — what exists today; why it needs change; concrete evidence from the answers.
@@ -139,7 +139,7 @@ R3. **Build front-matter** per the RES schema:
    - Standard: `id` (filename stem), `type: RES`, `date`, `owner`, `status: specify`, `affected-repos`, `skills`, `model-suggestion: deep`
    - RES-only: `hypothesis:` (verbatim from Q1), `kill-criteria:` (verbatim from Q3, single shape), `code-location:` (verbatim from Q4 — confirmed outside `src/`), `outcome:` (left blank; filled at done)
    - DO NOT set `risk:` or `severity:` — RES specs don't carry those fields
-   - Optional: `siblings:`, `depends-on:`, `cites-reqs:` if applicable
+   - Optional: `siblings:`, `depends-on:`, `domain-refs:` if applicable
 
 R4. **Fill `## Summary`** — Goal (one sentence — the research question), Scope (one short paragraph from Q2's smallest experiment), Out of scope (one sentence).
 

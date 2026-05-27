@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-05-26*
+*Last updated: 2026-05-27*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -97,7 +97,7 @@ for the full rule set and Iteration Log mandate.
     `splitting-rules.md § 2`](../skills/writing-specs/references/splitting-rules.md).
 13. **Baseline closure rule and Summary refresh.** Any spec that changes
     baseline behaviour in a feature with an existing
-    `<project>/docs/requirements/<feature>.md` file MUST update that
+    `<project>/docs/domain/<feature>.md` file MUST update that
     file in the same change before flipping to `done`. Baselines updated
     under this rule MUST describe the system after the spec's changes
     are applied -- not desired future behaviour -- and MUST bump the
@@ -109,14 +109,14 @@ for the full rule set and Iteration Log mandate.
     Out of scope reflect post-closure state.
 
     **Baseline discovery (Plan stage).** Before flipping to `plan`, scan
-    `<project>/docs/requirements/` for files whose feature name matches the
+    `<project>/docs/domain/` for files whose feature name matches the
     spec's scope. Any match MUST be listed under `affected-docs:` in
     front-matter. This ensures the closure rule above is enforceable —
     you cannot update a baseline you didn't know existed.
 
     **Seeding new baselines.** When the spec introduces baseline behaviour
     for a feature that has no baseline file yet, the closure MUST seed a
-    new file under `<project>/docs/requirements/<feature>.md` when **any**
+    new file under `<project>/docs/domain/<feature>.md` when **any**
     of these apply: (a) the spec is a CR introducing a user-facing
     feature; (b) ACs include observable behavior likely to be reasserted
     in future specs; (c) the feature crosses bounded contexts. Otherwise

@@ -1,6 +1,6 @@
 # IMP Standard Questions
 
-*Last updated: 2026-04-29*
+*Last updated: 2026-05-27*
 
 During the Specify stage, the agent asks up to **10 questions** from this
 list plus any improvement-specific ones. The human answers before
@@ -31,9 +31,9 @@ requirements are written.
 3. **Measurable benefit:** What concrete metric proves the improvement
    worked? Include baseline and target values.
    Example: "Does this reduce duplicate rule sites from 4 to 1?"
-4. **Baseline citation impact:** Which `docs/requirements/` baselines or
+4. **Baseline citation impact:** Which `docs/domain/` baselines or
    REQ-IDs does this change, supersede, or cite? If none, what is the
-   one-line justification for omitting `cites-reqs:`?
+   one-line justification for omitting `domain-refs:`?
    Example: "Does this change `REQ-PCE-005`, or is it convention-only?"
 5. **Rollback / revert:** How should the change be reverted if it creates
    churn or breaks an established workflow?

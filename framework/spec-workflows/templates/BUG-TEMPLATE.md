@@ -13,7 +13,7 @@ skills:
   - writing-specs
   - <project-testing-skill>
 model-suggestion: default
-# Optional fields (cites-reqs, siblings) — see docs/spec-templates-guide.md § Front-matter optional fields.
+# Optional fields (domain-refs, siblings) — see docs/spec-templates-guide.md § Front-matter optional fields.
 ---
 <!--
 Trivial-lane shortcut: if this BUG touches ≤2 files, single repo, no schema/boundary/prompt change,
@@ -39,7 +39,7 @@ If unsure — don't elect. Standard track is the safe default.
 | Human attention | <N gates>: <gate list>; <min/gate> |
 | Re-Specify tripwire | <condition(s) that force re-Specify> |
 ## Bug Description
-<One paragraph describing the incorrect behavior. If `cites-reqs:` is omitted, justify in one line.>
+<One paragraph describing the incorrect behavior. If `domain-refs:` is omitted, justify in one line.>
 ## Steps to Reproduce
 1. <step>
 ## Expected Behavior

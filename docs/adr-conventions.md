@@ -1,6 +1,6 @@
 # ADR Conventions
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-27*
 
 Naming convention, status values, and minimal template for Architecture Decision Records. Consulted only when an ADR is being authored or amended.
 
@@ -9,7 +9,7 @@ Naming convention, status values, and minimal template for Architecture Decision
 ## Location & naming
 
 ```
-docs/adr/
+docs/decisions/
     ADR-NNNN-<kebab-case-title>.md
 ```
 

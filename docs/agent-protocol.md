@@ -1,6 +1,6 @@
 # Agent Protocol
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-27*
 
 Operating procedures for AI agents working in any project that participates in the AI Agent Framework: path prefixes, two-scope model, context loading order, checklists, output conventions, and the on-demand reference material (determinism, schema sync, doc freshness, skills audit).
 
@@ -151,7 +151,7 @@ Three mechanisms eliminate most exploration:
 - [ ] Read existing code in that context directory.
 - [ ] Read relevant reference schemas from the project's docs.
 - [ ] Read the baseline at
-      `<project>/docs/requirements/<feature>.md` if the change touches a
+      `<project>/docs/domain/<feature>.md` if the change touches a
       feature with an existing baseline.
 - [ ] Check for active specs that may conflict with the change.
 - [ ] **Read the nearest precedent implementation** -- find the closest
@@ -230,7 +230,7 @@ duplicating the field list.
 | Architecture decision | New ADR |
 | New category / taxonomy | Category/taxonomy reference doc |
 | Config change | Relevant how-to runbook |
-| Code change in a baselined feature | Update `<project>/docs/requirements/<feature>.md` to reflect post-closure state (closure rule) |
+| Code change in a baselined feature | Update `<project>/docs/domain/<feature>.md` to reflect post-closure state (closure rule) |
 | New/renamed bounded context, key file, or workflow step | `module-map.md` |
 
 ## Agent output conventions

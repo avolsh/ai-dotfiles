@@ -16,7 +16,7 @@ hypothesis: <One sentence describing what is being tested.>
 kill-criteria: <time-box e.g. "≤8 hours" OR token-budget e.g. "≤200k tokens" OR iteration-count e.g. "≤3 backflips">
 code-location: research/<spec-id>/
 outcome:                                  # filled at `status: done`; one of: confirmed | refuted | inconclusive | promoted-to-<spec-id>
-# Optional fields (cites-reqs, siblings) — see docs/spec-templates-guide.md § Front-matter optional fields.
+# Optional fields (domain-refs, siblings) — see docs/spec-templates-guide.md § Front-matter optional fields.
 # RES specs MUST NOT elect `risk: trivial` — the Trivial lane is one-shot,
 # incompatible with the iterative loop. See spec-types.md § Trivial lane.
 ---

@@ -1,6 +1,6 @@
 # Writing Specs
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-27*
 
 Consolidated guidance for spec-driven work: lifecycle pointer, stage walk-throughs (Specify, Plan), writing-style rules, RFC 2119 keywords, the self-review additions, template usage, and anti-patterns. Topic-specific deep dives live in the linked docs.
 
@@ -179,6 +179,6 @@ Copy to `<project>/docs/specs/active/`, fill front-matter and title.
 - [`acceptance-criteria-patterns.md`](acceptance-criteria-patterns.md) — G/W/T patterns + coverage checklist.
 - [`splitting-specs.md`](splitting-specs.md) — split procedure and worked examples.
 - [`bounded-autonomy.md`](bounded-autonomy.md) — autonomy rationale, scope creep, breaking changes, security.
-- [`baseline-citations.md`](baseline-citations.md) — per-feature requirements baselines (structure, `cites-reqs:`).
+- [`baseline-citations.md`](baseline-citations.md) — per-feature domain baselines (structure, `domain-refs:`).
 - [`req-id-lifecycle.md`](req-id-lifecycle.md) — REQ-ID numbering, deletion, supersession, cross-baseline citation.
 - [`agent-protocol.md`](agent-protocol.md) — context loading, checklists, output conventions.

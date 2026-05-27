@@ -1,6 +1,6 @@
 # CR Standard Questions
 
-*Last updated: 2026-04-20*
+*Last updated: 2026-05-27*
 
 During the Specify stage, the agent asks up to **10 questions** from this
 list plus any spec-specific ones. The human answers before requirements
@@ -44,8 +44,8 @@ are written.
 
 ## Situational questions (optional, use as needed)
 
-- **Existing requirements:** Which baseline REQ-IDs (if any) under
-  `docs/requirements/` does this CR/IMP touch, change, or supersede?
+- **Existing domain baselines:** Which baseline REQ-IDs (if any) under
+  `docs/domain/` does this CR/IMP touch, change, or supersede?
   If none exist for the affected feature, will this spec seed a new
   baseline file at closure?
 - **Migration:** Is there existing data that needs migration or backfill?

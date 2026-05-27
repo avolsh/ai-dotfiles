@@ -1,6 +1,6 @@
 # Spec Templates Guide
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-27*
 
 Companion to the slimmed spec templates at
 [`framework/spec-workflows/templates/`](../framework/spec-workflows/templates/).
@@ -22,15 +22,15 @@ The slimmed templates list only the required front-matter fields. Three
 optional fields are added when their trigger fires. Each is YAML-list
 shaped and lives at the top level alongside the required fields.
 
-### `cites-reqs:`
+### `domain-refs:`
 
 Add when the spec touches existing baseline REQ-IDs. Two reference
 styles are accepted and may be mixed:
 
 ```yaml
-cites-reqs:
-  - REQ-PCE-005                                            # numeric ID from a baseline file
-  - requirements/place-catalog-enrichment.md#invariants    # path-anchor reference
+domain-refs:
+  - REQ-PCE-005                                       # numeric ID from a baseline file
+  - domain/place-catalog-enrichment.md#invariants     # path-anchor reference
 ```
 
 Omit when the spec is net-new and no baseline exists yet. When omitted,
