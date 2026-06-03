@@ -534,14 +534,69 @@ _ai_sync_claude_keychain_back() {
     || _ai_err "failed to refresh Keychain entry '$default_service' from '$profile_service'"
 }
 
+# --- Running-app guard ---------------------------------------------------
+# Switching or resetting while a Claude/Codex app still holds the OLD
+# CLAUDE_CONFIG_DIR/CODEX_HOME is the trigger for both failure modes we hit:
+# stranded/lost session files, and the Desktop app losing its transcript
+# links (cliSessionId). Detect such processes and stop, unless --force.
+#
+# Only flag a process whose environment actually points at a managed profile
+# dir — a Claude/Codex window using the default ~/.claude is unaffected by a
+# switch and must not block it. Emits "pid<TAB>name" per at-risk process.
+_ai_at_risk_processes() {
+  command -v pgrep >/dev/null 2>&1 || return 0
+  command -v ps    >/dev/null 2>&1 || return 0
+
+  local pids pid envline name
+  pids="$( { pgrep -x claude; pgrep -x codex; pgrep -x Claude; pgrep -x Codex; } 2>/dev/null | sort -u )"
+  [ -n "$pids" ] || return 0
+
+  printf '%s\n' "$pids" | while IFS= read -r pid; do
+    [ -n "$pid" ] || continue
+    [ "$pid" = "$$" ] && continue
+    envline="$(ps eww -o command= -p "$pid" 2>/dev/null)"
+    case "$envline" in
+      *"CLAUDE_CONFIG_DIR=$AI_DOTFILES/profiles/"*|*"CODEX_HOME=$AI_DOTFILES/profiles/"*)
+        name="$(ps -o comm= -p "$pid" 2>/dev/null)"
+        printf '%s\t%s\n' "$pid" "${name##*/}"
+        ;;
+    esac
+  done
+}
+
+_ai_guard_running() {
+  local op="$1" force="$2"
+  local procs line
+  procs="$(_ai_at_risk_processes)"
+  [ -n "$procs" ] || return 0
+
+  _ai_err "$op: Claude/Codex is running with a managed-profile config:"
+  printf '%s\n' "$procs" | while IFS= read -r line; do
+    _ai_err "  $line"
+  done
+  _ai_err "That app keeps the old config and can lose its session links."
+  _ai_err "Quit those apps first, then re-run; relaunch them to pick up the switch."
+  if [ "$force" = "1" ]; then
+    _ai_err "--force given: proceeding anyway."
+    return 0
+  fi
+  _ai_err "Re-run with --force to override."
+  return 1
+}
+
 ai_switch_main() {
   local rc_file="${AI_SWITCH_RC_FILE:-$HOME/.zshrc}"
   local marker_start='# >>> ai-dotfiles active profile >>>'
   local marker_end='# <<< ai-dotfiles active profile <<<'
   local profile=""
+  local force=0
 
   while [ $# -gt 0 ]; do
     case "$1" in
+      --force)
+        force=1
+        shift
+        ;;
       --rc-file)
         if [ -z "${2:-}" ]; then
           _ai_err "--rc-file requires a path argument"
@@ -559,7 +614,7 @@ ai_switch_main() {
         shift
         ;;
       -h|--help)
-        printf 'usage: ai-switch [--rc-file <path>] [<profile>|--reset]\n'
+        printf 'usage: ai-switch [--rc-file <path>] [--force] [<profile>|--reset]\n'
         return 0
         ;;
       *)
@@ -592,6 +647,8 @@ ai_switch_main() {
   fi
 
   if [ "$profile" = "__RESET__" ]; then
+    _ai_guard_running "refusing to reset" "$force" || return $?
+
     # Identify the currently active profile before we rewrite the rc block —
     # its tool dirs may hold real files written by the CLIs (atomic rename
     # replaces our symlinks with regular files) that must be restored to
@@ -645,6 +702,8 @@ ai_switch_main() {
     return 2
   fi
 
+  _ai_guard_running "refusing to switch" "$force" || return $?
+
   # Verify each tool subdir is initialized.
   local tool
   for tool in claude copilot codex; do
@@ -695,7 +754,8 @@ unset -f ai_switch_main _ai_err _ai_launchctl_setenv _ai_launchctl_unsetenv \
   _ai_link_shared_state_for_tool _ai_link_shared_state _ai_sync_claude_keychain \
   _ai_sync_claude_keychain_back _ai_restore_path _ai_restore_shared_state \
   _ai_restore_shared_state_for_tool _ai_merge_json_into \
-  _ai_reset_framework_links_for_tool _ai_remove_profile_symlinks 2>/dev/null
+  _ai_reset_framework_links_for_tool _ai_remove_profile_symlinks \
+  _ai_at_risk_processes _ai_guard_running 2>/dev/null
 if [ "$_ai_sourced" = "1" ]; then
   unset _ai_sourced
   return $_ai_rc 2>/dev/null
