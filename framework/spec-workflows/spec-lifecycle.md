@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-06-03*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -252,8 +252,11 @@ Run inside Specify before the requirements gate when **any** apply:
 - Changes data flow between contexts or services.
 - Changes a schema (database, type/interface, API contract).
 - Adds or reorders a pipeline step.
+- Adds or changes a user-facing UI surface (screen, view, component).
 
 Skip only when all are false. Record in `## Architecture` as a single line: `Skipped — <reason>`.
+
+**Output format.** Use **Mermaid** for structure, data flow, schema, and step ordering. For UI surfaces use **Figma** instead of Mermaid — link the frames (file key + node IDs) and embed screenshots; a Mermaid flowchart with subgraphs is acceptable only for navigation/composition, not visual design.
 
 ## Split sub-step (Specify)
 

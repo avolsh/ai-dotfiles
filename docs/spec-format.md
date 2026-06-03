@@ -1,6 +1,6 @@
 # Spec Format
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-06-03*
 
 Quick reference for spec sections, requirement keywords, acceptance criteria, and the review checklist. For templates, see [`framework/spec-workflows/templates/`](../framework/spec-workflows/templates/).
 
@@ -19,7 +19,7 @@ A spec has these sections. If a section does not apply, write
 2. Problem Statement (Context)
 3. Requirements (FR-N, NFR-N)
 4. Acceptance Criteria (Given/When/Then)
-5. Architecture (Mermaid diagrams, if Visualize triggered)
+5. Architecture (Mermaid diagrams and/or Figma frames, if Visualize triggered)
 6. Out of Scope
 7. Tasks (filled during Plan stage)
 
