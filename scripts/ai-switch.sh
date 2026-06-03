@@ -237,14 +237,30 @@ _ai_should_skip_shared_name() {
 _ai_link_shared_state_source() {
   local src="$1"
   local dst="$2"
-  local replace_existing="${3:-0}"
 
+  # A real (non-symlink) entry sits where the profile symlink belongs — the
+  # CLI recreated it (e.g. launched with a stale CLAUDE_CONFIG_DIR after a
+  # --reset tore the symlink down) and wrote into it. Fold its contents back
+  # into the shared source instead of skipping, so sessions / sqlite / config
+  # written there are never stranded. This is the same merge logic the
+  # --reset restore path uses, just applied at switch time.
   if { [ -e "$dst" ] || [ -L "$dst" ]; } && [ ! -L "$dst" ]; then
-    if [ "$replace_existing" != "1" ]; then
-      _ai_err "shared state target exists and is not a symlink; skipping: $dst"
+    if [ "${dst##*/}" = ".claude.json" ]; then
+      # JSON config: merge profile copy into home (home keys preserved,
+      # profile keys win), then drop the consumed profile copy.
+      if _ai_merge_json_into "$dst" "$src"; then
+        rm -f "$dst"
+      fi
+    else
+      _ai_restore_path "$dst" "$src"
+    fi
+
+    # If the merge declined to consume it (type mismatch, unparseable JSON),
+    # keep the old skip-and-warn safety rather than clobbering real data.
+    if { [ -e "$dst" ] || [ -L "$dst" ]; } && [ ! -L "$dst" ]; then
+      _ai_err "shared state target still real after restore; skipping to avoid data loss: $dst"
       return 0
     fi
-    rm -rf "$dst"
   fi
 
   if [ -L "$dst" ]; then
@@ -272,11 +288,11 @@ _ai_link_shared_state_for_tool() {
     fi
 
     dst="$profile_tool_dir/$name"
-    _ai_link_shared_state_source "$src" "$dst" 0
+    _ai_link_shared_state_source "$src" "$dst"
   done < <(find "$home_tool_dir" -mindepth 1 -maxdepth 1 -print)
 
   if [ "$tool" = "claude" ] && [ -e "$HOME/.claude.json" ]; then
-    _ai_link_shared_state_source "$HOME/.claude.json" "$profile_tool_dir/.claude.json" 1
+    _ai_link_shared_state_source "$HOME/.claude.json" "$profile_tool_dir/.claude.json"
   fi
 }
 
@@ -593,6 +609,19 @@ ai_switch_main() {
 
     _ai_remove_active_block "$rc_file" "$marker_start" "$marker_end" || return $?
     _ai_remove_profile_symlinks
+
+    # Harden against stray CLI launches: a shell or GUI app that still holds a
+    # stale CLAUDE_CONFIG_DIR/CODEX_HOME/COPILOT_HOME for the just-detached
+    # profile would otherwise recreate real session/sqlite dirs inside it —
+    # the cause of the recurring "shared state ... is not a symlink; skipping"
+    # warnings and lost sessions on the next switch. Re-point the profile's
+    # shared-state slots at ~/.<tool> so any such write passes through to the
+    # shared location instead of diverging. Framework links and the rc-block /
+    # launchctl env stay removed, so the profile remains inactive.
+    if [ -n "$active_profile" ] && [ -d "$AI_DOTFILES/profiles/$active_profile" ]; then
+      _ai_link_shared_state "$AI_DOTFILES/profiles/$active_profile"
+    fi
+
     _ai_launchctl_unsetenv CLAUDE_CONFIG_DIR
     _ai_launchctl_unsetenv COPILOT_HOME
     _ai_launchctl_unsetenv CODEX_HOME
