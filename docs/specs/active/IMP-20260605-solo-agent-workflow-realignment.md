@@ -2,7 +2,7 @@
 id: IMP-20260605-solo-agent-workflow-realignment
 type: IMP
 date: 2026-06-05
-status: plan
+status: in-progress
 owner: avolsh
 risk: medium
 affected-repos:
@@ -114,8 +114,8 @@ flowchart LR
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
-| T1 | Absorb the three generators' Steps + output contracts into the `writing-specs` skill so the main agent runs spec authoring, the split check, and task decomposition inline (FR-1). | `framework/skills/writing-specs/SKILL.md`, `framework/skills/writing-specs/references/authoring-steps.md` *(new)* | `framework/agents/spec-author.md`, `framework/agents/splitter.md`, `framework/agents/task-planner.md` | — | writing-specs | deep | ☐ pending |
-| T2 | Rewire `create-spec` + `plan-spec` prompts to run the absorbed sections inline; remove generator `Agent`-delegation + fallback paragraphs (FR-2). | `framework/prompts/create-spec.prompt.md`, `framework/prompts/plan-spec.prompt.md` | `framework/skills/writing-specs/SKILL.md` | T1 | writing-specs | default | ☐ pending |
+| T1 | Absorb the three generators' Steps + output contracts into the `writing-specs` skill so the main agent runs spec authoring, the split check, and task decomposition inline (FR-1). | `framework/skills/writing-specs/SKILL.md`, `framework/skills/writing-specs/references/authoring-steps.md` *(new)* | `framework/agents/spec-author.md`, `framework/agents/splitter.md`, `framework/agents/task-planner.md` | — | writing-specs | deep | ✅ done |
+| T2 | Rewire `create-spec` + `plan-spec` prompts to run the absorbed sections inline; remove generator `Agent`-delegation + fallback paragraphs (FR-2). | `framework/prompts/create-spec.prompt.md`, `framework/prompts/plan-spec.prompt.md` | `framework/skills/writing-specs/SKILL.md` | T1 | writing-specs | default | ✅ done |
 | T3 | Delete the four bespoke agent files; rewrite `agents/README.md` to drop them and state the subagent-need gate (mechanical need only; reject role decomposition) (FR-1, FR-3). | `framework/agents/spec-author.md`, `framework/agents/splitter.md`, `framework/agents/task-planner.md`, `framework/agents/precedent-finder.md`, `framework/agents/README.md` | — | T2 | writing-specs | default | ☐ pending |
 | T4 | Bring the rest of the framework into line with the removal: reroute the task-start preflight to Grep/Glob or the built-in explore subagent, update the delegation docs to inline authoring, and update both validators so `validate-specs` no longer assumes the removed agents and `lint-rules` no longer flags the absorbed inline Steps as drift; `make sync-agents-check` passes (FR-3, FR-4). | `framework/spec-workflows/spec-types.md`, `docs/agent-protocol.md`, `scripts/validate-specs.py`, `scripts/lint-rules.py` | `framework/agents/README.md`, `framework/boundaries.md` | T3 | writing-specs | default | ☐ pending |
 | T5 | Add the `reviewing-changes` skill carrying the 5-dimension checklist — coverage / scope / contract / bugs / minimality — plus "ignore style", as the shared review language (FR-6). | `framework/skills/reviewing-changes/SKILL.md` *(new)* | `framework/skills/writing-specs/SKILL.md` | — | writing-specs | deep | ☐ pending |
