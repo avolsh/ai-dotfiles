@@ -251,11 +251,12 @@ task (or a separate spec if the scope is large).
 
 ## Delegation contract
 
-System-scope sub-agents under [`framework/agents/`](../framework/agents/)
-expose a uniform delegation contract. When a workflow prompt is
-configured to delegate (e.g. `create-spec.prompt.md § Steps #3` →
-`spec-author`), the orchestrating agent's behaviour depends on its
-harness:
+Spec authoring, the Split check, and task decomposition run **inline in
+the main context** ([`writing-specs/references/authoring-steps.md`](../framework/skills/writing-specs/references/authoring-steps.md));
+they are not delegated. A sub-agent is used only on mechanical need
+(isolation / parallelism / read-only) — see the gate in
+[`framework/agents/README.md`](../framework/agents/README.md). The one
+bespoke sub-agent is the read-only `reviewer`.
 
 ### Claude Code path
 
@@ -269,40 +270,26 @@ Agent({
 })
 ```
 
-Three orchestration rules:
-1. **Self-contained prompt** — sub-agents start cold; include all paths,
-   inputs, and expected-output formats.
-2. **Single deliverable per call** — don't bundle "draft + run Split
-   check" into one invocation; `spec-author` and `splitter` are
-   separate by design.
-3. **No nested delegation** — sub-agents MUST NOT invoke their own
-   sub-agents. Keeps the call graph one level deep.
-
-Main-thread savings: ~32% on a typical Specify walk-through (measured
-in `tests/subagents-target.md`). The agent body is never loaded into
-the main thread on this path.
+Three orchestration rules: the prompt MUST be **self-contained**
+(sub-agents start cold — include all paths, inputs, expected-output
+formats), produce a **single deliverable**, and never **nest delegation**
+(keep the call graph one level deep).
 
 ### Copilot / Codex fallback path
 
-These harnesses do not implement an `Agent`-style sub-call. Every
-delegating prompt step includes a one-line fallback note:
+These harnesses do not implement an `Agent`-style sub-call. The
+principle is harness-independent: run the agent as a **separate
+empty-context session** whose only inputs are the brief the contract
+names. For the `reviewer` that is the spec + `git diff` + the
+`reviewing-changes` skill.
 
-> *Fallback (no `Agent` tool): inline the agent's Steps from its file.*
-
-The implementing agent opens `framework/agents/<name>.md` directly and
-follows its Steps in the main context. Main-thread savings on the
-fallback path: ~18% (smaller, because the agent body now joins the
-main load — but the prompt's slimmed Steps still avoid pulling in
-the docs-references previously inline).
-
-### Task-start preflight + `precedent-finder`
+### Task-start preflight (precedent files)
 
 The pre-flight checklist's "precedent files read" item (per
-[`boundaries.md § Always do #4`](../framework/boundaries.md)) maps to
-the `precedent-finder` agent. When delegation is available, invoke it
-with the task's Files column as input; it returns the nearest
-existing files per new path. On non-Claude harnesses, read the agent's
-search ladder inline.
+[`boundaries.md § Always do #4`](../framework/boundaries.md)) is the
+main agent's own `Grep`/`Glob` over the task's Files column — or the
+built-in read-only explore sub-agent returning a summary for heavy
+digging. There is no bespoke precedent agent.
 
 ### Agent contract reference
 

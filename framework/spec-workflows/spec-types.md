@@ -23,11 +23,11 @@
 
 ## Context to load per stage
 
-Each stage may delegate work to sub-agents — see [`<system>/agents/README.md`](../agents/README.md). Specify delegates
-to [`spec-author`](../agents/spec-author.md) (draft) + [`splitter`](../agents/splitter.md) (Split check); Plan delegates
-to [`task-planner`](../agents/task-planner.md); Task delegates to [`precedent-finder`](../agents/precedent-finder.md)
-when locating precedent files. Fallback (harnesses without sub-agent support): inline the agent's body and follow its
-Steps in the main context.
+Spec authoring (draft), the Split check, and task decomposition run **inline in the main context** per
+[`writing-specs/references/authoring-steps.md`](../skills/writing-specs/references/authoring-steps.md) — they are not
+delegated. Locating precedent files at task-start is the main agent's own `Grep`/`Glob`, or the built-in read-only
+explore sub-agent. Sub-agents are reserved for mechanical need (isolation / parallelism / read-only) — see
+[`<system>/agents/README.md`](../agents/README.md).
 
 Workspace docs are loaded when the spec touches them — beyond `module-map.md`, this includes
 `<project>/docs/architecture/` (ADRs, design notes), `<project>/docs/domain/<feature>.md` baselines per
