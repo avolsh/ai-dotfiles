@@ -106,26 +106,31 @@ thing on every harness, and make any future parallelization cheaper.
 Projects can add their own skills (e.g., `testing-with-jest`,
 `building-ddd-contexts`, `running-pipeline-steps`).
 
-## Sub-agents — delegated stage workers
+## Sub-agents — the exception, not a tier
 
-While skills are knowledge the main thread loads, **sub-agents** are
-workers the main thread *delegates to*. Each agent runs in its own
-context with its own tool allowlist; the orchestrating prompt keeps
-only the agent's structured output. Net effect: main-context token
-load drops by ~32% on a typical Specify walk-through (measured —
-`tests/subagents-target.md`).
+The base model is **one main agent**. Context is carried by the
+**artifacts** — the spec and the plan — not by a cast of agent roles.
+Sub-agents are not a next tier of seniority; they earn their existence
+only on a **mechanical need**: context isolation, parallelism, or
+read-only privilege. Role decomposition (author / architect / developer
+as separate agents) is an anti-pattern — it serializes coupled decisions
+and isolates context that belongs together. Spec authoring, the Split
+check, and task decomposition therefore run **inline in the main
+context** (see [`writing-specs/references/authoring-steps.md`](../framework/skills/writing-specs/references/authoring-steps.md)).
 
-| Agent | Stage | Model | Delegated from |
-|---|---|---|---|
-| `spec-author` | Specify | deep | `create-spec.prompt.md § Steps #3` |
-| `splitter` | Specify | deep | `create-spec.prompt.md § Steps #4` |
-| `task-planner` | Plan | deep | `plan-spec.prompt.md § Steps #3` |
-| `precedent-finder` | Task-start | default | invoked by the preflight checklist |
+The one bespoke sub-agent is the read-only **reviewer**:
 
-The contract — front-matter schema, body structure, delegation flow,
-fallback for non-Claude harnesses — lives at
+| Agent | When | Model | Tools | Purpose |
+|---|---|---|---|---|
+| `reviewer` | in-progress (recommended sub-step) | deep | read-only | Judges a change cold against its spec; returns `PASS` or `file:line → violated clause`. |
+
+Precedent search at task-start is the main agent's own `Grep`/`Glob` or
+the built-in read-only explore sub-agent — not a bespoke agent.
+
+The contract — front-matter schema, body structure, the subagent-need
+gate, fallback for non-Claude harnesses — lives at
 [`framework/agents/README.md`](../framework/agents/README.md). Delegation
-mechanics + Copilot/Codex fallback live at
+mechanics live at
 [`docs/agent-protocol.md § Delegation contract`](agent-protocol.md#delegation-contract).
 
 `make validate-specs` enforces the agent front-matter schema;

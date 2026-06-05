@@ -2,7 +2,7 @@
 id: IMP-20260605-solo-agent-workflow-realignment
 type: IMP
 date: 2026-06-05
-status: in-progress
+status: done
 owner: avolsh
 risk: medium
 affected-repos:
@@ -121,7 +121,10 @@ flowchart LR
 | T5 | Add the `reviewing-changes` skill carrying the 5-dimension checklist — coverage / scope / contract / bugs / minimality — plus "ignore style", as the shared review language (FR-6). | `framework/skills/reviewing-changes/SKILL.md` *(new)* | `framework/skills/writing-specs/SKILL.md` | — | writing-specs | deep | ✅ done |
 | T6 | Add `framework/agents/reviewer.md`: read-only `tools-allowed`, inputs `spec_path` + diff, output `PASS` / `file:line → violated clause`, diagnosis-only; loads `reviewing-changes`. Set its model tier in `model-selection.md` (FR-5). | `framework/agents/reviewer.md` *(new)*, `docs/model-selection.md` | `framework/agents/README.md`, `framework/skills/reviewing-changes/SKILL.md` | T5 | writing-specs, model-selection | deep | ✅ done |
 | T7 | Wire the reviewer as a recommended, non-blocking sub-step in `spec-lifecycle.md` (trigger risk medium/high or on demand, ≤1–2 cycles, main agent arbiter) + harness-independent fallback in `agents/README.md` (FR-7, FR-8). | `framework/spec-workflows/spec-lifecycle.md`, `framework/agents/README.md` | `framework/agents/reviewer.md` | T3, T6 | writing-specs | default | ✅ done |
-| T8 | State the base model and reshape the "Sub-agents" section/table in `ai-agent-framework.md` to the reviewer-only surface; retire the token-reduction framing (FR-9). | `docs/ai-agent-framework.md` | `framework/agents/README.md` | T3, T7 | writing-specs | default | ☐ pending |
+| T8 | State the base model and reshape the "Sub-agents" section/table in `ai-agent-framework.md` to the reviewer-only surface; retire the token-reduction framing (FR-9). | `docs/ai-agent-framework.md` | `framework/agents/README.md` | T3, T7 | writing-specs | default | ✅ done |
+## Closure
+*Closed 2026-06-05.* All 8 tasks done; AC-1..AC-7 verified and confirmed PASS by an independent `reviewer` cold-context dogfood run (1 cycle, no findings). `make sync-agents-check` green; `framework/agents/` = `README.md` + `reviewer.md`. Measurable benefit met: bespoke sub-agents 4 → 1 (read-only `reviewer`). Supersedes the delegation model of `IMP-20260514-framework-subagents` (kept archived; history not rewritten). Follow-up logged: stale `tests/*.md` agent references (out of scope here).
+
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 ## Docs updates required
