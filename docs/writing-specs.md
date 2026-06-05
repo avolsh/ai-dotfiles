@@ -1,6 +1,6 @@
 # Writing Specs
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-06-05*
 
 Consolidated guidance for spec-driven work: lifecycle pointer, stage walk-throughs (Specify, Plan), writing-style rules, RFC 2119 keywords, the self-review additions, template usage, and anti-patterns. Topic-specific deep dives live in the linked docs.
 
@@ -52,6 +52,7 @@ Apply to all spec text during Specify and Plan.
 - "Ensure", "consider", "it is recommended", "please note".
 - Restating the goal inside processing steps.
 - Sentences that don't directly specify behavior.
+- The same point restated across `## Summary`, `## Current State`, and `## Proposed Improvement` — keep prose minimal; the FR/AC contract carries the spec, narrative does not.
 
 ### Compression pass (apply before finalizing any section)
 
@@ -109,7 +110,10 @@ Apply to all spec text during Specify and Plan.
 
 ## Plan stage (detail)
 
-1. Decompose requirements into **tasks** (vertical slices).
+1. Decompose requirements into **tasks** (vertical slices). When an FR
+   names an affected set by capability (e.g. "every prompt that delegates
+   to X"), **grep for the full set** rather than trusting a hand-listed
+   file enumeration — the list may be incomplete.
 2. Each task: description, max 5 files, dependencies, model suggestion,
    required skills.
 3. Use [`model-selection/SKILL.md`](../framework/skills/model-selection/SKILL.md)
@@ -169,6 +173,7 @@ Copy to `<project>/docs/specs/active/`, fill front-matter and title.
 9. **Passive rules** — write "Keep provider-neutral." not "should be kept."
 10. **Skipping Visualize** — if any trigger applies, the sub-step is mandatory.
 11. **Writing tasks during Specify** — `## Tasks` belongs to Plan.
+12. **Enumerating files inside an FR** — phrase the affected set generically ("every prompt that delegates to X"); a hand-listed file set goes stale and Plan can miss members. Grep for the full set at Plan.
 
 ---
 
