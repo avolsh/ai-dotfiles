@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-06-05*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -89,13 +89,16 @@ each successful `ai <profile>` switch.
 
 ## Skills — what the AI knows
 
-Skills are on-demand knowledge modules. The AI loads them when needed,
-not all at once.
+Skills are on-demand knowledge modules — conditionally-relevant
+procedures the AI loads when needed, not all at once. They are also a
+**shared language**: well-codified procedures mean a task means the same
+thing on every harness, and make any future parallelization cheaper.
 
 | Skill | What it teaches the AI |
 |---|---|
 | **agent-protocol** | How to load context, run checklists, format output |
-| **writing-specs** | How to write specs, ask questions, plan tasks |
+| **writing-specs** | How to write specs, ask questions, plan tasks (authoring/split/decomposition run inline) |
+| **reviewing-changes** | The spec-conformance review checklist (coverage / scope / contract / bugs / minimality) |
 | **model-selection** | Which AI model tier (fast/default/deep) to use per task |
 | **bootstrapping-project** | How to set up a new project with the framework |
 | **writing-docs** | Doc conventions, glossary format, freshness rules |

@@ -95,7 +95,8 @@ GitHub Copilot CLI and OpenAI Codex CLI have no `Agent` mechanism. The
 principle is harness-independent: run the agent as a **separate
 empty-context session** whose only inputs are the brief the contract
 names. For the reviewer that is the spec + `git diff` + the
-`reviewing-changes` skill.
+`reviewing-changes` skill — run as the recommended sub-step per
+[`spec-lifecycle.md § Reviewer sub-step`](../spec-workflows/spec-lifecycle.md#reviewer-substep).
 
 ## Validator + lint integration
 

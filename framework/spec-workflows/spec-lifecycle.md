@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-06-03*
+*Last updated: 2026-06-05*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -264,6 +264,23 @@ Run on **every** CR / IMP / BUG after FRs + ACs, before the requirements gate. N
 one spec"* per [`splitting-rules.md § 4`](../skills/writing-specs/references/splitting-rules.md). Record under
 `## Split Decision`. Triggers: [`§ 2`](../skills/writing-specs/references/splitting-rules.md) (Specify), [
 `§ 3`](../skills/writing-specs/references/splitting-rules.md) (Plan-stage safety net).
+
+## Reviewer sub-step (in-progress) <a id="reviewer-substep"></a>
+
+A **recommended, non-blocking** sub-step run during `in-progress`, before
+requesting the closure gate. Run it when **risk is `medium` or `high`**,
+or on demand for any spec.
+
+- The [`reviewer`](../agents/reviewer.md) judges the change **cold** in a
+  fresh, read-only context: inputs are the spec + the `git diff` (it reads
+  the diff itself), output is `PASS` or `file:line → violated clause` per
+  the [`reviewing-changes`](../skills/reviewing-changes/SKILL.md) checklist.
+- **You are the arbiter.** Decide which findings to apply, apply them, and
+  re-run for **at most 1–2 cycles** — not an unbounded loop.
+- This is **not a status and not a gate.** It does not replace the human
+  `in-progress → done` closure gate; it informs it.
+- Harness without an `Agent` tool: run the reviewer as a separate
+  empty-context session per [`agents/README.md § Fallback`](../agents/README.md).
 
 ## File naming
 
