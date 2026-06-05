@@ -2,7 +2,7 @@
 id: IMP-20260605-solo-agent-workflow-realignment
 type: IMP
 date: 2026-06-05
-status: specify
+status: plan
 owner: avolsh
 risk: medium
 affected-repos:
@@ -41,7 +41,7 @@ model-suggestion: deep
 | Estimate | Value |
 |---|---|
 | Token range | 250k–500k |
-| Human attention | 3 gates: Specify, Plan, Closure; ~10 min/gate |
+| Human attention | ~11 gates: Specify, Plan, 8 task approvals, Closure; ~5–10 min each |
 | Re-Specify tripwire | Plan > 8 tasks, or any task adds runtime product code, or validator changes aren't git-revert reversible |
 ## Current State
 Four bespoke subagents exist; three (`spec-author`, `splitter`, `task-planner`) are *generators* justified only by token reduction. This conflicts with the solo model: isolating author/architect roles serializes coupled decisions — the artifact (spec/plan) should carry context, not a role. `precedent-finder` passes the read-only gate but is redundant — precedent search is generic read-only digging the main agent's Grep/Glob (or the built-in explore subagent) already covers. Meanwhile the one subagent worth isolating — a **read-only reviewer** (spec + diff → `PASS` / `file:line`) — is absent, and the base model is stated nowhere.
@@ -110,7 +110,18 @@ flowchart LR
 ## Split Decision
 **Kept as one** — E1 + E3 ([`splitting-rules.md § 4`](../../../framework/skills/writing-specs/references/splitting-rules.md)) + explicit owner election. T1 fires (Themes B/C are independently testable vs A), but A and B rewrite the same write path (`agents/README.md`, `ai-agent-framework.md § Sub-agents`, both prompts, the two validators — **E1**) and partial application breaks the workflow, so rollback must be atomic (**E3**). Plan MUST keep FR-1…FR-4 in one contiguous, atomically-revertable task group.
 ## Tasks
-Pending — Plan stage only.
+> **Before starting Task T1, set status: in-progress in the front-matter above.**
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| T1 | Absorb the three generators' Steps + output contracts into the `writing-specs` skill so the main agent runs spec authoring, the split check, and task decomposition inline (FR-1). | `framework/skills/writing-specs/SKILL.md`, `framework/skills/writing-specs/references/authoring-steps.md` *(new)* | `framework/agents/spec-author.md`, `framework/agents/splitter.md`, `framework/agents/task-planner.md` | — | writing-specs | deep | ☐ pending |
+| T2 | Rewire `create-spec` + `plan-spec` prompts to run the absorbed sections inline; remove generator `Agent`-delegation + fallback paragraphs (FR-2). | `framework/prompts/create-spec.prompt.md`, `framework/prompts/plan-spec.prompt.md` | `framework/skills/writing-specs/SKILL.md` | T1 | writing-specs | default | ☐ pending |
+| T3 | Delete the four bespoke agent files; rewrite `agents/README.md` to drop them and state the subagent-need gate (mechanical need only; reject role decomposition) (FR-1, FR-3). | `framework/agents/spec-author.md`, `framework/agents/splitter.md`, `framework/agents/task-planner.md`, `framework/agents/precedent-finder.md`, `framework/agents/README.md` | — | T2 | writing-specs | default | ☐ pending |
+| T4 | Bring the rest of the framework into line with the removal: reroute the task-start preflight to Grep/Glob or the built-in explore subagent, update the delegation docs to inline authoring, and update both validators so `validate-specs` no longer assumes the removed agents and `lint-rules` no longer flags the absorbed inline Steps as drift; `make sync-agents-check` passes (FR-3, FR-4). | `framework/spec-workflows/spec-types.md`, `docs/agent-protocol.md`, `scripts/validate-specs.py`, `scripts/lint-rules.py` | `framework/agents/README.md`, `framework/boundaries.md` | T3 | writing-specs | default | ☐ pending |
+| T5 | Add the `reviewing-changes` skill carrying the 5-dimension checklist — coverage / scope / contract / bugs / minimality — plus "ignore style", as the shared review language (FR-6). | `framework/skills/reviewing-changes/SKILL.md` *(new)* | `framework/skills/writing-specs/SKILL.md` | — | writing-specs | deep | ☐ pending |
+| T6 | Add `framework/agents/reviewer.md`: read-only `tools-allowed`, inputs `spec_path` + diff, output `PASS` / `file:line → violated clause`, diagnosis-only; loads `reviewing-changes`. Set its model tier in `model-selection.md` (FR-5). | `framework/agents/reviewer.md` *(new)*, `docs/model-selection.md` | `framework/agents/README.md`, `framework/skills/reviewing-changes/SKILL.md` | T5 | writing-specs, model-selection | deep | ☐ pending |
+| T7 | Wire the reviewer as a recommended, non-blocking sub-step in `spec-lifecycle.md` (trigger risk medium/high or on demand, ≤1–2 cycles, main agent arbiter) + harness-independent fallback in `agents/README.md` (FR-7, FR-8). | `framework/spec-workflows/spec-lifecycle.md`, `framework/agents/README.md` | `framework/agents/reviewer.md` | T3, T6 | writing-specs | default | ☐ pending |
+| T8 | State the base model and reshape the "Sub-agents" section/table in `ai-agent-framework.md` to the reviewer-only surface; retire the token-reduction framing (FR-9). | `docs/ai-agent-framework.md` | `framework/agents/README.md` | T3, T7 | writing-specs | default | ☐ pending |
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 ## Docs updates required
