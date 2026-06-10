@@ -131,3 +131,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** The first real `git commit` after installing the pre-commit backstop was rejected because the planted example key `AKIA...` lived as a contiguous literal inside the two test scripts themselves — the scanner correctly flagged the sources of its own tests.
 - **What was changed:** Both fixtures now assemble the key at runtime (`printf '%s%s' "AKIA" "IOSFODNN7EXAMPLE"`): the fixture file written during the test still contains a contiguous match (assertions unchanged, all suites green), while the committed source no longer does. The scanner was not weakened — no allowlist added.
 - **Suggested follow-up:** Document the runtime-assembly pattern wherever future fixtures need to plant secret-shaped strings (e.g., a note in framework/hooks/README.md § Tests).
+
+### 2026-06-10 — ai-switch tore down framework links without restoring them; doctor caught it live
+
+- **Spec / task:** Direct lane (incident during IMP-20260610-mechanize-framework-guardrails rollout)
+- **Category:** tooling
+- **What was found:** An `ai personal` switch removed every symlink under `profiles/` (`_ai_remove_profile_symlinks`) and linked shared user state, but the framework links (instruction files, boundaries, spec-workflows, skills, prompts, templates) were not recreated — `make doctor` immediately reported 24 failures. Two structural collisions surfaced: (a) `codex/skills` is a real directory owned by Codex CLI (`.system` marker), so whole-dir `ln -sfn` produces a nested `skills/skills` link — the per-entry symlink model from agent-protocol.md is the correct shape there; (b) `claude/settings.json` is switched to a symlink into `~/.claude/settings.json`, so profile-init's hook merge writes through to user-level settings (acceptable — that is the file the live session reads — but undocumented).
+- **What was changed:** Removed the nested `codex/skills/skills` link, re-ran `ai-profile-init personal` (restores links incl. `upstream`, re-renders hook adapters), doctor back to the 2 known stale-manifest failures.
+- **Suggested follow-up:** In `ai-switch.sh`: add `upstream` to the ref loop, make the switch re-create framework links it tears down, and guard `ln -sfn` against existing real directories (use per-entry links for `codex/skills`). Tracked as a spawned background task.
