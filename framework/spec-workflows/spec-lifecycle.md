@@ -5,7 +5,7 @@
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
 
-<!-- Anchors in this file (per `docs/rule-canonical-map.md`): R2 `never-tasks-table-at-specify` · R3 `never-flip-without-gate` · R6 `split-check-mandatory` · R7 `depends-on-blocks-plan` · R8 `visualize-not-a-status` · R10 `visualize-triggers`. -->
+<!-- Anchors in this file (per `docs/rule-canonical-map.md`): R2 `never-tasks-table-at-specify` · R3 `never-flip-without-gate` · R6 `split-check-mandatory` · R7 `depends-on-blocks-plan` · R8 `visualize-not-a-status` · R10 `visualize-triggers` (anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). -->
 
 ## Front-matter schema
 

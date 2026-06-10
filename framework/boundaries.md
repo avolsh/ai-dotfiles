@@ -2,7 +2,7 @@
 
 *Last updated: 2026-06-10*
 
-<!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R9). Other framework files link to these anchors rather than restate the rules. -->
+<!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
 > **System-scope** rules for all AI agents. Projects MAY extend via their `_canonical.md` § Boundaries
 > (rendered into all three agent files by `make sync-agents`); project rules win on conflict. Three tiers,

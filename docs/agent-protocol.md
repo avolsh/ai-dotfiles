@@ -1,6 +1,6 @@
 # Agent Protocol
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-06-10*
 
 Operating procedures for AI agents working in any project that participates in the AI Agent Framework: path prefixes, two-scope model, context loading order, checklists, output conventions, and the on-demand reference material (determinism, schema sync, doc freshness, skills audit).
 
@@ -215,6 +215,32 @@ in this order:
 
 Other framework files MUST cross-reference this section rather than
 duplicating the field list.
+
+## Canonical rules: the one-hop convention
+
+Mandatory rules (MUST / Always / Never) live in exactly two canonical
+files — `framework/boundaries.md` and
+`framework/spec-workflows/spec-lifecycle.md` — or in a reference file
+those two link **directly**. The invariant:
+
+> An agent reading `boundaries.md` or `spec-lifecycle.md` MUST reach any
+> mandatory rule's full statement in **at most one link hop**. Chains of
+> two or more hops are where agents drift.
+
+When editing framework rules:
+
+- **Adding a rule:** state it fully in one of the two canonical files, or
+  in a file they already link directly (e.g. `splitting-rules.md`,
+  `bounded-autonomy-rules.md`). Do not bury it deeper.
+- **Moving a rule:** keep its `<a id="...">` anchor with the statement and
+  update the phrase entry in `docs/rule-canonical-map.md` in the same
+  commit (the map is machine-read by `make lint-rules`).
+- **Citing a rule:** link to its anchor; never restate the text —
+  `make lint-rules` fails on verbatim duplicates, and
+  `make validate-anchors` fails on links to renamed or missing anchors.
+
+The invariant was verified to hold for the full rule corpus on 2026-06-10
+(IMP-20260610-reduce-self-referential-overhead, T1 trace).
 
 ---
 

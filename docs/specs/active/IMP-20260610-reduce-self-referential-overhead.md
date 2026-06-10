@@ -94,16 +94,19 @@ only via ≥2 hops go from current count to 0.
   the linter. Amendment approved by owner before the `specify → plan` flip.)*
 - FR-3: Every rule marked MUST/Never/Always in `framework/boundaries.md` and
   `framework/spec-workflows/spec-lifecycle.md` MUST be reachable in ≤1 link
-  hop from one of those two files; existing ≥2-hop chains are inlined or
-  re-homed, and the one-hop convention is documented in
-  `docs/agent-protocol.md`.
-- FR-4: For **every** overlapping `docs/<topic>.md` ↔
-  `framework/skills/<topic>/SKILL.md` pair (full inventory taken in Task 1),
-  the **skill MUST own the agent-facing content** (skills are what agents
-  load during tasks); the doc MUST shrink to a one-line pointer plus any
-  human-facing rationale that has no place in a SKILL.md, or be deleted, with
-  inbound links updated. *(Ownership direction chosen by owner during the
-  Specify question round, 2026-06-10.)*
+  hop from one of those two files, and the one-hop convention MUST be
+  documented in `docs/agent-protocol.md`. *(Amended 2026-06-10 after the T1
+  audit, owner-approved: the ≥2-hop remediation set is empty — the invariant
+  already holds (T1 trace, Closure Evidence) — so only the convention
+  documentation remains as work.)*
+- FR-4: Each `docs/<topic>.md` ↔ `framework/skills/<topic>/SKILL.md` pair
+  MUST have exactly one content owner with the counterpart as a pointer.
+  *(Closed as already satisfied, 2026-06-10, owner-approved: the T1 audit
+  found 0 duplicated paragraphs across all 6 pairs; IMP-20260514 D3 already
+  established the consistent direction doc = content, skill = pointer.
+  The originally elected inverse direction (skill = content) was dropped —
+  inverting a consistent zero-duplication structure is churn without
+  measurable benefit. Task T5 cancelled accordingly.)*
 ## Acceptance Criteria
 ### AC-1: Anchor validation runs and fails on breakage (FR-1)
 Given the validation script is installed
@@ -122,20 +125,21 @@ IMP-20260514 archive context
 And the measurable benefit is verified: zero live documents reference the map
 as human-maintained prose (grep evidence), and the live file's line count
 drops to the inventory minimum (before/after counts in closure evidence).
-### AC-3: No mandatory rule is two hops away (FR-3)
+### AC-3: One-hop invariant holds and is documented (FR-3)
 Given the post-change tree
 When each MUST/Never/Always rule in `boundaries.md` and `spec-lifecycle.md` is
 traced to its full statement
-Then every trace resolves in ≤1 link hop
-And the measurable benefit is verified: the Task 1 baseline count of ≥2-hop
-chains is reduced to 0 (trace table in closure evidence).
+Then every trace resolves in ≤1 link hop (T1 trace re-confirmed at closure)
+and `docs/agent-protocol.md` documents the one-hop convention for future
+framework edits
+And the measurable benefit is verified: ≥2-hop chain count stays 0.
 ### AC-4: One source per overlapping topic (FR-4)
-Given the list of overlapping pairs identified in Task 1
-When each pair is deduplicated
-Then one file owns the content and the counterpart is a pointer or deleted,
-with `check-md-links.sh` green
-And the measurable benefit is verified: duplicated-paragraph count across
-pairs is 0 (grep evidence against the Task 1 baseline).
+Given the T1 pair inventory
+When ownership is verified
+Then every pair has exactly one content owner (doc = content, skill =
+pointer) and duplicated-paragraph count is 0
+And the measurable benefit is verified: satisfied by the T1 baseline
+(0 duplicates, consistent ownership) — no further change required.
 ## Architecture
 Skipped — meta-documentation and validation scripts only; no bounded context,
 data flow, schema, pipeline, or UI change.
@@ -161,11 +165,11 @@ no `depends-on:`.
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
 | T1 | Baseline audit (feeds AC-3/AC-4 metrics): (a) trace every MUST/Never/Always rule in `boundaries.md` + `spec-lifecycle.md` to its full statement, list chains needing ≥2 hops; (b) inventory all overlapping `docs/<topic>.md` ↔ `framework/skills/<topic>/SKILL.md` pairs with duplicated-paragraph counts. Record both baseline tables in this spec under Closure Evidence. Inventory only — no edits outside this spec. | this spec *(baseline tables)* | `framework/boundaries.md`; `framework/spec-workflows/spec-lifecycle.md`; `framework/skills/**/SKILL.md`; `docs/*.md` | — | writing-docs | deep | ☑ done |
-| T2 | Anchor validator (FR-1): `scripts/validate-anchors.py` (stdlib only, mirrors `lint-rules.py` conventions) — every intra-repo markdown link with a `#fragment` across `framework/**/*.md` + `docs/**/*.md` must resolve to an existing heading or `<a id>`; non-zero exit with `path:lineno`. Add `make validate-anchors`; hook into `make check` and `sync-agents-check`. Fixture: deliberate broken-anchor test. | `scripts/validate-anchors.py` *(new)*; `Makefile` | `scripts/lint-rules.py` *(precedent)*; `scripts/validate-specs.py` *(precedent)* | — | writing-specs | default | ☐ todo |
-| T3 | Rule-map split (FR-2): slim `docs/rule-canonical-map.md` to the machine-read inventory (rule id → canonical file → anchor → phrases) with a "machine-read by lint-rules.py" header; move audit narrative to `docs/specs/archived/IMP-20260514-rule-map-narrative.md`. `lint-rules.py` parser must keep passing without code changes; `make check` green. | `docs/rule-canonical-map.md`; `docs/specs/archived/IMP-20260514-rule-map-narrative.md` *(new)* | `scripts/lint-rules.py` *(parser contract)* | — | writing-docs | default | ☐ todo |
-| T4 | One-hop re-homing (FR-3): inline or re-home every ≥2-hop chain from the T1 list so each mandatory rule resolves in ≤1 hop from `boundaries.md` / `spec-lifecycle.md`; update map inventory entries for any relocated canonical text; document the one-hop convention in `docs/agent-protocol.md`. `make check` green (lint-rules + validate-anchors). | `framework/boundaries.md`; `framework/spec-workflows/spec-lifecycle.md`; `docs/agent-protocol.md`; `docs/rule-canonical-map.md` | T1 baseline table; chain-target files identified in T1 | T1; T2; T3 | writing-docs | deep | ☐ todo |
-| T5 | Docs↔skills dedup (FR-4): for every pair from the T1 inventory, skill keeps the agent-facing content; doc shrinks to a one-line pointer plus human-facing rationale, or is deleted; update inbound links. `make links-check` + `make check` green. | `framework/skills/**/SKILL.md`; `docs/<topic>.md` per T1 inventory | T1 pair inventory | T1; T2 | writing-docs | default | ☐ todo |
-| T6 | Closure (all ACs): run `make check` — all green; assemble before/after evidence (T1 baselines → 0 two-hop chains, 0 duplicated paragraphs, map line counts); bump `*Last updated:*` stamps; log lessons to `docs/improvements-log.md`; refresh `## Summary` if scope drifted. | all previously edited files *(verify only)*; `docs/improvements-log.md`; this spec | T1 baselines; HEAD post-T2-T5 | T4; T5 | writing-specs | default | ☐ todo |
+| T2 | Anchor validator (FR-1): `scripts/validate-anchors.py` (stdlib only, mirrors `lint-rules.py` conventions) — every intra-repo markdown link with a `#fragment` across `framework/**/*.md` + `docs/**/*.md` must resolve to an existing heading or `<a id>`; non-zero exit with `path:lineno`. Add `make validate-anchors`; hook into `make check` and `sync-agents-check`. Fixture: deliberate broken-anchor test. | `scripts/validate-anchors.py` *(new)*; `Makefile` | `scripts/lint-rules.py` *(precedent)*; `scripts/validate-specs.py` *(precedent)* | — | writing-specs | default | ☑ done |
+| T3 | Rule-map split (FR-2): slim `docs/rule-canonical-map.md` to the machine-read inventory (rule id → canonical file → anchor → phrases) with a "machine-read by lint-rules.py" header; move audit narrative to `docs/specs/archived/IMP-20260514-rule-map-narrative.md`. `lint-rules.py` parser must keep passing without code changes; `make check` green. | `docs/rule-canonical-map.md`; `docs/specs/archived/IMP-20260514-rule-map-narrative.md` *(new)* | `scripts/lint-rules.py` *(parser contract)* | — | writing-docs | default | ☑ done |
+| T4 | One-hop convention (FR-3, rescoped 2026-06-10): document the ≤1-hop reachability convention for mandatory rules in `docs/agent-protocol.md` (placement: near the canonical-rule guidance). No re-homing needed — T1 found 0 chains. `make check` green. | `docs/agent-protocol.md` | T1 trace table | T1; T2 | writing-docs | default | ☑ done |
+| T5 | ~~Docs↔skills dedup (FR-4)~~ **Cancelled 2026-06-10, owner-approved:** T1 found 0 duplicates and consistent doc=content / skill=pointer ownership (IMP-20260514 D3); FR-4 closed as already satisfied. | — | T1 pair inventory | — | — | — | ☒ cancelled |
+| T6 | Closure (all ACs): run `make check` — all green; assemble before/after evidence (map line counts, anchor-validator green, T1 trace re-confirmed); bump `*Last updated:*` stamps; log lessons to `docs/improvements-log.md`; refresh `## Summary` to post-rescope scope. | all previously edited files *(verify only)*; `docs/improvements-log.md`; this spec | T1 baselines; HEAD post-T2-T4 | T3; T4 | writing-specs | default | ☐ todo |
 ## Closure Evidence
 
 ### T1 baseline — rule-chain trace (feeds AC-3)
@@ -215,6 +219,61 @@ side-finding notes, `## Summary` (~9L), `## D2-D6 action queue` (~9L).
 Side-check: `check-md-links.sh` validates file existence only — `#fragment`
 resolution is unchecked today (FR-1 gap confirmed; the R10 side-finding in the
 map documents a historical broken anchor).
+
+### T2 evidence — anchor validator (AC-1)
+
+- `scripts/validate-anchors.py` created (stdlib only; mirrors
+  `lint-rules.py` / `validate-specs.py` conventions: `path:lineno:check:message`,
+  non-zero exit on findings, `find_repo_root` via `docs/specs/`).
+- Self-test fixture: `--self-test` builds a temp tree with one resolving and
+  one deliberately broken fragment; run output:
+  `validate-anchors: self-test OK (1 deliberate breakage caught).`
+- Wired into `Makefile`: new `validate-anchors` target; chained into
+  `sync-agents-check` and `check`; help text updated.
+- First real run caught 2 live broken anchors in `docs/writing-specs.md`
+  (lines 33, 108) pointing at never-existing `spec-workflows/README.md`
+  anchors — the same failure class as the historical R10 side-finding.
+  Both redirected to the canonical `spec-lifecycle.md` anchors (`#rules`,
+  `#visualize-triggers`).
+- Post-fix: `validate-anchors: OK (51 fragment link(s) across 69 file(s))`;
+  `make sync-agents-check` green end-to-end.
+
+### T3 evidence — rule-map split (AC-2)
+
+- Live `docs/rule-canonical-map.md`: 220 → 104 lines. Now carries only the
+  parser-consumed inventory (R1-R8: section header, Canonical location row,
+  verbatim phrases — phrase entries preserved byte-identical) plus a
+  "machine-read by lint-rules.py" header documenting the parser contract and
+  the update-with-rule-change obligation.
+- Narrative archived to
+  `docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md` (97
+  lines): audit method, per-rule restatement counts / linking sites / notes,
+  R9-R10 entries (anchor-only, no tracked phrases), R10 side-finding history,
+  "Rules NOT duplicated" reference table, D1 summary, completed D2-D6 queue.
+- Placed under `archived/artifacts/` (not flat `archived/`) because
+  `validate-specs.py` discovers `archived/*.md` flat and would have validated
+  the narrative as a spec — divergence from the task row's listed path,
+  flagged in the T3 Bottom Line.
+- HTML pointer comments in `boundaries.md` / `spec-lifecycle.md` updated for
+  the anchor-only rules (R9, R10) now documented in the narrative.
+- Verification: `lint-rules: OK (8 canonical rule(s) + 1 agent(s); 25
+  phrase(s) tracked)` — identical counts to pre-split, zero linter code
+  changes; `validate-specs: OK (17 specs)` — narrative not picked up as a
+  spec; `validate-anchors: OK`. Pre-existing failure: `make links-check` was
+  red before this spec (4 vendored links under `framework/skills/.system/`)
+  — out of scope, flagged for a separate trivial fix.
+
+### T4 evidence — one-hop convention documented (AC-3, documentation half)
+
+- New section `## Canonical rules: the one-hop convention` added to
+  `docs/agent-protocol.md`, placed directly after `## The Bottom Line`
+  (adjacent to the existing "cross-reference rather than duplicate"
+  guidance). States the ≤1-hop invariant, the add/move/cite editing rules,
+  the lint-rules / validate-anchors enforcement hooks, and cites the T1
+  trace as the verification record.
+- No rule text moved or changed (T1 found 0 chains to re-home).
+- Verification: `make sync-agents-check` green (validate-specs 17 specs,
+  lint-rules 8+1 rules / 25 phrases, validate-anchors 51 links / 70 files).
 
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.

@@ -1,6 +1,6 @@
 # Writing Specs
 
-*Last updated: 2026-06-05*
+*Last updated: 2026-06-10*
 
 Consolidated guidance for spec-driven work: lifecycle pointer, stage walk-throughs (Specify, Plan), writing-style rules, RFC 2119 keywords, the self-review additions, template usage, and anti-patterns. Topic-specific deep dives live in the linked docs.
 
@@ -30,7 +30,7 @@ Process diagram and gate rules:
 Each stage is a **separate chat turn** with fresh preflight. The spec
 file is one living document updated at every stage. Hard gates between
 every stage — see
-[`spec-workflows/README.md § Anti-skip rules`](../framework/spec-workflows/README.md#anti-skip-rules).
+[`spec-lifecycle.md § Rules`](../framework/spec-workflows/spec-lifecycle.md#rules).
 
 ---
 
@@ -105,7 +105,7 @@ Apply to all spec text during Specify and Plan.
    [`splitting-specs.md`](splitting-specs.md).
 6. Run **Visualize sub-step** if any trigger applies — per spec, after
    the split is resolved
-   (see [`spec-workflows/README.md § Visualize sub-step`](../framework/spec-workflows/README.md#visualize-sub-step-when-mandatory)).
+   (see [`spec-lifecycle.md § Visualize sub-step`](../framework/spec-workflows/spec-lifecycle.md#visualize-triggers)).
 7. **Gate:** human approves requirements (and architecture, if populated).
 
 ## Plan stage (detail)
