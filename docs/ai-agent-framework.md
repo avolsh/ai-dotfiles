@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-06-05*
+*Last updated: 2026-06-10*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -149,6 +149,21 @@ Three tiers of rules, from gentle to absolute:
 
 Full list: [`framework/boundaries.md`](../framework/boundaries.md).
 
+### Enforcement pyramid
+
+The highest-leverage rules are enforced mechanically, in three layers
+(earliest first); everything else remains prose-enforced:
+
+1. **Harness hooks** — canonical scripts in
+   [`framework/hooks/`](../framework/hooks/README.md), wired into Claude
+   Code, Copilot CLI, and Codex CLI via adapter configs rendered by
+   `ai-profile-init`: spec-status guard (PreToolUse), stamp refresh
+   (PostToolUse), `ai doctor --fast` (SessionStart).
+2. **Git pre-commit** (`make install-git-hooks`) — secrets scan + stamp
+   freshness for every client, including IDE agents without CLI hooks.
+3. **CI / `make check`** — `validate-specs`, `lint-rules`,
+   `validate-anchors`, plus all script self-tests (`make tests`).
+
 ## The spec workflow
 
 All work follows four statuses with human gates between each, then a
@@ -162,6 +177,12 @@ The four statuses are tracked in the spec front-matter; `archived/` is a
 **directory move**, not a separate status. See
 [Spec Workflow Guide](spec-workflow-guide.md) for the full walkthrough
 with diagrams.
+
+Three lanes scale the ceremony to the risk, smallest first: **Direct**
+(≤2 files / ≤30 lines, no spec — Bottom Line + improvements-log entry),
+**Trivial** (one combined gate), **Standard** (full gate sequence).
+`low`/`trivial`-risk closures may run review-after (batch-reviewed) — see
+[`spec-lifecycle.md`](../framework/spec-workflows/spec-lifecycle.md#direct-lane).
 
 ### Spec types
 
@@ -194,6 +215,10 @@ hidden debt.
 | Regenerate project `AGENTS.md` after editing `copilot-instructions.md` | `make sync-agents` (per project) |
 | Verify no drift (used by CI) | `make sync-agents-check` |
 | Validate spec corpus (front-matter, deps, naming, freshness, links, English-only, status invariants) | `make validate-specs` |
+| Verify active-profile invariants (symlinks, manifest) | `make doctor` |
+| Install the git pre-commit backstop (secrets, stamps) | `make install-git-hooks` |
+| Run all script self-tests | `make tests` |
+| Report framework-vs-product spec share by month | `make spec-metrics` |
 
 ## Key principles
 

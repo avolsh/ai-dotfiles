@@ -1,0 +1,37 @@
+{
+  "_comment": "Canonical hook wiring for Claude Code (IMP-20260610-mechanize-framework-guardrails T3). Rendered by ai-profile-init: @AI_DOTFILES@ is substituted and the 'hooks' key is merged into the profile's claude/settings.json. Do not edit the rendered copy.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/framework/hooks/spec-status-guard.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/framework/hooks/stamp-refresh.sh"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/scripts/ai-doctor.sh --fast"
+          }
+        ]
+      }
+    ]
+  }
+}

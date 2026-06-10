@@ -1,4 +1,4 @@
-.PHONY: help install install-check profile-init reset project workspace links-check validate-specs lint-rules validate-anchors sync-system-templates sync-agents-check check
+.PHONY: help install install-check profile-init reset project workspace links-check validate-specs lint-rules validate-anchors sync-system-templates sync-agents-check check doctor doctor-fast install-git-hooks tests spec-metrics
 
 help:
 	@echo "Targets:"
@@ -8,6 +8,10 @@ help:
 	@echo "  reset                      Remove active-profile env (ai-switch --reset)"
 	@echo "  project                    Scaffold current dir as a project repo"
 	@echo "  workspace                  Scaffold current dir as a workspace root"
+	@echo "  doctor                     Verify active-profile invariants (symlinks, manifest)"
+	@echo "  install-git-hooks          Point this repo's core.hooksPath at scripts/git-hooks"
+	@echo "  tests                      Run all script self-tests (hooks, doctor, pre-commit, metrics)"
+	@echo "  spec-metrics               Report framework-vs-product spec share by month"
 	@echo "  links-check                Verify markdown link integrity"
 	@echo "  validate-specs             Validate spec corpus (front-matter, deps, naming, etc.)"
 	@echo "  lint-rules                 Flag verbatim canonical-rule duplicates outside their canonical files"
@@ -41,6 +45,26 @@ project:
 workspace:
 	./scripts/ai-workspace.sh
 
+install-git-hooks:
+	git config core.hooksPath scripts/git-hooks
+	@echo "core.hooksPath -> scripts/git-hooks (pre-commit backstop active)"
+
+tests:
+	./framework/scripts/test/check-md-links.test.sh
+	./framework/scripts/test/hooks.test.sh
+	./scripts/test/ai-doctor.test.sh
+	./scripts/test/pre-commit.test.sh
+	./scripts/test/spec-metrics.test.sh
+
+spec-metrics:
+	python3 ./scripts/spec-metrics.py
+
+doctor:
+	./scripts/ai-doctor.sh
+
+doctor-fast:
+	./scripts/ai-doctor.sh --fast
+
 links-check:
 	./framework/scripts/check-md-links.sh
 
@@ -61,4 +85,4 @@ sync-system-templates:
 # canonical-rule duplicate lint + anchor-fragment resolution.
 sync-agents-check: validate-specs lint-rules validate-anchors
 
-check: links-check install-check validate-specs lint-rules validate-anchors
+check: links-check install-check validate-specs lint-rules validate-anchors tests

@@ -1,0 +1,44 @@
+{
+  "_comment": "Canonical hook wiring for Codex CLI (IMP-20260610-mechanize-framework-guardrails T3). Rendered by ai-profile-init into the profile's codex/hooks.json (CODEX_HOME) with @AI_DOTFILES@ substituted. Codex uses the same matcher-group shape and exit-2-deny contract as Claude Code.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/framework/hooks/spec-status-guard.sh",
+            "statusMessage": "spec-status-guard",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/framework/hooks/stamp-refresh.sh",
+            "statusMessage": "stamp-refresh",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/scripts/ai-doctor.sh --fast",
+            "statusMessage": "ai-doctor",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -2,7 +2,7 @@
 id: IMP-20260610-mechanize-framework-guardrails
 type: IMP
 date: 2026-06-10
-status: plan
+status: done
 owner: avolsh
 risk: medium
 affected-repos:
@@ -170,13 +170,56 @@ this decision is revisited.
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
-| T1 | Canonical hook scripts (FR-1): `spec-status-guard` (PreToolUse — deny code edits while the governing spec is at `specify`/`plan`), `secrets-scan` (block commits with secrets), `stamp-refresh` (PostToolUse — refresh `*Last updated:*` on edited `.md`). JSON-on-stdin contract shared by all three harnesses; tests in same task. Feeds AC-1. | `framework/hooks/spec-status-guard.sh` *(new)*, `framework/hooks/secrets-scan.sh` *(new)*, `framework/hooks/stamp-refresh.sh` *(new)*, `framework/hooks/README.md` *(new)*, `framework/scripts/test/hooks.test.sh` *(new)* | `framework/spec-workflows/spec-lifecycle.md`, `docs/improvements-log.md` | — | — | default | ☐ pending |
-| T2 | `ai doctor` (FR-3): verify every `.active-manifest` symlink resolves, `<system>/upstream/` resolves, tool homes exist; non-zero exit on failure; fast manifest-only mode for SessionStart; Make target + tests. Feeds AC-3. | `scripts/ai-doctor.sh` *(new)*, `scripts/test/ai-doctor.test.sh` *(new)*, `Makefile` | `scripts/ai-switch.sh`, `scripts/ai-profile-init.sh` | — | — | default | ☐ pending |
-| T3 | Per-harness adapters (FR-1, FR-3): hook-config templates wiring T1 scripts (PreToolUse/PostToolUse) + T2 doctor (SessionStart) for Claude Code, Copilot CLI, Codex CLI; render via `ai-profile-init`; verify one rule end-to-end per harness. Closes AC-1, AC-3. | `framework/templates/system/claude/hooks.json` *(new)*, `framework/templates/system/copilot/copilot-cli-policy.json` *(new)*, `framework/templates/system/codex/hooks.json` *(new)*, `scripts/ai-profile-init.sh` | `framework/hooks/`, `scripts/ai-doctor.sh` | T1, T2 | — | default | ☐ pending |
-| T4 | Git pre-commit backstop (FR-2): pre-commit running secrets-scan + stamp check + `make validate-specs`; installer via `core.hooksPath` that chains rather than clobbers existing hooks; tests with planted dummy secret and stale stamp. Closes AC-2. | `scripts/git-hooks/pre-commit` *(new)*, `scripts/test/pre-commit.test.sh` *(new)*, `Makefile` | `framework/hooks/secrets-scan.sh`, `framework/hooks/stamp-refresh.sh` | T1 | — | default | ☐ pending |
-| T5 | Lane & gate rules (FR-4, FR-5): Direct lane (≤2 files, ≤30 lines, no schema/prompt/boundary/cross-repo; Bottom Line + improvements-log mandatory) in `boundaries.md` + `spec-lifecycle.md`; review-after closure for `risk: low`/`trivial` with batch-review obligation and revert path; update the three overview docs. Closes AC-4, AC-5. | `framework/boundaries.md`, `framework/spec-workflows/spec-lifecycle.md`, `docs/agent-protocol.md`, `docs/ai-agent-framework.md`, `docs/spec-workflow-guide.md` | `docs/rule-canonical-map.md`, `framework/spec-workflows/questions/trivial-questions.md` | — | writing-docs | default | ☐ pending |
-| T6 | Meta-share metric (FR-6): `spec-metrics.py` reporting monthly framework-vs-product spec share from `docs/specs/archived/` (classified by `affected-repos`); Make target; record current baseline; tests. Closes AC-6. | `scripts/spec-metrics.py` *(new)*, `scripts/test/spec-metrics.test.sh` *(new)*, `Makefile` | `docs/specs/archived/`, `scripts/validate-specs.py` | — | — | fast | ☐ pending |
-| T7 | Closure: run every AC end-to-end, collect evidence per AC, `make check` + `validate-specs` + `lint-rules` + `sync-agents-check` green, improvements-log entry, refresh `## Summary` if scope drifted, flip `done`, archive. | `docs/specs/active/IMP-20260610-mechanize-framework-guardrails.md`, `docs/improvements-log.md` | all task outputs | T1–T6 | writing-specs | default | ☐ pending |
+| T1 | Canonical hook scripts (FR-1): `spec-status-guard` (PreToolUse — deny code edits while the governing spec is at `specify`/`plan`), `secrets-scan` (block commits with secrets), `stamp-refresh` (PostToolUse — refresh `*Last updated:*` on edited `.md`). JSON-on-stdin contract shared by all three harnesses; tests in same task. Feeds AC-1. | `framework/hooks/spec-status-guard.sh` *(new)*, `framework/hooks/secrets-scan.sh` *(new)*, `framework/hooks/stamp-refresh.sh` *(new)*, `framework/hooks/README.md` *(new)*, `framework/scripts/test/hooks.test.sh` *(new)* | `framework/spec-workflows/spec-lifecycle.md`, `docs/improvements-log.md` | — | — | default | ✅ done (2026-06-10) |
+| T2 | `ai doctor` (FR-3): verify every `.active-manifest` symlink resolves, `<system>/upstream/` resolves, tool homes exist; non-zero exit on failure; fast manifest-only mode for SessionStart; Make target + tests. Feeds AC-3. | `scripts/ai-doctor.sh` *(new)*, `scripts/test/ai-doctor.test.sh` *(new)*, `Makefile` | `scripts/ai-switch.sh`, `scripts/ai-profile-init.sh` | — | — | default | ✅ done (2026-06-10) |
+| T3 | Per-harness adapters (FR-1, FR-3): hook-config templates wiring T1 scripts (PreToolUse/PostToolUse) + T2 doctor (SessionStart) for Claude Code, Copilot CLI, Codex CLI; render via `ai-profile-init`; verify one rule end-to-end per harness. Closes AC-1, AC-3. | `framework/templates/system/claude/hooks.json` *(new)*, `framework/templates/system/copilot/copilot-cli-policy.json` *(new)*, `framework/templates/system/codex/hooks.json` *(new)*, `scripts/ai-profile-init.sh` | `framework/hooks/`, `scripts/ai-doctor.sh` | T1, T2 | — | default | ✅ done (2026-06-10) |
+| T4 | Git pre-commit backstop (FR-2): pre-commit running secrets-scan + stamp check + `make validate-specs`; installer via `core.hooksPath` that chains rather than clobbers existing hooks; tests with planted dummy secret and stale stamp. Closes AC-2. | `scripts/git-hooks/pre-commit` *(new)*, `scripts/test/pre-commit.test.sh` *(new)*, `Makefile` | `framework/hooks/secrets-scan.sh`, `framework/hooks/stamp-refresh.sh` | T1 | — | default | ✅ done (2026-06-10) |
+| T5 | Lane & gate rules (FR-4, FR-5): Direct lane (≤2 files, ≤30 lines, no schema/prompt/boundary/cross-repo; Bottom Line + improvements-log mandatory) in `boundaries.md` + `spec-lifecycle.md`; review-after closure for `risk: low`/`trivial` with batch-review obligation and revert path; update the three overview docs. Closes AC-4, AC-5. | `framework/boundaries.md`, `framework/spec-workflows/spec-lifecycle.md`, `docs/agent-protocol.md`, `docs/ai-agent-framework.md`, `docs/spec-workflow-guide.md` | `docs/rule-canonical-map.md`, `framework/spec-workflows/questions/trivial-questions.md` | — | writing-docs | default | ✅ done (2026-06-10) |
+| T6 | Meta-share metric (FR-6): `spec-metrics.py` reporting monthly framework-vs-product spec share from `docs/specs/archived/` (classified by `affected-repos`); Make target; record current baseline; tests. Closes AC-6. | `scripts/spec-metrics.py` *(new)*, `scripts/test/spec-metrics.test.sh` *(new)*, `Makefile` | `docs/specs/archived/`, `scripts/validate-specs.py` | — | — | fast | ✅ done (2026-06-10) |
+| T7 | Closure: run every AC end-to-end, collect evidence per AC, `make check` + `validate-specs` + `lint-rules` + `sync-agents-check` green, improvements-log entry, refresh `## Summary` if scope drifted, flip `done`, archive. | `docs/specs/active/IMP-20260610-mechanize-framework-guardrails.md`, `docs/improvements-log.md` | all task outputs | T1–T6 | writing-specs | default | ✅ done (2026-06-10) |
+## Closure Evidence
+
+- **AC-1 (cross-harness rule enforcement):** `framework/scripts/test/hooks.test.sh`
+  — 12 assertions green (deny at `specify` naming the spec, allow at
+  `in-progress`/ungoverned/spec-self, fail-open on malformed payload).
+  Per-harness demonstration (recorded in session, 2026-06-10): the same
+  `spec-status-guard.sh` denied with rc=2 under the Claude Code payload
+  (`tool_input.file_path`), the Codex payload (`tool_input.path`,
+  `apply_patch`), and the Copilot camelCase payload (`toolInput.filePath`).
+  Rendered adapters are valid JSON with `@AI_DOTFILES@` substituted:
+  `profiles/personal/{claude/settings.json,codex/hooks.json,copilot/hooks/framework-policy.json}`.
+  **Live fire:** during T5 the PostToolUse `stamp-refresh` hook auto-bumped
+  `docs/spec-workflow-guide.md` and `docs/ai-agent-framework.md` stamps in
+  the working Claude Code session — the wiring is active in production.
+- **AC-2 (pre-commit backstop):** `scripts/test/pre-commit.test.sh` — 6
+  assertions green: planted `AKIA…` secret rejected citing the file, staged
+  `.env` rejected, stale stamp rejected citing the file,
+  `SKIP_STAMP_CHECK=1` escape hatch works, fresh stamp passes, repo-local
+  hook chained (its rc controls the outcome). `make install-git-hooks`
+  applied to this repo (`core.hooksPath = scripts/git-hooks`).
+- **AC-3 (self-announcing profile breakage):** `scripts/test/ai-doctor.test.sh`
+  — 7 assertions green (broken symlink fails naming the path, repair
+  restores rc=0, fast mode, manifest mismatch/consistency, missing profile).
+  Live run found 5 real pre-existing failures: `upstream` link missing in
+  all three tool dirs (fixed by adding `upstream` to the profile-init refs
+  and re-initializing) and 2 stale `.active-manifest` targets (logged to
+  improvements-log; cleared by the next `ai personal` switch). 100% of
+  manifest entries checked.
+- **AC-4 (Direct lane codified):** `spec-lifecycle.md § Direct lane`
+  (anchor `direct-lane`), `boundaries.md` Always #3 + Never #2 link to it
+  (one-hop); lanes overview added to `spec-workflow-guide.md` and
+  `ai-agent-framework.md`. `make validate-specs` + `make lint-rules` +
+  `make validate-anchors` all OK after the edits.
+- **AC-5 (review-after closure):** `spec-lifecycle.md § Review-after closure`
+  (anchor `review-after-closure`) — low/trivial only, batch-review
+  obligation + revert path stated; transition table row updated;
+  `boundaries.md` Never #4 amended; requirements/plan gates unchanged.
+- **AC-6 (meta-share metric):** `scripts/test/spec-metrics.test.sh` green;
+  `make spec-metrics` baseline on the live corpus (2026-06-10):
+  2026-05 → 15 framework / 0 product (100%), 2026-06 → 2 framework / 0
+  product (100%), total 17/0 — the meta-share watch threshold (>30%) is
+  exceeded, exactly the gravity this metric now makes visible.
+
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`. Changes to
 `boundaries.md` and `spec-lifecycle.md` are "Ask first" — they land only inside this

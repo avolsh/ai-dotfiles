@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# scripts/git-hooks/pre-commit
+#
+# Git backstop (FR-2, IMP-20260610-mechanize-framework-guardrails): enforces
+# the commit-time rules for every client, including IDE-embedded agents that
+# bypass CLI lifecycle hooks. Install with `make install-git-hooks`
+# (sets core.hooksPath); an existing repo-local .git/hooks/pre-commit is
+# chained after these checks pass, never clobbered.
+#
+# Checks:
+#   1. secrets — framework/hooks/secrets-scan.sh on the staged changes
+#      (boundaries.md § Never do #1)
+#   2. stamp freshness — staged *.md carrying a `*Last updated:*` line must
+#      be stamped with today's date (boundaries.md § Always do #10);
+#      escape hatch: SKIP_STAMP_CHECK=1 git commit ...
+set -euo pipefail
+
+HOOKS_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+DF="${AI_DOTFILES:-$(cd "$HOOKS_DIR/../.." && pwd)}"
+SCAN="$DF/framework/hooks/secrets-scan.sh"
+
+fail=0
+
+if [ -x "$SCAN" ]; then
+  "$SCAN" || fail=1
+else
+  echo "pre-commit: WARN secrets-scan not found at $SCAN (set AI_DOTFILES)" >&2
+fi
+
+if [ "${SKIP_STAMP_CHECK:-0}" != "1" ]; then
+  today="$(date +%F)"
+  while IFS= read -r f; do
+    case "$f" in
+      *_legacy/*|*upstream/*|docs/specs/archived/*) continue ;;
+    esac
+    case "$f" in
+      *.md) ;;
+      *) continue ;;
+    esac
+    stamp="$(git show ":$f" 2>/dev/null | sed -n 's/^\*Last updated: \([0-9][0-9-]*\)\*$/\1/p' | head -1)"
+    [ -n "$stamp" ] || continue
+    if [ "$stamp" != "$today" ]; then
+      echo "pre-commit: stale '*Last updated:*' stamp in $f ($stamp, expected $today)." >&2
+      echo "            Bump the stamp, or bypass once with: SKIP_STAMP_CHECK=1 git commit ..." >&2
+      fail=1
+    fi
+  done < <(git diff --cached --name-only --diff-filter=ACM)
+fi
+
+[ "$fail" -eq 0 ] || exit 1
+
+# Chain to the repo-local hook that core.hooksPath would otherwise shadow.
+if [ -x "$REPO_ROOT/.git/hooks/pre-commit" ]; then
+  exec "$REPO_ROOT/.git/hooks/pre-commit" "$@"
+fi
+exit 0

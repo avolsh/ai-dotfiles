@@ -85,7 +85,7 @@ link_framework() {
   local target_dir="$profile_dir/$tool"
   local ref
 
-  for ref in spec-workflows prompts templates skills agents; do
+  for ref in spec-workflows prompts templates skills agents upstream; do
     if [ -d "$AI_DOTFILES/framework/$ref" ]; then
       if [ -L "$target_dir/$ref" ]; then
         rm -f "$target_dir/$ref"
@@ -104,5 +104,45 @@ link_framework() {
 link_framework claude
 link_framework copilot
 link_framework codex
+
+# --- 4. Render hook adapter configs (IMP-20260610-mechanize-framework-guardrails T3) ---
+# Canonical templates carry @AI_DOTFILES@ placeholders; rendered copies are
+# real files (not symlinks) so each harness reads absolute script paths.
+render_hook_template() { # $1 tool, $2 template filename, $3 rendered relative path
+  local template="$AI_DOTFILES/framework/templates/system/$1/$2"
+  local out="$profile_dir/$1/$3"
+  [ -f "$template" ] || return 0
+  mkdir -p "$(dirname "$out")"
+  sed "s|@AI_DOTFILES@|$AI_DOTFILES|g" "$template" > "$out"
+  _log "rendered: $out"
+}
+
+render_hook_template codex   hooks.json              hooks.json
+render_hook_template copilot copilot-cli-policy.json hooks/framework-policy.json
+
+# Claude Code reads hooks from settings.json — merge the rendered 'hooks'
+# key into the profile's claude/settings.json, preserving every other key.
+merge_claude_hooks() {
+  local template="$AI_DOTFILES/framework/templates/system/claude/hooks.json"
+  local settings="$profile_dir/claude/settings.json"
+  [ -f "$template" ] || return 0
+  AI_DOTFILES="$AI_DOTFILES" python3 - "$template" "$settings" <<'PY'
+import json, os, sys
+template_path, settings_path = sys.argv[1], sys.argv[2]
+with open(template_path, encoding="utf-8") as fh:
+    rendered = fh.read().replace("@AI_DOTFILES@", os.environ["AI_DOTFILES"])
+hooks = json.loads(rendered)["hooks"]
+settings = {}
+if os.path.exists(settings_path):
+    with open(settings_path, encoding="utf-8") as fh:
+        settings = json.load(fh)
+settings["hooks"] = hooks
+with open(settings_path, "w", encoding="utf-8") as fh:
+    json.dump(settings, fh, indent=2)
+    fh.write("\n")
+print(f"merged hooks into: {settings_path}", file=sys.stderr)
+PY
+}
+merge_claude_hooks
 
 printf '✓ profile=%s initialized at %s\n' "$profile" "$profile_dir"

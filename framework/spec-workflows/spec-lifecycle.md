@@ -59,7 +59,7 @@ stateDiagram-v2
 | `[start]` → `specify`  | Human asked for a new spec                                                                                       | Copy template, fill front-matter, write title — status `specify` from birth |
 | `specify` → `plan`     | Human approved requirements (and architecture if Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                         |
 | `plan` → `in-progress` | Human approved the plan, first task begins                                                                       | Flip status **before** the first file edit of Task 1                        |
-| `in-progress` → `done` | Every AC has evidence, tests pass, docs updated                                                                  | Flip status, post closure summary                                           |
+| `in-progress` → `done` | Every AC has evidence, tests pass, docs updated. Closure approval is synchronous for `medium`/`high` risk; `low`/`trivial` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
 | `done` → `archived/`   | Immediately after closure                                                                                        | Move file from `docs/specs/active/` to `docs/specs/archived/`               |
 
 **No status is skipped. No status is revisited in place** — if the plan
@@ -185,8 +185,8 @@ being `done`.
 
 The Trivial lane is a parallel short-circuit of the standard lifecycle for changes too small to warrant the full
 Specify → Plan → in-progress gate sequence. It elects in via `risk: trivial` (CR/IMP) or `severity: trivial` (BUG). The
-Closure gate is **unchanged** — every AC still needs evidence, and the human still flips `in-progress → done`
-explicitly.
+Closure evidence requirement is **unchanged** — every AC still needs evidence; the closure approval may run
+review-after per [§ Review-after closure](#review-after-closure).
 
 ### Status sequence
 
@@ -242,6 +242,54 @@ IMP-20260514-trivial-lane Task T2).
    as `done` with `outcome: scope-grew` (one-line note) and the work re-opens as a standard-track spec.
 4. **No retroactive reclassification.** Archived specs (`docs/specs/archived/`) MUST NOT have `risk:` or `severity:`
    flipped to `trivial`. The lane applies only to specs created after this rule lands.
+
+## Direct lane <a id="direct-lane"></a>
+
+The Direct lane covers owner-approved changes too small for any spec — the
+"owner-approved direct edit" practice the improvements log already records,
+now with a canonical home (IMP-20260610-mechanize-framework-guardrails FR-4).
+
+**Eligibility — all MUST hold:**
+
+- ≤ 2 files and ≤ 30 changed lines in total.
+- No schema change (front-matter, baseline, type system, API contract).
+- No change to AI prompts (`framework/prompts/`, project prompt catalogs).
+- No change to `framework/boundaries.md`, this file, or any project
+  `_canonical.md` § Boundaries (including rendered agent files).
+- Single repo; no cross-repo impact.
+- The owner explicitly approved the specific change in chat **before** the edit.
+
+**Obligations — both MUST happen:**
+
+1. Post **The Bottom Line** for the change
+   ([`agent-protocol.md § Bottom Line`](../../docs/agent-protocol.md#the-bottom-line--canonical-format)).
+2. Land an entry in the project's `docs/improvements-log.md` in the same
+   session (what changed, why, owner approval noted).
+
+Anything beyond the threshold falls back to the Trivial lane (if eligible)
+or the standard track. The Direct lane is **not** a skip of judgment — it is
+the codification of the smallest unit of owner-approved work; when in doubt,
+write a spec.
+
+## Review-after closure <a id="review-after-closure"></a>
+
+For specs with `risk: low` or `risk: trivial` (BUG: `severity: low`/`trivial`),
+the closure approval MAY run **review-after** (IMP-20260610-mechanize-framework-guardrails FR-5):
+
+- The agent flips `in-progress → done` and archives **immediately** once
+  every AC has documented evidence and the closure summary is posted —
+  no synchronous wait on the owner.
+- The owner reviews review-after closures **in batch**: each closure summary
+  is linkable from the archived spec; the improvements log cross-references
+  any review-after closure landed since the last batch review.
+- **Revert path:** if batch review rejects a closure, the spec moves back to
+  `docs/specs/active/` at `status: in-progress`, the rejected evidence rows
+  are voided, and the offending change is reverted or re-worked under the
+  reopened spec.
+
+`medium`/`high` risk closures remain synchronous. Requirements and plan
+gates remain blocking for **all** lanes — review-after applies to the
+closure gate only.
 
 ## Visualize sub-step (Specify) <a id="visualize-triggers"></a>
 

@@ -14,7 +14,9 @@
 2. **Ensure `CLAUDE.md` and `AGENTS.md` exist** at every project root and the workspace root; if missing, create them
    via the scaffold manifest before any other work.
 3. **Follow the spec workflow** — no coding until `in-progress`. See [
-   `spec-workflows/spec-lifecycle.md`](spec-workflows/spec-lifecycle.md).
+   `spec-workflows/spec-lifecycle.md`](spec-workflows/spec-lifecycle.md). Sole exception: owner-approved changes
+   within the Direct lane ([`spec-lifecycle.md § Direct lane`](spec-workflows/spec-lifecycle.md#direct-lane)).
+   This rule is also enforced mechanically by the `spec-status-guard` hook ([`hooks/README.md`](hooks/README.md)).
 4. **Post task-start preflight proof** — `Task #`, precedent files read, loaded skill paths (with scope) — before the
    first edit in each task.
 5. **Load all task skills before coding** — resolve project-first, then workspace (two-scope lookup).
@@ -47,11 +49,16 @@
 2. <a id="never-skip-specify"></a>**Never** skip the Specify stage — even a trivial bug needs confirmed understanding
    via the question round. The Trivial lane ([
    `spec-lifecycle.md § Trivial lane`](spec-workflows/spec-lifecycle.md#trivial-lane)) is NOT a skip: Specify still
-   runs, just combined with Plan into a single gate (≤3 questions instead of ≤10).
+   runs, just combined with Plan into a single gate (≤3 questions instead of ≤10). The only spec-less path is the
+   Direct lane ([`spec-lifecycle.md § Direct lane`](spec-workflows/spec-lifecycle.md#direct-lane)) — ≤2 files,
+   ≤30 lines, owner-approved in advance, Bottom Line + improvements-log entry mandatory.
 3. **Never** populate `## Tasks` before Plan — canonical rule at [
    `spec-lifecycle.md § Rules #2`](spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify).
 4. **Never** flip a spec's status without the preceding human gate — three specific cases at [
-   `spec-lifecycle.md § Rules #3-#5`](spec-workflows/spec-lifecycle.md#never-flip-without-gate).
+   `spec-lifecycle.md § Rules #3-#5`](spec-workflows/spec-lifecycle.md#never-flip-without-gate). The closure gate
+   for `low`/`trivial` risk may run asynchronously per [
+   `spec-lifecycle.md § Review-after closure`](spec-workflows/spec-lifecycle.md#review-after-closure); requirements
+   and plan gates are blocking in every lane.
 5. **Never** mix refactoring and feature work in the same task — extract into a separate task (or IMP spec) if scope is
    large.
 6. <a id="continue-single-task-only"></a>**Never** treat a one-word affirmation as approval for multiple tasks or

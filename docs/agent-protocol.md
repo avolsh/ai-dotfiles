@@ -142,6 +142,25 @@ Three mechanisms eliminate most exploration:
 
 ---
 
+## Mechanical enforcement layer
+
+Three behavioural rules are enforced by tooling, not prose (canonical
+scripts: [`framework/hooks/README.md`](../framework/hooks/README.md);
+introduced by IMP-20260610-mechanize-framework-guardrails):
+
+| Layer | Mechanism | Enforces |
+|---|---|---|
+| Harness hooks (Claude Code, Copilot CLI, Codex CLI) | adapter configs rendered by `ai-profile-init` | spec-status guard (PreToolUse), stamp refresh (PostToolUse), `ai doctor --fast` (SessionStart) |
+| Git pre-commit (`make install-git-hooks`) | `scripts/git-hooks/pre-commit` | secrets scan + stamp freshness for every client, incl. IDE agents |
+| CI / `make check` | `validate-specs`, `lint-rules`, `validate-anchors`, `tests` | artifact-level invariants |
+
+A hook denial is not an obstacle to route around — it is the rule firing.
+Fix the state (e.g., advance the spec through its gate), don't bypass the
+hook. `scripts/ai-doctor.sh` (`make doctor`) verifies profile symlinks and
+manifest consistency; run it whenever `<system>/` path resolution misbehaves.
+All remaining boundaries rules stay prose-enforced — hooks narrow the gap,
+they do not replace judgment.
+
 ## Pre-flight checklist (before any file edit)
 
 - [ ] Read the target project's architecture docs.
