@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-06-05*
+*Last updated: 2026-06-10*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -83,3 +83,27 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** The two convention follow-ups logged earlier today (specs too verbose; FRs enumerating files by name) had no home in the canonical writing-style guidance.
 - **What was changed:** `docs/writing-specs.md` — added a Forbidden bullet (no point restated across Summary / Current State / Proposed Improvement; FR/AC contract carries the spec), anti-pattern #12 (don't enumerate files inside an FR; phrase generically + grep at Plan), and a Plan-stage note to grep for the full set when an FR names an affected set by capability. Owner approved direct edits (no spec) for these two entries only.
 - **Suggested follow-up:** None — entries #1 and #3 from earlier today are now resolved in canonical guidance.
+
+### 2026-06-10 — Audit-first ordering caught a stale premise before it became churn
+
+- **Spec / task:** IMP-20260610-reduce-self-referential-overhead / T1
+- **Category:** pattern
+- **What was found:** The spec's FR-3 (re-home ≥2-hop rule chains) and FR-4 (dedup docs↔skills pairs) were premised on a code-review impression. The T1 baseline audit measured both: 0 two-hop chains, 0 duplicated paragraphs — IMP-20260514 D3 had already done the work. Executing FR-4 as approved (inverting content ownership) would have been pure churn. Similarly, the original FR-2 ("archive the rule map") assumed the map was unconsumed; checking the tooling revealed `lint-rules.py` machine-reads it, forcing an amendment.
+- **What was changed:** T4 rescoped to convention-documentation only; T5 cancelled; FR-4 closed as already satisfied (owner-approved). FR-2 amended to a split (live machine inventory + archived narrative) before the plan gate.
+- **Suggested follow-up:** When an IMP's premise comes from impression rather than measurement, make Task 1 a measurement-only task and gate the remaining tasks on its numbers. Verify any "X is unused" claim against the Makefile/scripts before approving a removal FR.
+
+### 2026-06-10 — Anchor-fragment validation paid for itself on the first run
+
+- **Spec / task:** IMP-20260610-reduce-self-referential-overhead / T2
+- **Category:** tooling
+- **What was found:** `check-md-links.sh` validates file existence only; `#fragment` resolution was unchecked. The new `scripts/validate-anchors.py` caught 2 live broken anchors in `docs/writing-specs.md` on its first run — links to anchors that never existed in `spec-workflows/README.md`, the exact failure class documented (and supposedly closed) by the R10 side-finding of IMP-20260514 D1.
+- **What was changed:** `validate-anchors` target wired into `make check` and `make sync-agents-check`; the two stale links redirected to the canonical `spec-lifecycle.md` anchors.
+- **Suggested follow-up:** None — the class is now mechanically enforced.
+
+### 2026-06-10 — `validate-specs` flat-glob constrains what can live in `archived/`
+
+- **Spec / task:** IMP-20260610-reduce-self-referential-overhead / T3
+- **Category:** tooling
+- **What was found:** `discover_specs` globs `docs/specs/{active,archived}/*.md` flat, so any non-spec markdown placed directly in `archived/` is validated as a spec and fails on missing front-matter. The archived rule-map narrative had to live in `archived/artifacts/` instead of the path listed in the task row.
+- **What was changed:** Created `docs/specs/archived/artifacts/` for non-spec closure artifacts; divergence recorded in the T3 Bottom Line.
+- **Suggested follow-up:** Document the `archived/artifacts/` convention in `docs/spec-templates-guide.md` (or make `discover_specs` skip declared artifact subtrees explicitly) so future closures don't rediscover this.

@@ -4,8 +4,10 @@
 # Verifies that every relative markdown link [text](path) inside the
 # ai-dotfiles markdown sources resolves to an existing file in the repo.
 #
-# Scope (default): framework/**/*.md (excluding framework/templates/ and
-# framework/upstream/), docs/**/*.md, and the ai-dotfiles README.md.
+# Scope (default): framework/**/*.md (excluding framework/templates/,
+# framework/upstream/, and framework/skills/.system/ — vendored upstream
+# mirrors whose links target their original hosting site), docs/**/*.md,
+# and the ai-dotfiles README.md.
 #
 # Custom scope: ./framework/scripts/check-md-links.sh path1 path2 ...
 #
@@ -28,7 +30,8 @@ else
     {
       [[ -d "$ROOT/framework" ]] && find "$ROOT/framework" -type f -name '*.md' \
         -not -path "$ROOT/framework/templates/*" \
-        -not -path "$ROOT/framework/upstream/*"
+        -not -path "$ROOT/framework/upstream/*" \
+        -not -path "$ROOT/framework/skills/.system/*"
       [[ -d "$ROOT/docs" ]] && find "$ROOT/docs" -type f -name '*.md'
       [[ -f "$ROOT/README.md" ]] && echo "$ROOT/README.md"
     } | sort -u

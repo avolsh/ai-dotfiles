@@ -2,7 +2,7 @@
 id: IMP-20260610-reduce-self-referential-overhead
 type: IMP
 date: 2026-06-10
-status: in-progress
+status: done
 owner: avolsh
 risk: medium
 affected-repos:
@@ -28,18 +28,22 @@ model-suggestion: default
 # IMP-20260610-reduce-self-referential-overhead
 *Last updated: 2026-06-10*
 ## Summary
-- **Goal:** Cut the framework's self-maintenance surface — the hand-kept rule
-  map, multi-hop rule chains, and duplicated `docs/` ↔ `framework/skills/`
-  content — by moving enforcement into scripts and collapsing each topic to a
-  single content source.
-- **Scope:** Framework meta-docs and validation scripts in `ai-dotfiles` only:
-  disposition of `docs/rule-canonical-map.md`, mechanical anchor validation,
-  a documented one-hop reachability rule for mandatory rules (plus an audit of
-  existing chains), and deduplication of overlapping `docs/<topic>.md` /
-  `framework/skills/<topic>/SKILL.md` pairs (one source + one-line pointer).
+*(Refreshed at closure, 2026-06-10, per the Summary-refresh closure rule —
+scope narrowed after the T1 audit.)*
+- **Goal:** Cut the framework's self-maintenance surface by moving anchor
+  enforcement into a script and splitting the rule map into a machine-read
+  inventory plus archived narrative.
+- **Scope (as delivered):** `scripts/validate-anchors.py` + Makefile wiring
+  (FR-1); `docs/rule-canonical-map.md` split — 104-line machine inventory
+  live, narrative archived to `docs/specs/archived/artifacts/` (FR-2); the
+  one-hop reachability convention documented in `docs/agent-protocol.md`
+  (FR-3, rescoped — the T1 audit found 0 chains to re-home); FR-4
+  (docs↔skills dedup) closed as already satisfied by IMP-20260514 D3 —
+  0 duplicates measured, task T5 cancelled.
 - **Out of scope:** Changing any rule's meaning; renaming `.github/copilot/*`
   catalog directories; CI wiring beyond the existing local script entry points;
-  downstream project adoption.
+  downstream project adoption; the pre-existing vendored `links-check`
+  failures under `framework/skills/.system/` (flagged separately).
 ## Cost Estimate
 
 | Estimate | Value |
@@ -169,7 +173,7 @@ no `depends-on:`.
 | T3 | Rule-map split (FR-2): slim `docs/rule-canonical-map.md` to the machine-read inventory (rule id → canonical file → anchor → phrases) with a "machine-read by lint-rules.py" header; move audit narrative to `docs/specs/archived/IMP-20260514-rule-map-narrative.md`. `lint-rules.py` parser must keep passing without code changes; `make check` green. | `docs/rule-canonical-map.md`; `docs/specs/archived/IMP-20260514-rule-map-narrative.md` *(new)* | `scripts/lint-rules.py` *(parser contract)* | — | writing-docs | default | ☑ done |
 | T4 | One-hop convention (FR-3, rescoped 2026-06-10): document the ≤1-hop reachability convention for mandatory rules in `docs/agent-protocol.md` (placement: near the canonical-rule guidance). No re-homing needed — T1 found 0 chains. `make check` green. | `docs/agent-protocol.md` | T1 trace table | T1; T2 | writing-docs | default | ☑ done |
 | T5 | ~~Docs↔skills dedup (FR-4)~~ **Cancelled 2026-06-10, owner-approved:** T1 found 0 duplicates and consistent doc=content / skill=pointer ownership (IMP-20260514 D3); FR-4 closed as already satisfied. | — | T1 pair inventory | — | — | — | ☒ cancelled |
-| T6 | Closure (all ACs): run `make check` — all green; assemble before/after evidence (map line counts, anchor-validator green, T1 trace re-confirmed); bump `*Last updated:*` stamps; log lessons to `docs/improvements-log.md`; refresh `## Summary` to post-rescope scope. | all previously edited files *(verify only)*; `docs/improvements-log.md`; this spec | T1 baselines; HEAD post-T2-T4 | T3; T4 | writing-specs | default | ☐ todo |
+| T6 | Closure (all ACs): run `make check` — all green; assemble before/after evidence (map line counts, anchor-validator green, T1 trace re-confirmed); bump `*Last updated:*` stamps; log lessons to `docs/improvements-log.md`; refresh `## Summary` to post-rescope scope. | all previously edited files *(verify only)*; `docs/improvements-log.md`; this spec | T1 baselines; HEAD post-T2-T4 | T3; T4 | writing-specs | default | ☑ done |
 ## Closure Evidence
 
 ### T1 baseline — rule-chain trace (feeds AC-3)
@@ -274,6 +278,22 @@ map documents a historical broken anchor).
 - No rule text moved or changed (T1 found 0 chains to re-home).
 - Verification: `make sync-agents-check` green (validate-specs 17 specs,
   lint-rules 8+1 rules / 25 phrases, validate-anchors 51 links / 70 files).
+
+### T6 evidence — closure verification (all ACs)
+
+| AC | Status | Evidence |
+|---|---|---|
+| AC-1 (validator) | ✅ | T2 evidence: self-test catches deliberate breakage; real tree green (51 fragment links / 70 files); wired into `check` + `sync-agents-check`; caught 2 live breakages on first run |
+| AC-2 (map split) | ✅ | T3 evidence: live map 220 → 104 lines, machine-read label present; narrative archived (97 lines); `lint-rules` identical counts (8+1 rules, 25 phrases) with zero linter code changes |
+| AC-3 (one-hop) | ✅ | T1 trace: 0 chains ≥2 hops (re-confirmed at closure — rule files unchanged since T1 except pointer comments); convention documented in `agent-protocol.md` (T4) |
+| AC-4 (dedup) | ✅ | T1 baseline: 0 duplicated paragraphs across all 6 pairs, consistent doc=content / skill=pointer ownership — satisfied without change (owner-approved rescope) |
+
+Final verification run (2026-06-10): `validate-specs: OK (17 specs)`,
+`lint-rules: OK (8+1; 25 phrases)`, `validate-anchors: OK (51/70)`,
+`install-check: OK`. `links-check` red on 4 pre-existing vendored links under
+`framework/skills/.system/` — predates this spec, out of scope, flagged for a
+separate trivial fix. Lessons logged to `docs/improvements-log.md` (3 entries,
+2026-06-10). Stamps bumped on all modified docs.
 
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
