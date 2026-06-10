@@ -1,19 +1,33 @@
-# upstream/ — pending placeholder
+# upstream/ — external skill & agent catalogs
 
-This directory is reserved for the upstream skill catalog submodule (previously
-hosted under tobevisit's old workspace framework root, now deleted by FR-29 of
-the bootstrap IMP).
+*Last updated: 2026-06-10*
 
-**Status:** Not yet populated. Re-pointing or re-adding the submodule is deferred to a
-future spec (see `IMP-20260504-ai-dotfiles-bootstrap` OS-6 / followup `IMP-20260505-ai-dotfiles-followups` FR-9).
+Read-only submodules used as a **quarry**: cherry-pick entries, copy them
+into `framework/skills/` (or a project's `.github/copilot/skills/`), and
+adapt to the framework's format (two-scope model, `<system>/` prefixes).
+Never symlink upstream content directly into the active catalog — an
+upstream update must not silently change agent behaviour
+(see `framework/boundaries.md § Ask first`).
 
-References inside `framework/` files use `<system>/upstream/...` which resolves to this
-directory via the symlinks created by `ai-switch.sh` step 4a. Those links are intentionally
-broken until this directory is populated — the broken state is visible and deliberate.
+## Submodules
 
-## When this becomes actionable
+| Path | Upstream | Purpose |
+|---|---|---|
+| `mcp-server-guide/` | `figma/mcp-server-guide` | Figma MCP server reference |
+| `anthropic-skills/` | `anthropics/skills` | Official Anthropic skill catalog; canonical SKILL.md format reference |
+| `superpowers/` | `obra/superpowers` | Methodology skills (TDD, debugging, planning) — cherry-pick only; its workflow does not replace the spec lifecycle |
+| `volt-skills/` | `VoltAgent/awesome-agent-skills` | 1000+ cross-harness skills (Claude Code, Codex, Cursor) |
+| `wshobson-agents/` | `wshobson/agents` | Sub-agent definitions and multi-harness plugins; convert to skills unless a mechanical sub-agent need exists (`framework/agents/README.md`) |
 
-Once `IMP-20260505-ai-dotfiles-followups` FR-9 advances to `in-progress`:
-1. Add the upstream submodule here (or copy it from its current location).
-2. Remove this placeholder notice.
-3. Verify `<system>/upstream/claude-skills/` resolves correctly from each tool home.
+## Updating
+
+Submodules are pinned to a SHA. Update deliberately, review the diff —
+catalog updates are framework-file changes:
+
+```sh
+git submodule update --remote framework/upstream/<name>
+git diff --submodule framework/upstream/<name>
+```
+
+References inside `framework/` files use `<system>/upstream/...`, which
+resolves here via the symlinks created by `ai-switch.sh` step 4a.
