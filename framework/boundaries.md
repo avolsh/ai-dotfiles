@@ -1,15 +1,16 @@
 # Boundaries
 
-*Last updated: 2026-05-26*
+*Last updated: 2026-06-10*
 
 <!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R9). Other framework files link to these anchors rather than restate the rules. -->
 
-> **System-scope** rules for all AI agents. Projects MAY extend via their `.github/copilot-instructions.md` §
-> Boundaries; project rules win on conflict. Three tiers, severity increases top to bottom.
+> **System-scope** rules for all AI agents. Projects MAY extend via their `_canonical.md` § Boundaries
+> (rendered into all three agent files by `make sync-agents`); project rules win on conflict. Three tiers,
+> severity increases top to bottom.
 
 ## Always do
 
-1. **Read the project's `.github/copilot-instructions.md` first** — project-scope authority. `AGENTS.md` is a generated copy (via `make sync-agents`); never edit it directly. Harnesses that read only `AGENTS.md` (e.g. Codex) get byte-identical content.
+1. **Read your agent's project instructions file first** — `CLAUDE.md` (Claude Code), `AGENTS.md` (Codex), or `.github/copilot-instructions.md` (Copilot). All three are byte-identical copies rendered from `_canonical.md` (via `make sync-agents`) — the project-scope authority. Never edit a rendered copy directly; edit `_canonical.md` and re-render.
 2. **Ensure `CLAUDE.md` and `AGENTS.md` exist** at every project root and the workspace root; if missing, create them
    via the scaffold manifest before any other work.
 3. **Follow the spec workflow** — no coding until `in-progress`. See [
@@ -18,7 +19,7 @@
    first edit in each task.
 5. **Load all task skills before coding** — resolve project-first, then workspace (two-scope lookup).
 6. **Include tests in the same task** as feature or fix logic; never defer to a follow-up task or spec.
-7. **Run build and test** per the project's `.github/copilot-instructions.md` § Build and Run before posting "The Bottom Line".
+7. **Run build and test** per the project's agent-instructions file § Build and Run before posting "The Bottom Line".
 8. **Write all file output in English.** Chat may use any language, but filesystem content (specs, docs, code comments,
    commit messages, `.github/` files) MUST be English.
 9. **Post "The Bottom Line"** in the canonical format ([

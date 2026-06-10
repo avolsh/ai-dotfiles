@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-06-05*
+*Last updated: 2026-06-10*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -207,8 +207,8 @@ A spec MUST satisfy all of these to elect `trivial`:
 - No `depends-on:` (autonomous by construction)
 - No schema change (front-matter, baseline, type system, API contract)
 - No new bounded context
-- No change to AI prompts under `framework/prompts/` or `<project>/.github/copilot/prompts/`
-- No change to `framework/boundaries.md` or any `<project>/.github/copilot-instructions.md` § Boundaries section
+- No change to AI prompts under `framework/prompts/` or the project's prompt catalog (`<project>/.github/copilot/prompts/`)
+- No change to `framework/boundaries.md` or any `<project>/_canonical.md` § Boundaries section (including its rendered agent files)
 
 A spec that fails any check MUST drop `trivial` and re-run Specify on the standard track. `validate-specs.py` enforces
 these mechanically; the human elects the lane, the framework verifies.

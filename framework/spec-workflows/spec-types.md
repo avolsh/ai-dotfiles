@@ -1,6 +1,6 @@
 # Spec Types
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-06-10*
 
 ## Type catalog
 
@@ -38,7 +38,7 @@ projects.
 
 | Stage | Load |
 |---|---|
-| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/cr-questions.md`](questions/cr-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baselines (if any) |
+| Specify | Project agent-instructions file (`CLAUDE.md` / `AGENTS.md` / `.github/copilot-instructions.md` — pick your agent's), this file, [`questions/cr-questions.md`](questions/cr-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baselines (if any) |
 | Visualize (sub-step) | The spec, project architecture overview, relevant reference schemas |
 | Plan | The spec, `<system>/skills/model-selection/SKILL.md`, skill `SKILL.md` files for every skill in front-matter |
 | Task | The spec, `<system>/boundaries.md`, project boundaries (if any), required skill `SKILL.md` files, target code from task's "Files" column + nearest precedent |
@@ -47,7 +47,7 @@ projects.
 
 | Stage | Load |
 |---|---|
-| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/bug-questions.md`](questions/bug-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baseline (if any) |
+| Specify | Project agent-instructions file (`CLAUDE.md` / `AGENTS.md` / `.github/copilot-instructions.md` — pick your agent's), this file, [`questions/bug-questions.md`](questions/bug-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baseline (if any) |
 | Plan | The spec, `<system>/skills/model-selection/SKILL.md` |
 | Task | The spec, `<system>/boundaries.md`, project boundaries (if any), target code, failing test scaffold |
 
@@ -55,7 +55,7 @@ projects.
 
 | Stage | Load |
 |---|---|
-| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/imp-questions.md`](questions/imp-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baselines (if any) |
+| Specify | Project agent-instructions file (`CLAUDE.md` / `AGENTS.md` / `.github/copilot-instructions.md` — pick your agent's), this file, [`questions/imp-questions.md`](questions/imp-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baselines (if any) |
 | Visualize (if triggered) | Same as CR |
 | Plan | Same as CR |
 | Task | Same as CR |
