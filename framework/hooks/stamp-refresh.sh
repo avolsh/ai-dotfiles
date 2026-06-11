@@ -20,6 +20,12 @@ try:
 except Exception:
     raise SystemExit
 ti = d.get("tool_input") or d.get("toolInput") or {}
+if not ti and isinstance(d.get("toolArgs"), str):
+    # Copilot CLI: toolArgs is a JSON-encoded string
+    try:
+        ti = json.loads(d["toolArgs"]) or {}
+    except Exception:
+        ti = {}
 print(ti.get("file_path") or ti.get("path") or ti.get("filePath")
       or d.get("file_path") or "")
 ')" || exit 0

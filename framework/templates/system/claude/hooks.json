@@ -8,6 +8,29 @@
           {
             "type": "command",
             "command": "@AI_DOTFILES@/framework/hooks/spec-status-guard.sh"
+          },
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/framework/hooks/preflight-reminder.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/framework/hooks/test-rerun-guard.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/framework/hooks/stop-build-check.sh"
           }
         ]
       }

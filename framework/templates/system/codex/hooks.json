@@ -10,6 +10,35 @@
             "command": "@AI_DOTFILES@/framework/hooks/spec-status-guard.sh",
             "statusMessage": "spec-status-guard",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/framework/hooks/preflight-reminder.sh",
+            "statusMessage": "preflight-reminder",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|shell|local_shell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/framework/hooks/test-rerun-guard.sh",
+            "statusMessage": "test-rerun-guard",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/framework/hooks/stop-build-check.sh",
+            "statusMessage": "stop-build-check",
+            "timeout": 15
           }
         ]
       }

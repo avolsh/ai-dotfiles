@@ -66,6 +66,15 @@ printf 'not json' | "$GUARD" 2>/dev/null; rc=$?
 set -e
 expect "guard fails open on malformed payload" 0 "$rc"
 
+# Copilot CLI real payload shape: toolArgs is a JSON-encoded string (T7 finding)
+sed -i.bak 's/^status: in-progress/status: specify/' "$proj/docs/specs/active/CR-20260101-demo.md" && rm -f "$proj/docs/specs/active/CR-20260101-demo.md.bak"
+set +e
+out="$(printf '{"sessionId":"cs1","toolName":"edit","toolArgs":"{\\"path\\":\\"%s/src/foo/bar.ts\\"}","cwd":"%s"}' "$proj" "$proj" | "$GUARD" 2>&1)"; rc=$?
+set -e
+expect "guard denies under Copilot toolArgs payload" 2 "$rc"
+echo "$out" | grep -q "CR-20260101-demo" || { echo "FAIL: Copilot-shape deny must name the spec" >&2; fails=$((fails+1)); }
+sed -i.bak 's/^status: specify/status: in-progress/' "$proj/docs/specs/active/CR-20260101-demo.md" && rm -f "$proj/docs/specs/active/CR-20260101-demo.md.bak"
+
 # ---------- secrets-scan.sh ----------
 SCAN="$HOOKS_DIR/secrets-scan.sh"
 repo="$TMP/repo"
@@ -132,6 +141,119 @@ arch="$TMP/docs/specs/archived/old.md"
 printf '# t\n*Last updated: 2020-01-01*\n' > "$arch"
 payload "$arch" "$TMP" | "$STAMP"
 grep -q '2020-01-01' "$arch" || { echo "FAIL: archived stamp must be preserved" >&2; fails=$((fails+1)); }
+
+# ---------- test-rerun-guard.sh ----------
+GUARD2="$HOOKS_DIR/test-rerun-guard.sh"
+export AI_HOOKS_STATE_DIR="$TMP/state"
+trepo="$TMP/trepo"
+mkdir -p "$trepo"
+git -C "$trepo" init -q && git -C "$trepo" config user.email t@t && git -C "$trepo" config user.name t
+echo "x" > "$trepo/f.txt" && git -C "$trepo" add f.txt && git -C "$trepo" commit -qm i
+
+tpay() { printf '{"session_id":"s1","tool_name":"Bash","tool_input":{"command":"%s"},"cwd":"%s"}' "$1" "$trepo"; }
+
+set +e
+tpay "make test" | "$GUARD2" 2>/dev/null; rc=$?
+set -e
+expect "rerun-guard allows first test run" 0 "$rc"
+
+set +e
+out="$(tpay "make test" | "$GUARD2" 2>&1)"; rc=$?
+set -e
+expect "rerun-guard denies identical re-run" 2 "$rc"
+echo "$out" | grep -q "FORCE_TEST_RERUN" || { echo "FAIL: deny must name the override" >&2; fails=$((fails+1)); }
+
+echo "y" >> "$trepo/f.txt"
+set +e
+tpay "make test" | "$GUARD2" 2>/dev/null; rc=$?
+set -e
+expect "rerun-guard allows after worktree change" 0 "$rc"
+
+set +e
+tpay "FORCE_TEST_RERUN=1 make test" | "$GUARD2" 2>/dev/null; rc=$?
+set -e
+expect "rerun-guard honors FORCE_TEST_RERUN=1" 0 "$rc"
+
+set +e
+tpay "ls -la" | "$GUARD2" 2>/dev/null; rc=$?
+set -e
+expect "rerun-guard ignores non-test commands" 0 "$rc"
+
+set +e
+printf '{"session_id":"s1","tool_input":{"command":"make test"},"cwd":"/nonexistent"}' | "$GUARD2" 2>/dev/null; rc=$?
+set -e
+expect "rerun-guard fails open outside git" 0 "$rc"
+
+# ---------- stop-build-check.sh ----------
+SBC="$HOOKS_DIR/stop-build-check.sh"
+tr1="$TMP/tr-edit-after-test.jsonl"
+cat > "$tr1" <<'EOF'
+{"message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"make test"}}]}}
+{"message":{"content":[{"type":"tool_use","name":"Edit","input":{"file_path":"/p/src/a.go"}}]}}
+EOF
+set +e
+out="$(printf '{"transcript_path":"%s"}' "$tr1" | "$SBC" 2>&1)"; rc=$?
+set -e
+expect "stop-check exits 0 (advisory)" 0 "$rc"
+echo "$out" | grep -q "advisory" || { echo "FAIL: stop-check must advise when edit follows last test" >&2; fails=$((fails+1)); }
+
+tr2="$TMP/tr-test-after-edit.jsonl"
+cat > "$tr2" <<'EOF'
+{"message":{"content":[{"type":"tool_use","name":"Edit","input":{"file_path":"/p/src/a.go"}}]}}
+{"message":{"content":[{"type":"tool_use","name":"Bash","input":{"command":"make test"}}]}}
+EOF
+set +e
+out="$(printf '{"transcript_path":"%s"}' "$tr2" | "$SBC" 2>&1)"; rc=$?
+set -e
+expect "stop-check silent when tests ran after edits" 0 "$rc"
+[ -z "$out" ] || { echo "FAIL: stop-check must stay silent: $out" >&2; fails=$((fails+1)); }
+
+set +e
+printf '{"no":"transcript"}' | "$SBC" >/dev/null 2>&1; rc=$?
+set -e
+expect "stop-check fails open without transcript" 0 "$rc"
+
+# md-only edits are not code edits
+tr3="$TMP/tr-md-only.jsonl"
+printf '{"message":{"content":[{"type":"tool_use","name":"Edit","input":{"file_path":"/p/docs/a.md"}}]}}\n' > "$tr3"
+set +e
+out="$(printf '{"transcript_path":"%s"}' "$tr3" | "$SBC" 2>&1)"; rc=$?
+set -e
+expect "stop-check ignores md-only sessions" 0 "$rc"
+[ -z "$out" ] || { echo "FAIL: md-only session must not advise" >&2; fails=$((fails+1)); }
+
+# ---------- preflight-reminder.sh ----------
+PFR="$HOOKS_DIR/preflight-reminder.sh"
+trn="$TMP/tr-nopreflight.jsonl"
+printf '{"message":{"content":[{"type":"text","text":"hello"}]}}\n' > "$trn"
+
+ppay() { printf '{"session_id":"%s","tool_input":{"file_path":"%s"},"transcript_path":"%s"}' "$1" "$2" "$3"; }
+
+set +e
+out="$(ppay pf1 /p/src/a.go "$trn" | "$PFR" 2>&1)"; rc=$?
+set -e
+expect "preflight-reminder advises on first code edit" 0 "$rc"
+echo "$out" | grep -q "preflight" || { echo "FAIL: reminder text missing" >&2; fails=$((fails+1)); }
+
+set +e
+out="$(ppay pf1 /p/src/b.go "$trn" | "$PFR" 2>&1)"; rc=$?
+set -e
+expect "preflight-reminder fires once per session" 0 "$rc"
+[ -z "$out" ] || { echo "FAIL: second edit must be silent" >&2; fails=$((fails+1)); }
+
+trp="$TMP/tr-preflight.jsonl"
+printf '{"message":{"content":[{"type":"text","text":"Preflight proof: Task T5, precedents read"}]}}\n' > "$trp"
+set +e
+out="$(ppay pf2 /p/src/a.go "$trp" | "$PFR" 2>&1)"; rc=$?
+set -e
+expect "preflight-reminder silent when proof present" 0 "$rc"
+[ -z "$out" ] || { echo "FAIL: must be silent with proof in transcript" >&2; fails=$((fails+1)); }
+
+set +e
+out="$(ppay pf3 /p/docs/a.md "$trn" | "$PFR" 2>&1)"; rc=$?
+set -e
+expect "preflight-reminder ignores md edits" 0 "$rc"
+[ -z "$out" ] || { echo "FAIL: md edit must not trigger reminder" >&2; fails=$((fails+1)); }
 
 if [ "$fails" -ne 0 ]; then
   echo "$fails hook self-test(s) failed ✗" >&2

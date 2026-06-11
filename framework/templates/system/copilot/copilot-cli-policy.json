@@ -6,8 +6,15 @@
     "preToolUse": [
       {
         "type": "command",
-        "bash": "@AI_DOTFILES@/framework/hooks/spec-status-guard.sh",
-        "timeoutSec": 15
+        "bash": "@AI_DOTFILES@/framework/hooks/adapters/copilot-pretooluse.sh @AI_DOTFILES@/framework/hooks/spec-status-guard.sh @AI_DOTFILES@/framework/hooks/test-rerun-guard.sh @AI_DOTFILES@/framework/hooks/preflight-reminder.sh",
+        "timeoutSec": 20
+      }
+    ],
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "@AI_DOTFILES@/framework/hooks/stop-build-check.sh",
+        "timeoutSec": 30
       }
     ],
     "postToolUse": [
