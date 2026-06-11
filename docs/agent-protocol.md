@@ -1,6 +1,6 @@
 # Agent Protocol
 
-*Last updated: 2026-06-10*
+*Last updated: 2026-06-11*
 
 Operating procedures for AI agents working in any project that participates in the AI Agent Framework: path prefixes, two-scope model, context loading order, checklists, output conventions, and the on-demand reference material (determinism, schema sync, doc freshness, skills audit).
 
@@ -13,7 +13,7 @@ Documentation uses three path prefixes to avoid fragile relative paths
 
 | Prefix | Meaning | Example resolution |
 |---|---|---|
-| `<system>/` | User-home, populated by `ai-switch.sh` from `ai-dotfiles`. Resolves to the active tool's home directory (`~/.claude/`, `~/.copilot/`, `~/.codex/`). `<system>/skills/<name>` resolves via per-entry symlink in **all three** tool homes (skills overlay covers claude+copilot+codex). `<system>/spec-workflows/`, `<system>/prompts/`, `<system>/templates/`, and `<system>/boundaries.md` resolve via tool-agnostic reference symlinks installed once per tool home. `<system>/agents/<name>` resolves via per-entry symlink in `~/.claude/agents/` and `~/.copilot/agents/` (Codex does not consume system agents). | `<system>/skills/writing-specs/SKILL.md` → `~/.claude/skills/writing-specs/SKILL.md` |
+| `<system>/` | The active tool's config dir — `$CLAUDE_CONFIG_DIR`, `$COPILOT_HOME`, or `$CODEX_HOME`, each pointing at `$AI_DOTFILES/profiles/<profile>/<tool>/`. Wired by `scripts/lib/profile-links.sh` (called by both `ai-switch.sh` and `ai-profile-init.sh`): `<system>/skills/`, `<system>/spec-workflows/`, `<system>/prompts/`, `<system>/templates/`, `<system>/agents/`, `<system>/upstream/`, and `<system>/boundaries.md` resolve via whole-dir/file symlinks into `$AI_DOTFILES/framework/`, with per-entry symlinks as the fallback inside CLI-owned real dirs (e.g. `codex/skills/`). | `<system>/skills/writing-specs/SKILL.md` → `$AI_DOTFILES/profiles/personal/claude/skills/writing-specs/SKILL.md` |
 | `<project>/` | Per-repo project root. Holds `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.github/copilot/instructions/`, and (when present) project-scope `.github/copilot/skills/`, `.github/copilot/prompts/`, `.github/copilot/agents/`. Project entries extend or override system-scope catalog entries on name collision. | `<project>/docs/architecture/` → `src/github.com/tobeverse/tobevisit-content/docs/architecture/` |
 | `<workspace>/` | Optional. Host-specific workspace root for multi-project workspaces. The project list lives in `<workspace>/CLAUDE.md` (or `AGENTS.md`). Single-project hosts can omit; workspace-level steps in workflows are conditional on this placeholder being configured. | `<workspace>/CLAUDE.md` → `~/vcs/geeoz/tobevisit/CLAUDE.md` |
 
@@ -39,7 +39,7 @@ Skills, boundaries, and protocol exist at two scopes. Agents load both.
 
 | Scope | Location | Overrides |
 |---|---|---|
-| **System** | `~/.{claude,copilot,codex}/` — instruction files (`CLAUDE.md`, `AGENTS.md`), per-entry symlinks under `skills/` and `agents/`, manifest at `.active-manifest`. Rendered by `ai-switch.sh` from `ai-dotfiles`. | Base layer |
+| **System** | `$AI_DOTFILES/profiles/<profile>/{claude,copilot,codex}/` — the dirs `CLAUDE_CONFIG_DIR` / `COPILOT_HOME` / `CODEX_HOME` point at. Wired by the shared library `scripts/lib/profile-links.sh` (single source of truth for `ai-switch.sh` and `ai-profile-init.sh`): instruction-file link, `boundaries.md`, refs (`spec-workflows prompts templates skills agents upstream`), rendered hook adapters. Whole-dir symlinks normally; **per-entry symlinks as the fallback inside CLI-owned real dirs** (e.g. `codex/skills/` with its `.system/`). `profiles/<p>/claude/settings.json` may be a symlink into `~/.claude/settings.json` — the hooks merge intentionally writes through it. Each switch writes `~/.<tool>/.active-manifest` (`profile=`, `target=`, `timestamp=`); `--reset` removes it; `ai-doctor` validates `profile` and `target`. | Base layer |
 | **Project** | Per-repo: `<project>/CLAUDE.md`, `<project>/AGENTS.md`, `<project>/.github/copilot-instructions.md`, `<project>/.github/copilot/instructions/`, **`<project>/.github/copilot/skills/`**, **`<project>/.github/copilot/prompts/`**, **`<project>/.github/copilot/agents/`** (when present) | Extends system; wins on name collision |
 
 **Skill resolution order:** project scope → system scope. When a task lists a
@@ -71,9 +71,9 @@ placeholder.
 
 An AI agent starting work MUST read files in this order:
 
-1. `<system>` instruction file for the active tool (`~/.claude/CLAUDE.md`,
-   `~/.copilot/AGENTS.md`, or `~/.codex/AGENTS.md`) -- framework bootstrap,
-   rendered by `ai-switch.sh`.
+1. `<system>` instruction file for the active tool (`$CLAUDE_CONFIG_DIR/CLAUDE.md`,
+   `$COPILOT_HOME/copilot-instructions.md`, or `$CODEX_HOME/AGENTS.md`) --
+   framework bootstrap, wired by `scripts/lib/profile-links.sh`.
 2. Target project `AGENTS.md` (or `CLAUDE.md`) -- project-specific rules.
 3. `<workspace>/CLAUDE.md` (or `AGENTS.md`) -- only when routing is unclear,
    the change is cross-project, or shared framework files are involved. Skip

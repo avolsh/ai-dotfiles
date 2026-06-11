@@ -13,7 +13,9 @@
 set -euo pipefail
 
 PATTERNS='-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|xox[bpars]-[A-Za-z0-9-]{10,}|sk-[A-Za-z0-9_-]{20,}'
-ASSIGN_PATTERN='(api[_-]?key|secret|token|password)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{8,}'
+# Value must not start with `$` — variable references and command
+# substitutions (e.g. token="$(security ...)") are not hardcoded literals.
+ASSIGN_PATTERN='(api[_-]?key|secret|token|password)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"'$][^"'"'"']{7,}'
 
 fail=0
 

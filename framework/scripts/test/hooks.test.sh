@@ -106,6 +106,13 @@ set +e
 set -e
 expect "scan flags explicit file argument" 1 "$rc"
 
+# Command substitutions / variable refs are not hardcoded literals.
+printf 'token="$(security find-generic-password -w)"\npassword="$KEYCHAIN_PW"\n' > "$repo/subst.sh"
+set +e
+"$SCAN" "$repo/subst.sh" >/dev/null 2>&1; rc=$?
+set -e
+expect "scan ignores command-substitution credential reads" 0 "$rc"
+
 # ---------- stamp-refresh.sh ----------
 STAMP="$HOOKS_DIR/stamp-refresh.sh"
 today="$(date +%F)"

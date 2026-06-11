@@ -2,7 +2,7 @@
 id: IMP-20260610-stabilize-profile-switching
 type: IMP
 date: 2026-06-10
-status: plan
+status: in-progress
 owner: avolsh
 risk: medium
 affected-repos:
@@ -34,7 +34,7 @@ skills:
 model-suggestion: default
 ---
 # IMP-20260610-stabilize-profile-switching
-*Last updated: 2026-06-10*
+*Last updated: 2026-06-11*
 ## Summary
 - **Goal:** Make profile switching boringly reliable so day-to-day product
   development needs no migrations, re-inits, or manual repairs.
@@ -309,10 +309,10 @@ repo already ships (shared closure narrative, one review pass). Guard: P1
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
-| T1 | Characterization suite vs **unmodified** ai-switch (FR-5, FR-12 baseline): hermetic HOME+AI_DOTFILES fixtures; sequences init→switch, switch×2 (same/other profile), switch→reset, reset→switch, double-init; per-tool session invariants (planted Claude/Codex/Copilot state byte-identical, sqlite/db by checksum), atomic-rename merge, `.claude.json` merge. Session invariants MUST pass at HEAD; doctor-green assertions land disabled with the current failures recorded as baseline (enabled in T3). Record FR-12 function-body hashes. | `scripts/test/ai-switch.test.sh` *(new)*, `Makefile` | `scripts/ai-switch.sh`, `scripts/ai-profile-init.sh`, `scripts/ai-doctor.sh` | — | — | deep | ☐ pending |
-| T2 | Shared wiring library (FR-1, FR-3): extract ref list (incl. `upstream`), instruction links, adapter rendering, settings hooks merge into `scripts/lib/profile-links.sh`; per-entry fallback for CLI-owned real dirs (`codex/skills/.system` preserved); `ai-profile-init.sh` converges on it; sourced+executed safe (no file-scope `set -e`). | `scripts/lib/profile-links.sh` *(new)*, `scripts/ai-profile-init.sh`, `scripts/test/profile-links.test.sh` *(new)*, `Makefile` | `framework/hooks/README.md`, `scripts/ai-switch.sh` | T1 | — | default | ☐ pending |
-| T3 | Switch convergence (FR-1, FR-2, FR-4, FR-12): ai-switch calls the library; new active-profile-scoped teardown replaces `_ai_remove_profile_symlinks` call sites (legacy deleted only at zero callers); manifest written on switch / removed on reset; `ai-doctor.sh` validates exactly those fields; enable doctor-green assertions in the T1 suite; verify FR-12 hashes unchanged. | `scripts/ai-switch.sh`, `scripts/ai-doctor.sh`, `scripts/test/ai-switch.test.sh` | `scripts/lib/profile-links.sh` | T2 | — | deep | ☐ pending |
-| T4 | Env + docs reconciliation (FR-6): profile.env files reduced to `AI_PROFILE`; `agent-protocol.md § Two-scope` matched to the implemented model (CLAUDE_CONFIG_DIR profile dirs; settings.json write-through documented); cheat-sheet rows refreshed. | `profiles/personal/profile.env`, `profiles/work/profile.env`, `docs/agent-protocol.md`, `docs/ai-agent-framework.md` | `scripts/lib/profile-links.sh` | T3 | writing-docs | fast | ☐ pending |
+| T1 | Characterization suite vs **unmodified** ai-switch (FR-5, FR-12 baseline): hermetic HOME+AI_DOTFILES fixtures; sequences init→switch, switch×2 (same/other profile), switch→reset, reset→switch, double-init; per-tool session invariants (planted Claude/Codex/Copilot state byte-identical, sqlite/db by checksum), atomic-rename merge, `.claude.json` merge. Session invariants MUST pass at HEAD; doctor-green assertions land disabled with the current failures recorded as baseline (enabled in T3). Record FR-12 function-body hashes. | `scripts/test/ai-switch.test.sh` *(new)*, `Makefile` | `scripts/ai-switch.sh`, `scripts/ai-profile-init.sh`, `scripts/ai-doctor.sh` | — | — | deep | ✅ done (2026-06-10) |
+| T2 | Shared wiring library (FR-1, FR-3): extract ref list (incl. `upstream`), instruction links, adapter rendering, settings hooks merge into `scripts/lib/profile-links.sh`; per-entry fallback for CLI-owned real dirs (`codex/skills/.system` preserved); `ai-profile-init.sh` converges on it; sourced+executed safe (no file-scope `set -e`). | `scripts/lib/profile-links.sh` *(new)*, `scripts/ai-profile-init.sh`, `scripts/test/profile-links.test.sh` *(new)*, `Makefile` | `framework/hooks/README.md`, `scripts/ai-switch.sh` | T1 | — | default | ✅ done (2026-06-10) |
+| T3 | Switch convergence (FR-1, FR-2, FR-4, FR-12): ai-switch calls the library; new active-profile-scoped teardown replaces `_ai_remove_profile_symlinks` call sites (legacy deleted only at zero callers); manifest written on switch / removed on reset; `ai-doctor.sh` validates exactly those fields; enable doctor-green assertions in the T1 suite; verify FR-12 hashes unchanged. | `scripts/ai-switch.sh`, `scripts/ai-doctor.sh`, `scripts/test/ai-switch.test.sh` | `scripts/lib/profile-links.sh` | T2 | — | deep | ✅ done (2026-06-11) |
+| T4 | Env + docs reconciliation (FR-6): profile.env files reduced to `AI_PROFILE`; `agent-protocol.md § Two-scope` matched to the implemented model (CLAUDE_CONFIG_DIR profile dirs; settings.json write-through documented); cheat-sheet rows refreshed. | `profiles/personal/profile.env`, `profiles/work/profile.env`, `docs/agent-protocol.md`, `docs/ai-agent-framework.md` | `scripts/lib/profile-links.sh` | T3 | writing-docs | fast | ✅ done (2026-06-11) |
 | T5 | Three remaining hooks + self-tests (FR-7): `test-rerun-guard` (deny on unchanged worktree hash), `stop-build-check` (advisory), `preflight-reminder` (advisory); extend hooks test suite. | `framework/hooks/test-rerun-guard.sh` *(new)*, `framework/hooks/stop-build-check.sh` *(new)*, `framework/hooks/preflight-reminder.sh` *(new)*, `framework/scripts/test/hooks.test.sh` | `framework/hooks/spec-status-guard.sh`, `framework/boundaries.md` | — | — | default | ☐ pending |
 | T6 | Adapter wiring for the new hooks (FR-7): extend the three harness templates; re-render via the T2 library; verify rendered JSON validity. | `framework/templates/system/claude/hooks.json`, `framework/templates/system/codex/hooks.json`, `framework/templates/system/copilot/copilot-cli-policy.json` | `scripts/lib/profile-links.sh`, `framework/hooks/` | T2, T5 | — | default | ☐ pending |
 | T7 | Live per-harness verification (FR-9): scripted `claude -p` / `codex exec` / `copilot -p` runs in a fixture project with a `specify` spec; capture deny + SessionStart doctor lines; fix canonical extractors on payload-shape mismatch with added tests; document Codex project-trust step. | `framework/hooks/spec-status-guard.sh`, `framework/hooks/stamp-refresh.sh`, `framework/scripts/test/hooks.test.sh`, this spec *(evidence)* | rendered adapters in `profiles/personal/` | T3, T6 | — | default | ☐ pending |

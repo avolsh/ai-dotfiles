@@ -341,48 +341,40 @@ _ai_sync_claude_keychain() {
   fi
 }
 
-_ai_reset_framework_links_for_tool() {
+# Detach exactly one profile: remove its symlinks only (FR-2 of
+# IMP-20260610-stabilize-profile-switching). Replaces the legacy
+# _ai_remove_profile_symlinks, which deleted symlinks across ALL profiles.
+_ai_detach_profile_links() {
   local profile_dir="$1"
-  local tool="$2"
-  local target_dir="$profile_dir/$tool"
-  local instruction_name
-  local instruction_source
-  local ref
-
-  mkdir -p "$target_dir"
-
-  case "$tool" in
-    claude) instruction_name="CLAUDE.md" ;;
-    copilot) instruction_name="copilot-instructions.md" ;;
-    codex) instruction_name="AGENTS.md" ;;
-  esac
-
-  instruction_source="$AI_DOTFILES/framework/templates/system/$tool/$instruction_name"
-  if [ -f "$instruction_source" ]; then
-    if [ ! -e "$target_dir/$instruction_name" ] && [ ! -L "$target_dir/$instruction_name" ]; then
-      ln -s "$instruction_source" "$target_dir/$instruction_name"
-    fi
-  fi
-
-  for ref in spec-workflows prompts templates skills agents; do
-    if [ -d "$AI_DOTFILES/framework/$ref" ]; then
-      if [ ! -e "$target_dir/$ref" ] && [ ! -L "$target_dir/$ref" ]; then
-        ln -s "$AI_DOTFILES/framework/$ref" "$target_dir/$ref"
-      fi
-    fi
-  done
-
-  if [ -f "$AI_DOTFILES/framework/boundaries.md" ]; then
-    if [ ! -e "$target_dir/boundaries.md" ] && [ ! -L "$target_dir/boundaries.md" ]; then
-      ln -s "$AI_DOTFILES/framework/boundaries.md" "$target_dir/boundaries.md"
-    fi
-  fi
+  [ -n "$profile_dir" ] || return 0
+  [ -d "$profile_dir" ] || return 0
+  find "$profile_dir" -type l -exec rm -f {} +
 }
 
-_ai_remove_profile_symlinks() {
-  if [ -d "$AI_DOTFILES/profiles" ]; then
-    find "$AI_DOTFILES/profiles" -type l -exec rm -f {} +
-  fi
+# Manifest lifecycle (FR-4): written on every switch, removed on --reset.
+# ai-doctor.sh validates exactly these fields (profile, target).
+_ai_write_manifests() {
+  local profile="$1" profile_dir="$2" tool iname
+  for tool in claude copilot codex; do
+    case "$tool" in
+      claude)  iname="CLAUDE.md" ;;
+      copilot) iname="copilot-instructions.md" ;;
+      codex)   iname="AGENTS.md" ;;
+    esac
+    mkdir -p "$HOME/.$tool"
+    {
+      printf 'profile=%s\n' "$profile"
+      printf 'target=%s\n' "$profile_dir/$tool/$iname"
+      printf 'timestamp=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    } > "$HOME/.$tool/.active-manifest"
+  done
+}
+
+_ai_remove_manifests() {
+  local tool
+  for tool in claude copilot codex; do
+    rm -f "$HOME/.$tool/.active-manifest"
+  done
 }
 
 # Move a real file/dir from a profile back into $HOME/.<tool>/. Atomic-rename
@@ -665,7 +657,12 @@ ai_switch_main() {
     fi
 
     _ai_remove_active_block "$rc_file" "$marker_start" "$marker_end" || return $?
-    _ai_remove_profile_symlinks
+    # Scoped detach (FR-2): only the active profile's links are removed;
+    # other profiles stay wired. No active profile known -> nothing to detach.
+    if [ -n "$active_profile" ]; then
+      _ai_detach_profile_links "$AI_DOTFILES/profiles/$active_profile"
+    fi
+    _ai_remove_manifests
 
     # Harden against stray CLI launches: a shell or GUI app that still holds a
     # stale CLAUDE_CONFIG_DIR/CODEX_HOME/COPILOT_HOME for the just-detached
@@ -704,15 +701,21 @@ ai_switch_main() {
 
   _ai_guard_running "refusing to switch" "$force" || return $?
 
-  # Verify each tool subdir is initialized.
-  local tool
-  for tool in claude copilot codex; do
-    _ai_reset_framework_links_for_tool "$profile_dir" "$tool"
-  done
+  # Wire the profile via the shared library (FR-1) — the same single source
+  # of truth ai-profile-init.sh uses; the switch can no longer drift from it.
+  # shellcheck source=lib/profile-links.sh
+  . "$AI_DOTFILES/scripts/lib/profile-links.sh" || {
+    _ai_err "failed to load $AI_DOTFILES/scripts/lib/profile-links.sh"
+    return 3
+  }
+  ai_links_wire_profile "$AI_DOTFILES" "$profile_dir" || {
+    _ai_err "profile wiring failed for $profile_dir"
+    return 3
+  }
 
   _ai_link_shared_state "$profile_dir"
 
-  # --- Source profile.env (sets AI_PROFILE; may also set ANTHROPIC_MODEL) ---
+  # --- Source profile.env (sets AI_PROFILE — the only variable; FR-6) ---
   # shellcheck disable=SC1090
   . "$profile_env" || { _ai_err "failed to source $profile_env"; return 3; }
 
@@ -741,6 +744,8 @@ EOF
   _ai_launchctl_setenv COPILOT_HOME "$COPILOT_HOME"
   _ai_launchctl_setenv CODEX_HOME "$CODEX_HOME"
 
+  _ai_write_manifests "$profile" "$profile_dir"
+
   printf '✓ profile=%s CLAUDE_CONFIG_DIR=%s COPILOT_HOME=%s CODEX_HOME=%s\n' \
     "$profile" "$CLAUDE_CONFIG_DIR" "$COPILOT_HOME" "$CODEX_HOME"
 }
@@ -754,8 +759,11 @@ unset -f ai_switch_main _ai_err _ai_launchctl_setenv _ai_launchctl_unsetenv \
   _ai_link_shared_state_for_tool _ai_link_shared_state _ai_sync_claude_keychain \
   _ai_sync_claude_keychain_back _ai_restore_path _ai_restore_shared_state \
   _ai_restore_shared_state_for_tool _ai_merge_json_into \
-  _ai_reset_framework_links_for_tool _ai_remove_profile_symlinks \
+  _ai_detach_profile_links _ai_write_manifests _ai_remove_manifests \
+  ai_links_wire_profile ai_links_wire_tool ai_links_render_hooks \
+  _ai_links_place _ai_links_instruction_name _ai_links_log \
   _ai_at_risk_processes _ai_guard_running 2>/dev/null
+unset AI_LINKS_REFS AI_LINKS_TOOLS 2>/dev/null
 if [ "$_ai_sourced" = "1" ]; then
   unset _ai_sourced
   return $_ai_rc 2>/dev/null

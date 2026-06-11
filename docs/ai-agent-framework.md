@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-06-10*
+*Last updated: 2026-06-11*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -42,6 +42,7 @@ ai-dotfiles/
 │       └── codex/                 ← Pre-built — CODEX_HOME target
 ├── scripts/
 │   ├── ai-switch.sh               ← Switches active profile, persists env, links shared state
+│   ├── lib/profile-links.sh       ← Single source of truth for profile wiring (switch + init)
 │   └── ai-profile-init.sh         ← Renders profile tool subdirs (one-time per profile)
 ├── Makefile                       ← Entry-point wrapper; run `make help`
 ├── docs/
