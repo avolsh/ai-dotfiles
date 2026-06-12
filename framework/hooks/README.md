@@ -1,6 +1,6 @@
 # framework/hooks/ — canonical hook scripts
 
-*Last updated: 2026-06-10*
+*Last updated: 2026-06-12*
 
 Single-source enforcement scripts for the rules in
 [`boundaries.md`](../boundaries.md) that all three harnesses (Claude Code,
@@ -39,5 +39,11 @@ must stay editable during Specify/Plan); `stamp-refresh.sh` skips `_legacy/`,
 ## Tests
 
 `framework/scripts/test/hooks.test.sh` — fixture-based self-tests for all
-three scripts; run directly. Wiring into `make check` lands with the
-Makefile changes of T4 (same spec).
+hook scripts; wired into `make tests` (and `make check`).
+
+**Planting secret-shaped fixtures:** assemble the value at runtime so the
+test's own source never contains a contiguous match for the very scanner
+it tests — e.g. `printf 'key = "%s%s"' "AKIA" "IOSFODNN7EXAMPLE"`. The
+fixture file written during the test still holds a contiguous secret
+(assertions unchanged), while the committed source stays clean for the
+pre-commit backstop. Never add scanner allowlists for test files.

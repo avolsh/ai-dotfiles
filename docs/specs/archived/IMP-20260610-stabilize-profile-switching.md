@@ -2,7 +2,7 @@
 id: IMP-20260610-stabilize-profile-switching
 type: IMP
 date: 2026-06-10
-status: in-progress
+status: done
 owner: avolsh
 risk: medium
 affected-repos:
@@ -34,7 +34,7 @@ skills:
 model-suggestion: default
 ---
 # IMP-20260610-stabilize-profile-switching
-*Last updated: 2026-06-11*
+*Last updated: 2026-06-12*
 ## Summary
 - **Goal:** Make profile switching boringly reliable so day-to-day product
   development needs no migrations, re-inits, or manual repairs.
@@ -316,9 +316,76 @@ repo already ships (shared closure narrative, one review pass). Guard: P1
 | T5 | Three remaining hooks + self-tests (FR-7): `test-rerun-guard` (deny on unchanged worktree hash), `stop-build-check` (advisory), `preflight-reminder` (advisory); extend hooks test suite. | `framework/hooks/test-rerun-guard.sh` *(new)*, `framework/hooks/stop-build-check.sh` *(new)*, `framework/hooks/preflight-reminder.sh` *(new)*, `framework/scripts/test/hooks.test.sh` | `framework/hooks/spec-status-guard.sh`, `framework/boundaries.md` | — | — | default | ✅ done (2026-06-11) |
 | T6 | Adapter wiring for the new hooks (FR-7): extend the three harness templates; re-render via the T2 library; verify rendered JSON validity. | `framework/templates/system/claude/hooks.json`, `framework/templates/system/codex/hooks.json`, `framework/templates/system/copilot/copilot-cli-policy.json` | `scripts/lib/profile-links.sh`, `framework/hooks/` | T2, T5 | — | default | ✅ done (2026-06-11) |
 | T7 | Live per-harness verification (FR-9): scripted `claude -p` / `codex exec` / `copilot -p` runs in a fixture project with a `specify` spec; capture deny + SessionStart doctor lines; fix canonical extractors on payload-shape mismatch with added tests; document Codex project-trust step. | `framework/hooks/spec-status-guard.sh`, `framework/hooks/stamp-refresh.sh`, `framework/scripts/test/hooks.test.sh`, this spec *(evidence)* | rendered adapters in `profiles/personal/` | T3, T6 | — | default | ✅ done (2026-06-11) — Codex partial, see Closure Evidence |
-| T8 | Product repo rollout (FR-8): in tobevisit-content and tobevisit-web — install the pre-commit backstop (`core.hooksPath` to the shared dir), planted-secret rejection + clean-commit verification, backstop note in each repo's canonical agent-instructions (+ `make sync-agents` re-render). | `tobevisit-content` canonical agent file *(+renders)*, `tobevisit-web` canonical agent file *(+renders)* | `scripts/git-hooks/pre-commit` | T1 | — | fast | ☐ pending |
-| T9 | Docs sweep (FR-10, FR-11): `archived/artifacts/` convention in spec-templates-guide; runtime-assembled-fixture note in hooks README; verify/add "artifact-exists over ≥N" in acceptance-criteria-patterns; 30-day stability-window bullet in boundaries § Ask first (end date + spec-metrics review). | `docs/spec-templates-guide.md`, `framework/hooks/README.md`, `docs/acceptance-criteria-patterns.md`, `framework/boundaries.md` | `docs/improvements-log.md` | — | writing-docs | fast | ☐ pending |
-| T10 | Closure (all ACs, AC-12 mandatory reviewer): cold reviewer PASS on the FR-12 clause; FR-12 diff evidence; live migration (`ai personal`, doctor green, delete stale manifests); follow-up ledger dispositions (AC-10); improvements-log entry; owner-approved commit of the full staged state; flip `done`, archive. | this spec, `docs/improvements-log.md` | all task outputs | T1–T9 | writing-specs | default | ☐ pending |
+| T8 | Product repo rollout (FR-8): in tobevisit-content and tobevisit-web — install the pre-commit backstop (`core.hooksPath` to the shared dir), planted-secret rejection + clean-commit verification, backstop note in each repo's canonical agent-instructions (+ `make sync-agents` re-render). | `tobevisit-content` canonical agent file *(+renders)*, `tobevisit-web` canonical agent file *(+renders)* | `scripts/git-hooks/pre-commit` | T1 | — | fast | ✅ done (2026-06-11) |
+| T9 | Docs sweep (FR-10, FR-11): `archived/artifacts/` convention in spec-templates-guide; runtime-assembled-fixture note in hooks README; verify/add "artifact-exists over ≥N" in acceptance-criteria-patterns; 30-day stability-window bullet in boundaries § Ask first (end date + spec-metrics review). | `docs/spec-templates-guide.md`, `framework/hooks/README.md`, `docs/acceptance-criteria-patterns.md`, `framework/boundaries.md` | `docs/improvements-log.md` | — | writing-docs | fast | ✅ done (2026-06-11) |
+| T10 | Closure (all ACs, AC-12 mandatory reviewer): cold reviewer PASS on the FR-12 clause; FR-12 diff evidence; live migration (`ai personal`, doctor green, delete stale manifests); follow-up ledger dispositions (AC-10); improvements-log entry; owner-approved commit of the full staged state; flip `done`, archive. | this spec, `docs/improvements-log.md` | all task outputs | T1–T9 | writing-specs | default | ✅ done (2026-06-12) |
+## Closure Evidence
+
+- **AC-1 (single source of truth):** ref list (incl. `upstream`) exists once,
+  at `scripts/lib/profile-links.sh` (`AI_LINKS_REFS`); both entry points
+  source the library (reviewer-verified line refs: ai-switch.sh:707,
+  ai-profile-init.sh:59); zero duplicate lists by grep.
+- **AC-2 (switch never un-wires):** `ai-switch.test.sh` STRICT=1 green over
+  all six sequences; live D1 reproduction during T3 (old on-disk code lost
+  `upstream` mid-task) vs new code surviving reset→switch on a copy of the
+  real personal profile.
+- **AC-3 (collision safety):** `profile-links.test.sh` cases 5–6 (real
+  `codex/skills` with `.system/marker` preserved, per-entry links, no
+  nested `skills/skills`, shadowing entry kept + reported); live re-init
+  on the real profile preserved Codex's `.system`.
+- **AC-4 (manifest lifecycle):** suite asserts presence+fields after switch
+  and absence after reset; live `ai --force personal` (2026-06-12) wrote
+  `profile=personal`, resolving `target=`, timestamp; stale 2026-05-11
+  orphans deleted; doctor green before and after.
+- **AC-5 (hermetic suite in CI):** wired into `make tests`/`make check`;
+  mutation test: removing `upstream` from the library ref list failed the
+  suite on 4 assertions (recorded in session, 2026-06-11).
+- **AC-6 (env + docs):** both profile.env files export only `AI_PROFILE`
+  (stale `ANTHROPIC_MODEL=claude-sonnet-4-6` pins removed);
+  `agent-protocol.md` `<system>/` prefix row, § Two-scope System row, and
+  Context-loading §1 rewritten to the implemented model; write-through
+  `settings.json` documented.
+- **AC-7 (remaining hooks):** `test-rerun-guard` (deny, FORCE_TEST_RERUN
+  override), `stop-build-check` + `preflight-reminder` (advisory, rc=0,
+  fail-open) — 14 new assertions in hooks.test.sh; wired in all three
+  adapter templates.
+- **AC-8 (product repos):** `core.hooksPath` set in both repos (owner) and
+  verified on local clones: planted `AKIA…` secret rejected citing the
+  file, clean commit passes — both tobevisit-content and tobevisit-web
+  (2026-06-12); backstop bullet present in both `_canonical.md` § Boundaries
+  (+3 renders each, owner-authored).
+- **AC-9 (live per-harness proof):** **Claude** — PreToolUse denied this
+  session's own Edit of a governed fixture file (verbatim guard message in
+  transcript) and SessionStart printed `ai-doctor … OK ✓` on resume.
+  **Copilot** — live deny: agent relayed "The file cannot be edited because
+  it is governed by a spec that is currently in the 'specify' status",
+  `Changes +0 -0`; required two extractor/adapter fixes (see Divergences in
+  T7 Bottom Line): `toolArgs` JSON-string parsing in all four guards
+  (+unit test) and `adapters/copilot-pretooluse.sh` translating exit-2 to
+  `permissionDecision: deny` (Copilot 1.0.46 ignores exit codes — verified
+  by an always-exit-2 probe). **Codex** — partial: hooks.json valid in both
+  CODEX_HOME and `~/.codex`, but codex-cli 0.139 did not execute hooks in
+  `exec` mode even with `--dangerously-bypass-hook-trust` (catch-all probe
+  silent; trust prompt hangs non-interactively). Pending owner's one-time
+  interactive `codex` trust grant; until then Codex is covered by the git
+  pre-commit backstop. Accepted at closure as a documented limitation.
+- **AC-10 (follow-up ledger):** (a) `archived/artifacts/` documented in
+  spec-templates-guide.md ✓; (b) runtime-assembled-fixture pattern in
+  hooks/README.md § Tests ✓; (c) artifact-exists-over-≥N row added to
+  acceptance-criteria-patterns.md § Common mistakes (was absent) ✓;
+  (d) ai-switch follow-ups subsumed by FR-1..4 ✓. No open follow-ups
+  remain unaddressed.
+- **AC-11 (stability window):** boundaries § Ask first #6, end date
+  2026-07-12 (closure + 30 days), `make spec-metrics` review named;
+  `make lint-rules` OK.
+- **AC-12 (sessions untouched):** cold reviewer verdict **PASS** —
+  per-function SHA-256 of all ten shared-state bodies identical to the
+  pre-spec revision; legacy functions deleted with zero call sites;
+  characterization suite (incl. per-tool session byte-identity and
+  atomic-rename merge) green throughout. Live confirmation:
+  `_ai_guard_running` correctly refused the closure-time switch under a
+  running CLI until `--force`.
+
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 `ai-switch.sh` is **sourced** into the user's interactive shell: the library

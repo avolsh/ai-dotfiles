@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-06-10*
+*Last updated: 2026-06-12*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -139,3 +139,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** An `ai personal` switch removed every symlink under `profiles/` (`_ai_remove_profile_symlinks`) and linked shared user state, but the framework links (instruction files, boundaries, spec-workflows, skills, prompts, templates) were not recreated — `make doctor` immediately reported 24 failures. Two structural collisions surfaced: (a) `codex/skills` is a real directory owned by Codex CLI (`.system` marker), so whole-dir `ln -sfn` produces a nested `skills/skills` link — the per-entry symlink model from agent-protocol.md is the correct shape there; (b) `claude/settings.json` is switched to a symlink into `~/.claude/settings.json`, so profile-init's hook merge writes through to user-level settings (acceptable — that is the file the live session reads — but undocumented).
 - **What was changed:** Removed the nested `codex/skills/skills` link, re-ran `ai-profile-init personal` (restores links incl. `upstream`, re-renders hook adapters), doctor back to the 2 known stale-manifest failures.
 - **Suggested follow-up:** In `ai-switch.sh`: add `upstream` to the ref loop, make the switch re-create framework links it tears down, and guard `ln -sfn` against existing real directories (use per-entry links for `codex/skills`). Tracked as a spawned background task.
+
+### 2026-06-12 — Profile switching stabilized; live verification reshaped the Copilot adapter
+
+- **Spec / task:** IMP-20260610-stabilize-profile-switching / T1-T10
+- **Category:** tooling
+- **What was found:** (1) The characterization-first ordering paid off twice: the suite captured the exact D1 baseline (upstream lost only after reset→switch), and a mid-task live incident reproduced it with the old on-disk code while the fix was being written. (2) Live per-harness verification (FR-9) found two contract gaps no documentation showed: Copilot CLI sends tool args as a JSON-encoded string in `toolArgs`, and ignores hook exit codes entirely — denial requires `{"permissionDecision":"deny"}` on stdout. An always-exit-2 probe proved the latter. (3) codex-cli 0.139 does not execute hooks in `exec` mode even with `--dangerously-bypass-hook-trust`; interactive trust is the only path.
+- **What was changed:** Shared wiring library + scoped teardown + live manifests (FR-1..4); hermetic switch suite in `make check` (FR-5); extractors extended and `adapters/copilot-pretooluse.sh` added (FR-9); Codex live verification recorded as a documented limitation pending one-time interactive trust.
+- **Suggested follow-up:** After the owner grants Codex hook trust interactively, re-run the T7 fixture scenario for Codex (Direct lane; the fixture recipe is in the spec's Closure Evidence). During the stability window, treat any new harness-contract surprise the same way: probe first, adapt in the adapter layer, never weaken the canonical scripts.

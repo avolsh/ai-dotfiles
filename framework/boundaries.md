@@ -1,6 +1,6 @@
 # Boundaries
 
-*Last updated: 2026-06-10*
+*Last updated: 2026-06-12*
 
 <!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
@@ -42,6 +42,12 @@
 4. **Changing shared framework files** in `<system>/` — they affect every project in the workspace.
 5. **Changing cross-repo schemas or output formats** — coordinate via a single spec listing all repos in
    `affected-repos`.
+6. <a id="stability-window"></a>**Framework stability window (until 2026-07-12):** after
+   IMP-20260610-stabilize-profile-switching closed, framework-scope changes (`<system>/`, this file, spec
+   workflows, hooks, profile scripts) are limited to Direct-lane fixes ([
+   `spec-lifecycle.md § Direct lane`](spec-workflows/spec-lifecycle.md#direct-lane)) or an explicit owner waiver.
+   At the window end, review `make spec-metrics` — the framework-vs-product share decides whether the freeze
+   extends. Product-repo work is unaffected.
 
 ## Never do
 
