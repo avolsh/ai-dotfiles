@@ -1,1 +1,0 @@
-/Users/alex/vcs/geeoz/tobevisit/env/ai-dotfiles/framework/templates/system/copilot/copilot-instructions.md
