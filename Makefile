@@ -88,3 +88,6 @@ sync-system-templates:
 sync-agents-check: validate-specs lint-rules validate-anchors
 
 check: links-check install-check validate-specs lint-rules validate-anchors tests
+
+submodule-update:
+	git submodule update --remote --recursive
