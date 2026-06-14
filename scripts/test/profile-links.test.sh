@@ -106,6 +106,33 @@ ln -s "$DF/nonexistent" "$P/claude/agents"
 ai_links_wire_tool "$DF" "$P" claude 2>/dev/null
 [ -e "$P/claude/agents" ] || fail "dangling ref link not repaired"
 
+# 9. CROSS-SHELL: the library is sourced into the user's zsh by `ai`.
+# zsh does not word-split unquoted `$VAR` and aborts on empty `.[!.]*`
+# globs — both broke `ai <profile>` while bash-only tests stayed green.
+# Re-run full profile wiring under zsh and assert every ref link lands.
+if command -v zsh >/dev/null 2>&1; then
+  Z="$TMP/zsh-profile"
+  mkdir -p "$Z/claude" "$Z/copilot" "$Z/codex/skills/.system"
+  echo "marker" > "$Z/codex/skills/.system/marker"   # CLI-owned real dir
+  if zsh -c ". '$LIB'; ai_links_wire_profile '$DF' '$Z'" >/dev/null 2>&1; then
+    for tool in claude copilot codex; do
+      for ref in spec-workflows prompts templates skills agents upstream; do
+        # codex/skills is a real dir -> per-entry links inside it, not a dir symlink
+        if [ "$tool/$ref" = "codex/skills" ]; then
+          [ -L "$Z/codex/skills/writing-specs" ] || fail "zsh: per-entry skill link missing"
+        else
+          [ -L "$Z/$tool/$ref" ] || fail "zsh: ref link missing $tool/$ref (word-split regression)"
+        fi
+      done
+    done
+    [ -f "$Z/codex/skills/.system/marker" ] || fail "zsh: CLI-owned .system clobbered"
+  else
+    fail "zsh: ai_links_wire_profile returned non-zero (sourced-shell regression)"
+  fi
+else
+  echo "profile-links.test: zsh not found — skipping cross-shell check" >&2
+fi
+
 if [ "$fails" -ne 0 ]; then
   echo "$fails profile-links test(s) failed ✗" >&2
   exit 1

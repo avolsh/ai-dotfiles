@@ -24,6 +24,13 @@ AI_LINKS_TOOLS="claude copilot codex"
 
 _ai_links_log() { printf 'profile-links: %s\n' "$*" >&2; }
 
+# Emit a space-separated token list one-per-line. Used instead of
+# `for x in $VAR`: zsh does NOT word-split unquoted parameter expansions
+# (no SH_WORD_SPLIT by default), so the bare loop runs once with the whole
+# string — this library is sourced into the user's zsh, so the bash-only
+# idiom silently collapsed and broke `ai <profile>`.
+_ai_links_words() { printf '%s\n' "$1" | tr ' ' '\n'; }
+
 _ai_links_instruction_name() {
   case "$1" in
     claude)  printf 'CLAUDE.md' ;;
@@ -48,16 +55,19 @@ _ai_links_place() { # $1 src, $2 dst
   fi
   if [ -d "$dst" ] && [ -d "$src" ]; then
     # CLI-owned real directory: per-entry links inside, never nest the
-    # whole-dir link (the historical skills/skills defect).
-    for entry in "$src"/* "$src"/.[!.]*; do
-      [ -e "$entry" ] || continue
+    # whole-dir link (the historical skills/skills defect). Enumerate via
+    # `find` rather than a shell glob — globs differ across bash/zsh
+    # (zsh's default `nomatch` aborts on an empty `.[!.]*`), and this
+    # library is sourced into the user's interactive shell.
+    while IFS= read -r entry; do
+      [ -n "$entry" ] || continue
       name="${entry##*/}"
       if [ -L "$dst/$name" ] || [ ! -e "$dst/$name" ]; then
         ln -sfn "$entry" "$dst/$name"
       else
         _ai_links_log "kept CLI-owned entry (shadows framework): $dst/$name"
       fi
-    done
+    done < <(find "$src" -mindepth 1 -maxdepth 1)
     return 0
   fi
   _ai_links_log "WARN real path in the way; skipped (never clobbered): $dst"
@@ -73,9 +83,10 @@ ai_links_wire_tool() { # $1 dotfiles root, $2 profile_dir, $3 tool
   iname="$(_ai_links_instruction_name "$tool")" || return 1
   _ai_links_place "$df/framework/templates/system/$tool/$iname" "$tdir/$iname"
   _ai_links_place "$df/framework/boundaries.md" "$tdir/boundaries.md"
-  for ref in $AI_LINKS_REFS; do
+  while IFS= read -r ref; do
+    [ -n "$ref" ] || continue
     _ai_links_place "$df/framework/$ref" "$tdir/$ref"
-  done
+  done < <(_ai_links_words "$AI_LINKS_REFS")
   return 0
 }
 
@@ -128,9 +139,10 @@ PY
 # Wire a whole profile: every tool subdir + hook adapters.
 ai_links_wire_profile() { # $1 dotfiles root, $2 profile_dir
   local df="$1" pdir="$2" tool rc=0
-  for tool in $AI_LINKS_TOOLS; do
+  while IFS= read -r tool; do
+    [ -n "$tool" ] || continue
     ai_links_wire_tool "$df" "$pdir" "$tool" || rc=1
-  done
+  done < <(_ai_links_words "$AI_LINKS_TOOLS")
   ai_links_render_hooks "$df" "$pdir" || rc=1
   return "$rc"
 }
