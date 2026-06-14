@@ -1,6 +1,6 @@
 # Trivial-lane Standard Questions
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-06-10*
 
 During the **combined `specify+plan` gate** for a Trivial-lane spec
 (`risk: trivial` or `severity: trivial`), the agent asks exactly **3
@@ -33,8 +33,8 @@ content shape, status sequence — lives at
    `docs/domain/`, type / API contracts, AI prompts under
    `framework/prompts/` or project `.github/copilot/prompts/`,
    `framework/boundaries.md`, or any project's
-   `.github/copilot-instructions.md § Boundaries` section? If yes to any
-   — drop `trivial`.
+   `_canonical.md § Boundaries` section (or its rendered agent files)?
+   If yes to any — drop `trivial`.
 
 3. **One AC sufficient.** Can the change be verified by a single
    acceptance criterion (one Given / When / Then)? If you find yourself

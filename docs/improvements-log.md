@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-06-13*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -43,3 +43,115 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** Three different `make sync-agents-check` targets now exist depending on cwd: (a) workspace `tobevisit/Makefile` runs `.github/scripts/sync-agents.sh --check` (AGENTS.md drift), (b) project repos (e.g. tobevisit-content) chain their own validators, (c) ai-dotfiles (post-this-spec) chains `validate-specs`. The same command name does three different things. Acceptable for now — each cwd has the right local meaning — but the overload is a latent friction.
 - **What was changed:** None — logged for review. The overload is by convention, not by accident.
 - **Suggested follow-up:** Consider renaming the ai-dotfiles target to `ci-check` or `framework-check` if the friction shows up in practice. Not urgent; revisit after one or two real CI runs.
+
+### 2026-06-05 — Specs were too verbose for per-gate human review
+
+- **Spec / task:** IMP-20260605-solo-agent-workflow-realignment / Specify
+- **Category:** pattern
+- **What was found:** The owner reviews every spec at each gate. Long prose sections (Current State, Proposed Improvement, restated rationale) pushed read time toward ~20 min/iteration without adding signal beyond the FR/AC contract. First draft of this IMP ran ~190 lines.
+- **What was changed:** Rewrote the IMP to ~124 lines — compressed prose to a few bullets, kept FR/AC precise but terse, removed cross-section restatement. New default: the FR/AC contract carries the weight; narrative is minimal.
+- **Suggested follow-up:** Fold a "keep specs terse — prose minimal, FR/AC carry the contract" line into `docs/writing-specs.md` writing-style rules and/or `framework/spec-workflows/templates/*` so it's enforced by convention, not memory.
+
+### 2026-06-05 — Reached for harness memory instead of the framework's improvements-log
+
+- **Spec / task:** IMP-20260605-solo-agent-workflow-realignment / Specify
+- **Category:** anti-pattern
+- **What was found:** Given process feedback ("write specs concise"), I stored it in the harness's private memory file rather than `docs/improvements-log.md`. `boundaries.md § Always do #13` and the project CLAUDE.md designate the improvements-log as the canonical home for process-improvement findings, and CLAUDE.md states project instructions OVERRIDE default behavior. I defaulted to the generic memory tool without checking that the framework already owns this class of fact.
+- **What was changed:** Deleted the memory file + its `MEMORY.md` index line; moved the finding here. Going forward, process-improvement / friction findings go to the relevant `docs/improvements-log.md`, not harness memory.
+- **Suggested follow-up:** None — convention already exists; this was an adherence miss, now corrected.
+
+### 2026-06-05 — Generator-delegation removal missed `research-spec.prompt.md`
+
+- **Spec / task:** IMP-20260605-solo-agent-workflow-realignment / T3
+- **Category:** anti-pattern
+- **What was found:** FR-2 named only `create-spec.prompt.md` and `plan-spec.prompt.md` as prompts that delegate to the generator agents. After deleting the agent files in T3, a grep surfaced that `framework/prompts/research-spec.prompt.md:17` also delegates to `spec-author` (RES mode) — left dangling, it points at a deleted file. The RES prompt was not in any task's Files column.
+- **What was changed:** Folded the `research-spec.prompt.md` inline rewrite into T4 (same theme: bring the framework into line with the removal). Surfaced at the T3 gate for re-approval before proceeding.
+- **Suggested follow-up:** When a spec enumerates files by name in an FR (rather than "all prompts that delegate to X"), the Plan stage should grep for the full set rather than trust the FR's list. Consider a generic-phrasing preference in `docs/writing-specs.md`.
+
+### 2026-06-05 — Orphaned `tests/*.md` reference removed agents (reviewer dogfood finding)
+
+- **Spec / task:** IMP-20260605-solo-agent-workflow-realignment / reviewer sub-step
+- **Category:** pattern
+- **What was found:** Dogfooding the new `reviewer` sub-agent on this IMP surfaced that `tests/subagents-target.md`, `tests/subagents-baseline.md`, and `tests/research-lane-closure-evidence.md` still reference `spec-author`/`splitter`/`task-planner`. They are historical measurement/closure artifacts of the now-superseded `IMP-20260514-framework-subagents`; validators do not consume them, so they are not AC violations (the AC-1/AC-2 grep scope was `framework/prompts framework/agents`).
+- **What was changed:** None in this IMP — left out to avoid scope creep. Flagged as a follow-up.
+- **Suggested follow-up:** Trivial-lane IMP to archive or annotate those `tests/*.md` as historical (note they describe the superseded delegated-subagent model) so the active tree is free of dangling agent references.
+
+### 2026-06-05 — Applied the terseness + generic-phrasing follow-ups
+
+- **Spec / task:** ad-hoc (direct edit, owner-approved)
+- **Category:** protocol
+- **What was found:** The two convention follow-ups logged earlier today (specs too verbose; FRs enumerating files by name) had no home in the canonical writing-style guidance.
+- **What was changed:** `docs/writing-specs.md` — added a Forbidden bullet (no point restated across Summary / Current State / Proposed Improvement; FR/AC contract carries the spec), anti-pattern #12 (don't enumerate files inside an FR; phrase generically + grep at Plan), and a Plan-stage note to grep for the full set when an FR names an affected set by capability. Owner approved direct edits (no spec) for these two entries only.
+- **Suggested follow-up:** None — entries #1 and #3 from earlier today are now resolved in canonical guidance.
+
+### 2026-06-10 — Audit-first ordering caught a stale premise before it became churn
+
+- **Spec / task:** IMP-20260610-reduce-self-referential-overhead / T1
+- **Category:** pattern
+- **What was found:** The spec's FR-3 (re-home ≥2-hop rule chains) and FR-4 (dedup docs↔skills pairs) were premised on a code-review impression. The T1 baseline audit measured both: 0 two-hop chains, 0 duplicated paragraphs — IMP-20260514 D3 had already done the work. Executing FR-4 as approved (inverting content ownership) would have been pure churn. Similarly, the original FR-2 ("archive the rule map") assumed the map was unconsumed; checking the tooling revealed `lint-rules.py` machine-reads it, forcing an amendment.
+- **What was changed:** T4 rescoped to convention-documentation only; T5 cancelled; FR-4 closed as already satisfied (owner-approved). FR-2 amended to a split (live machine inventory + archived narrative) before the plan gate.
+- **Suggested follow-up:** When an IMP's premise comes from impression rather than measurement, make Task 1 a measurement-only task and gate the remaining tasks on its numbers. Verify any "X is unused" claim against the Makefile/scripts before approving a removal FR.
+
+### 2026-06-10 — Anchor-fragment validation paid for itself on the first run
+
+- **Spec / task:** IMP-20260610-reduce-self-referential-overhead / T2
+- **Category:** tooling
+- **What was found:** `check-md-links.sh` validates file existence only; `#fragment` resolution was unchecked. The new `scripts/validate-anchors.py` caught 2 live broken anchors in `docs/writing-specs.md` on its first run — links to anchors that never existed in `spec-workflows/README.md`, the exact failure class documented (and supposedly closed) by the R10 side-finding of IMP-20260514 D1.
+- **What was changed:** `validate-anchors` target wired into `make check` and `make sync-agents-check`; the two stale links redirected to the canonical `spec-lifecycle.md` anchors.
+- **Suggested follow-up:** None — the class is now mechanically enforced.
+
+### 2026-06-10 — `validate-specs` flat-glob constrains what can live in `archived/`
+
+- **Spec / task:** IMP-20260610-reduce-self-referential-overhead / T3
+- **Category:** tooling
+- **What was found:** `discover_specs` globs `docs/specs/{active,archived}/*.md` flat, so any non-spec markdown placed directly in `archived/` is validated as a spec and fails on missing front-matter. The archived rule-map narrative had to live in `archived/artifacts/` instead of the path listed in the task row.
+- **What was changed:** Created `docs/specs/archived/artifacts/` for non-spec closure artifacts; divergence recorded in the T3 Bottom Line.
+- **Suggested follow-up:** Document the `archived/artifacts/` convention in `docs/spec-templates-guide.md` (or make `discover_specs` skip declared artifact subtrees explicitly) so future closures don't rediscover this.
+
+### 2026-06-10 — First doctor run surfaced two latent breakage classes
+
+- **Spec / task:** IMP-20260610-mechanize-framework-guardrails / T2-T3
+- **Category:** tooling
+- **What was found:** `make doctor`'s first live run reported 5 failures: (a) the `upstream` framework ref was absent from the symlink loops of both `ai-profile-init.sh` and `ai-switch.sh` — the documented `<system>/upstream/` resolution never existed, which is why the broken state persisted invisibly for weeks; (b) `~/.claude/.active-manifest` and `~/.copilot/.active-manifest` still carry `target=` paths from the pre-CLAUDE_CONFIG_DIR model (`~/.claude/CLAUDE.md`) that no longer resolve.
+- **What was changed:** (a) fixed for `ai-profile-init.sh` (T3, `upstream` added to refs) and the profile re-initialized; `ai-switch.sh` was out of the spec's file list and still lacks `upstream` in `_ai_reset_framework_links_for_tool`. (b) not changed — manifests are regenerated by the next `ai personal` switch.
+- **Suggested follow-up:** Direct-lane edit adding `upstream` to `ai-switch.sh`'s ref loop; run `ai personal` to regenerate stale manifests; until then `make doctor` reports the 2 manifest failures by design.
+
+### 2026-06-10 — Hook wiring went live mid-spec and enforced its own rule
+
+- **Spec / task:** IMP-20260610-mechanize-framework-guardrails / T5
+- **Category:** pattern
+- **What was found:** After T3 merged the hooks into the profile's `claude/settings.json`, the running Claude Code session picked them up immediately: the PostToolUse `stamp-refresh` hook auto-bumped `*Last updated:*` on `docs/spec-workflow-guide.md` and `docs/ai-agent-framework.md` before the agent could do it manually — the first boundaries rule to move from prose to mechanical enforcement did so during the very spec that introduced it.
+- **What was changed:** Nothing — recorded as live-fire evidence under the spec's Closure Evidence (AC-1).
+- **Suggested follow-up:** When extending the hook set (OS-2 follow-up: test-rerun block, Stop-hook build check, preflight reminder), expect hooks to activate mid-session after profile re-init; sequence rollouts accordingly.
+
+### 2026-06-10 — Secrets backstop flagged its own test fixtures on first real commit
+
+- **Spec / task:** Direct lane (owner-reported, post IMP-20260610-mechanize-framework-guardrails)
+- **Category:** tooling
+- **What was found:** The first real `git commit` after installing the pre-commit backstop was rejected because the planted example key `AKIA...` lived as a contiguous literal inside the two test scripts themselves — the scanner correctly flagged the sources of its own tests.
+- **What was changed:** Both fixtures now assemble the key at runtime (`printf '%s%s' "AKIA" "IOSFODNN7EXAMPLE"`): the fixture file written during the test still contains a contiguous match (assertions unchanged, all suites green), while the committed source no longer does. The scanner was not weakened — no allowlist added.
+- **Suggested follow-up:** Document the runtime-assembly pattern wherever future fixtures need to plant secret-shaped strings (e.g., a note in framework/hooks/README.md § Tests).
+
+### 2026-06-10 — ai-switch tore down framework links without restoring them; doctor caught it live
+
+- **Spec / task:** Direct lane (incident during IMP-20260610-mechanize-framework-guardrails rollout)
+- **Category:** tooling
+- **What was found:** An `ai personal` switch removed every symlink under `profiles/` (`_ai_remove_profile_symlinks`) and linked shared user state, but the framework links (instruction files, boundaries, spec-workflows, skills, prompts, templates) were not recreated — `make doctor` immediately reported 24 failures. Two structural collisions surfaced: (a) `codex/skills` is a real directory owned by Codex CLI (`.system` marker), so whole-dir `ln -sfn` produces a nested `skills/skills` link — the per-entry symlink model from agent-protocol.md is the correct shape there; (b) `claude/settings.json` is switched to a symlink into `~/.claude/settings.json`, so profile-init's hook merge writes through to user-level settings (acceptable — that is the file the live session reads — but undocumented).
+- **What was changed:** Removed the nested `codex/skills/skills` link, re-ran `ai-profile-init personal` (restores links incl. `upstream`, re-renders hook adapters), doctor back to the 2 known stale-manifest failures.
+- **Suggested follow-up:** In `ai-switch.sh`: add `upstream` to the ref loop, make the switch re-create framework links it tears down, and guard `ln -sfn` against existing real directories (use per-entry links for `codex/skills`). Tracked as a spawned background task.
+
+### 2026-06-12 — Profile switching stabilized; live verification reshaped the Copilot adapter
+
+- **Spec / task:** IMP-20260610-stabilize-profile-switching / T1-T10
+- **Category:** tooling
+- **What was found:** (1) The characterization-first ordering paid off twice: the suite captured the exact D1 baseline (upstream lost only after reset→switch), and a mid-task live incident reproduced it with the old on-disk code while the fix was being written. (2) Live per-harness verification (FR-9) found two contract gaps no documentation showed: Copilot CLI sends tool args as a JSON-encoded string in `toolArgs`, and ignores hook exit codes entirely — denial requires `{"permissionDecision":"deny"}` on stdout. An always-exit-2 probe proved the latter. (3) codex-cli 0.139 does not execute hooks in `exec` mode even with `--dangerously-bypass-hook-trust`; interactive trust is the only path.
+- **What was changed:** Shared wiring library + scoped teardown + live manifests (FR-1..4); hermetic switch suite in `make check` (FR-5); extractors extended and `adapters/copilot-pretooluse.sh` added (FR-9); Codex live verification recorded as a documented limitation pending one-time interactive trust.
+- **Suggested follow-up:** After the owner grants Codex hook trust interactively, re-run the T7 fixture scenario for Codex (Direct lane; the fixture recipe is in the spec's Closure Evidence). During the stability window, treat any new harness-contract surprise the same way: probe first, adapt in the adapter layer, never weaken the canonical scripts.
+
+### 2026-06-12 — Generated profile wiring no longer tracked in git
+
+- **Spec / task:** Direct lane (owner-approved), follow-on to IMP-20260610-stabilize-profile-switching
+- **Category:** tooling
+- **What was found:** `.gitignore` explicitly un-ignored (`!`) every profile wiring entry (CLAUDE.md, boundaries.md, skills, prompts, spec-workflows, templates, agents, upstream) per tool, so the machine-generated, absolute-path, host-specific symlinks were version-controlled. Every `ai --reset` → commit → re-init cycle then churned `git status` (a reset's committed deletions, then untracked re-creations), and a reset's deletions had already landed in an unrelated product commit.
+- **What was changed:** `.gitignore` now ignores `profiles/*/{claude,copilot,codex}/` wholesale (regenerated by `make profile-init` / `ai <profile>`); only the hand-authored `profile.env` and `preferences.md` at the profile root stay tracked. `git rm -r --cached` untracked the 25 generated entries. Verified: re-init now produces zero git churn; `make doctor` green; `make check` 11/11.
+- **Suggested follow-up:** None — the reset/switch/re-init cycle is now git-silent by construction.

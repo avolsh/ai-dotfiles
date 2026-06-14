@@ -1,6 +1,6 @@
 # Spec Workflow — How We Work
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-06-10*
 
 Every change — feature, bug fix, or improvement — follows the same
 four-status lifecycle. Each status transition ends with a **human gate**:
@@ -87,6 +87,19 @@ again after each.
    (directory move — not a separate status).
 
 **🔒 Gate:** You confirm closure. The spec is archived — never deleted.
+For `risk: low`/`trivial` specs this gate may run **review-after**: the agent
+archives immediately once every AC has evidence and you review closures in
+batch, with a defined revert path — see [`spec-lifecycle.md § Review-after closure`](../framework/spec-workflows/spec-lifecycle.md#review-after-closure).
+Requirements and plan gates stay blocking in every lane.
+
+## Direct lane: when even one gate is overkill
+
+Owner-approved changes of **≤2 files and ≤30 lines** with no schema, prompt,
+boundary, or cross-repo impact may ship without a spec at all — only a
+Bottom Line post and an improvements-log entry. Eligibility and obligations:
+[`spec-lifecycle.md § Direct lane`](../framework/spec-workflows/spec-lifecycle.md#direct-lane).
+The three lanes, smallest first: **Direct** (no spec) → **Trivial**
+(one combined gate) → **Standard** (full gate sequence).
 
 ## Trivial lane: when 3 gates is overkill
 

@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "disableAllHooks": false,
+  "_comment": "Canonical hook wiring for Copilot CLI (IMP-20260610-mechanize-framework-guardrails T3). Rendered by ai-profile-init into the profile's copilot/hooks/framework-policy.json ($COPILOT_HOME/hooks/) with @AI_DOTFILES@ substituted. preToolUse errors/timeouts deny the tool call (fail-closed on Copilot's side); the scripts themselves fail open on malformed payloads.",
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "bash": "@AI_DOTFILES@/framework/hooks/adapters/copilot-pretooluse.sh @AI_DOTFILES@/framework/hooks/spec-status-guard.sh @AI_DOTFILES@/framework/hooks/test-rerun-guard.sh @AI_DOTFILES@/framework/hooks/preflight-reminder.sh",
+        "timeoutSec": 20
+      }
+    ],
+    "agentStop": [
+      {
+        "type": "command",
+        "bash": "@AI_DOTFILES@/framework/hooks/stop-build-check.sh",
+        "timeoutSec": 30
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "bash": "@AI_DOTFILES@/framework/hooks/stamp-refresh.sh",
+        "timeoutSec": 15
+      }
+    ],
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "@AI_DOTFILES@/scripts/ai-doctor.sh --fast",
+        "timeoutSec": 30
+      }
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 # Spec Templates Guide
 
-*Last updated: 2026-06-03*
+*Last updated: 2026-06-12*
 
 Companion to the slimmed spec templates at
 [`framework/spec-workflows/templates/`](../framework/spec-workflows/templates/).
@@ -229,6 +229,16 @@ replace the placeholder with the approved task table per
 [`spec-lifecycle.md`](../framework/spec-workflows/spec-lifecycle.md)
 § Rule 2. For BUG specs, Task 1 is always
 `Reproduce & write failing test`.
+
+---
+
+## Non-spec closure artifacts — `archived/artifacts/`
+
+`validate-specs` globs `docs/specs/{active,archived}/*.md` flat and
+requires spec front-matter on every match. Non-spec markdown produced at
+closure (baseline tables, narratives, captures) therefore MUST NOT live
+directly in `archived/` — place it under `docs/specs/archived/artifacts/`
+and link it from the owning spec's Closure Evidence.
 
 ---
 

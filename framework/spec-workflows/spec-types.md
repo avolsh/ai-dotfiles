@@ -1,6 +1,6 @@
 # Spec Types
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-06-10*
 
 ## Type catalog
 
@@ -23,11 +23,11 @@
 
 ## Context to load per stage
 
-Each stage may delegate work to sub-agents — see [`<system>/agents/README.md`](../agents/README.md). Specify delegates
-to [`spec-author`](../agents/spec-author.md) (draft) + [`splitter`](../agents/splitter.md) (Split check); Plan delegates
-to [`task-planner`](../agents/task-planner.md); Task delegates to [`precedent-finder`](../agents/precedent-finder.md)
-when locating precedent files. Fallback (harnesses without sub-agent support): inline the agent's body and follow its
-Steps in the main context.
+Spec authoring (draft), the Split check, and task decomposition run **inline in the main context** per
+[`writing-specs/references/authoring-steps.md`](../skills/writing-specs/references/authoring-steps.md) — they are not
+delegated. Locating precedent files at task-start is the main agent's own `Grep`/`Glob`, or the built-in read-only
+explore sub-agent. Sub-agents are reserved for mechanical need (isolation / parallelism / read-only) — see
+[`<system>/agents/README.md`](../agents/README.md).
 
 Workspace docs are loaded when the spec touches them — beyond `module-map.md`, this includes
 `<project>/docs/architecture/` (ADRs, design notes), `<project>/docs/domain/<feature>.md` baselines per
@@ -38,7 +38,7 @@ projects.
 
 | Stage | Load |
 |---|---|
-| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/cr-questions.md`](questions/cr-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baselines (if any) |
+| Specify | Project agent-instructions file (`CLAUDE.md` / `AGENTS.md` / `.github/copilot-instructions.md` — pick your agent's), this file, [`questions/cr-questions.md`](questions/cr-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baselines (if any) |
 | Visualize (sub-step) | The spec, project architecture overview, relevant reference schemas |
 | Plan | The spec, `<system>/skills/model-selection/SKILL.md`, skill `SKILL.md` files for every skill in front-matter |
 | Task | The spec, `<system>/boundaries.md`, project boundaries (if any), required skill `SKILL.md` files, target code from task's "Files" column + nearest precedent |
@@ -47,7 +47,7 @@ projects.
 
 | Stage | Load |
 |---|---|
-| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/bug-questions.md`](questions/bug-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baseline (if any) |
+| Specify | Project agent-instructions file (`CLAUDE.md` / `AGENTS.md` / `.github/copilot-instructions.md` — pick your agent's), this file, [`questions/bug-questions.md`](questions/bug-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baseline (if any) |
 | Plan | The spec, `<system>/skills/model-selection/SKILL.md` |
 | Task | The spec, `<system>/boundaries.md`, project boundaries (if any), target code, failing test scaffold |
 
@@ -55,7 +55,7 @@ projects.
 
 | Stage | Load |
 |---|---|
-| Specify | Project `.github/copilot-instructions.md`, this file, [`questions/imp-questions.md`](questions/imp-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baselines (if any) |
+| Specify | Project agent-instructions file (`CLAUDE.md` / `AGENTS.md` / `.github/copilot-instructions.md` — pick your agent's), this file, [`questions/imp-questions.md`](questions/imp-questions.md), project `docs/architecture/module-map.md`, matching `docs/domain/<feature>.md` baselines (if any) |
 | Visualize (if triggered) | Same as CR |
 | Plan | Same as CR |
 | Task | Same as CR |

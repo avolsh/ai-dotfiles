@@ -9,7 +9,12 @@ description: >
 
 # Writing Specs
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-06-05*
+
+Spec authoring, the Split check, and task decomposition run **inline in
+the main context** — they are not delegated to subagents. The
+step-by-step procedures live in
+[`references/authoring-steps.md`](references/authoring-steps.md).
 
 ## When to use
 
@@ -22,6 +27,7 @@ description: >
 
 ## References
 
+- [`references/authoring-steps.md`](references/authoring-steps.md) — inline procedures for spec authoring (CR/IMP/RES), the Split check, and task decomposition.
 - [`docs/writing-specs.md`](../../../docs/writing-specs.md) — lifecycle pointer, stage walk-throughs (Specify, Plan), writing-style rules, RFC 2119, anti-patterns, self-review additions, template usage, and topic index.
 - [`docs/spec-asking-questions.md`](../../../docs/spec-asking-questions.md), [`docs/spec-format.md`](../../../docs/spec-format.md), [`docs/acceptance-criteria-patterns.md`](../../../docs/acceptance-criteria-patterns.md) — Specify-stage authoring.
 - [`docs/splitting-specs.md`](../../../docs/splitting-specs.md) + [`references/splitting-rules.md`](references/splitting-rules.md) — split procedure (prose) + trigger / exception ID tables.

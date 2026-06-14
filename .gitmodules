@@ -1,0 +1,15 @@
+[submodule "framework/upstream/mcp-server-guide"]
+	path = framework/upstream/mcp-server-guide
+	url = git@github.com:figma/mcp-server-guide.git
+[submodule "framework/upstream/anthropic-skills"]
+	path = framework/upstream/anthropic-skills
+	url = git@github.com:anthropics/skills.git
+[submodule "framework/upstream/superpowers"]
+	path = framework/upstream/superpowers
+	url = git@github.com:obra/superpowers.git
+[submodule "framework/upstream/volt-skills"]
+	path = framework/upstream/volt-skills
+	url = git@github.com:VoltAgent/awesome-agent-skills.git
+[submodule "framework/upstream/wshobson-agents"]
+	path = framework/upstream/wshobson-agents
+	url = git@github.com:wshobson/agents.git

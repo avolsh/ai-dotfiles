@@ -1,6 +1,6 @@
 # Agent Protocol
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-06-11*
 
 Operating procedures for AI agents working in any project that participates in the AI Agent Framework: path prefixes, two-scope model, context loading order, checklists, output conventions, and the on-demand reference material (determinism, schema sync, doc freshness, skills audit).
 
@@ -13,7 +13,7 @@ Documentation uses three path prefixes to avoid fragile relative paths
 
 | Prefix | Meaning | Example resolution |
 |---|---|---|
-| `<system>/` | User-home, populated by `ai-switch.sh` from `ai-dotfiles`. Resolves to the active tool's home directory (`~/.claude/`, `~/.copilot/`, `~/.codex/`). `<system>/skills/<name>` resolves via per-entry symlink in **all three** tool homes (skills overlay covers claude+copilot+codex). `<system>/spec-workflows/`, `<system>/prompts/`, `<system>/templates/`, and `<system>/boundaries.md` resolve via tool-agnostic reference symlinks installed once per tool home. `<system>/agents/<name>` resolves via per-entry symlink in `~/.claude/agents/` and `~/.copilot/agents/` (Codex does not consume system agents). | `<system>/skills/writing-specs/SKILL.md` → `~/.claude/skills/writing-specs/SKILL.md` |
+| `<system>/` | The active tool's config dir — `$CLAUDE_CONFIG_DIR`, `$COPILOT_HOME`, or `$CODEX_HOME`, each pointing at `$AI_DOTFILES/profiles/<profile>/<tool>/`. Wired by `scripts/lib/profile-links.sh` (called by both `ai-switch.sh` and `ai-profile-init.sh`): `<system>/skills/`, `<system>/spec-workflows/`, `<system>/prompts/`, `<system>/templates/`, `<system>/agents/`, `<system>/upstream/`, and `<system>/boundaries.md` resolve via whole-dir/file symlinks into `$AI_DOTFILES/framework/`, with per-entry symlinks as the fallback inside CLI-owned real dirs (e.g. `codex/skills/`). | `<system>/skills/writing-specs/SKILL.md` → `$AI_DOTFILES/profiles/personal/claude/skills/writing-specs/SKILL.md` |
 | `<project>/` | Per-repo project root. Holds `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.github/copilot/instructions/`, and (when present) project-scope `.github/copilot/skills/`, `.github/copilot/prompts/`, `.github/copilot/agents/`. Project entries extend or override system-scope catalog entries on name collision. | `<project>/docs/architecture/` → `src/github.com/tobeverse/tobevisit-content/docs/architecture/` |
 | `<workspace>/` | Optional. Host-specific workspace root for multi-project workspaces. The project list lives in `<workspace>/CLAUDE.md` (or `AGENTS.md`). Single-project hosts can omit; workspace-level steps in workflows are conditional on this placeholder being configured. | `<workspace>/CLAUDE.md` → `~/vcs/geeoz/tobevisit/CLAUDE.md` |
 
@@ -39,7 +39,7 @@ Skills, boundaries, and protocol exist at two scopes. Agents load both.
 
 | Scope | Location | Overrides |
 |---|---|---|
-| **System** | `~/.{claude,copilot,codex}/` — instruction files (`CLAUDE.md`, `AGENTS.md`), per-entry symlinks under `skills/` and `agents/`, manifest at `.active-manifest`. Rendered by `ai-switch.sh` from `ai-dotfiles`. | Base layer |
+| **System** | `$AI_DOTFILES/profiles/<profile>/{claude,copilot,codex}/` — the dirs `CLAUDE_CONFIG_DIR` / `COPILOT_HOME` / `CODEX_HOME` point at. Wired by the shared library `scripts/lib/profile-links.sh` (single source of truth for `ai-switch.sh` and `ai-profile-init.sh`): instruction-file link, `boundaries.md`, refs (`spec-workflows prompts templates skills agents upstream`), rendered hook adapters. Whole-dir symlinks normally; **per-entry symlinks as the fallback inside CLI-owned real dirs** (e.g. `codex/skills/` with its `.system/`). `profiles/<p>/claude/settings.json` may be a symlink into `~/.claude/settings.json` — the hooks merge intentionally writes through it. Each switch writes `~/.<tool>/.active-manifest` (`profile=`, `target=`, `timestamp=`); `--reset` removes it; `ai-doctor` validates `profile` and `target`. | Base layer |
 | **Project** | Per-repo: `<project>/CLAUDE.md`, `<project>/AGENTS.md`, `<project>/.github/copilot-instructions.md`, `<project>/.github/copilot/instructions/`, **`<project>/.github/copilot/skills/`**, **`<project>/.github/copilot/prompts/`**, **`<project>/.github/copilot/agents/`** (when present) | Extends system; wins on name collision |
 
 **Skill resolution order:** project scope → system scope. When a task lists a
@@ -71,9 +71,9 @@ placeholder.
 
 An AI agent starting work MUST read files in this order:
 
-1. `<system>` instruction file for the active tool (`~/.claude/CLAUDE.md`,
-   `~/.copilot/AGENTS.md`, or `~/.codex/AGENTS.md`) -- framework bootstrap,
-   rendered by `ai-switch.sh`.
+1. `<system>` instruction file for the active tool (`$CLAUDE_CONFIG_DIR/CLAUDE.md`,
+   `$COPILOT_HOME/copilot-instructions.md`, or `$CODEX_HOME/AGENTS.md`) --
+   framework bootstrap, wired by `scripts/lib/profile-links.sh`.
 2. Target project `AGENTS.md` (or `CLAUDE.md`) -- project-specific rules.
 3. `<workspace>/CLAUDE.md` (or `AGENTS.md`) -- only when routing is unclear,
    the change is cross-project, or shared framework files are involved. Skip
@@ -141,6 +141,25 @@ Three mechanisms eliminate most exploration:
    precedent. No directory scanning needed if the Plan step did its job.
 
 ---
+
+## Mechanical enforcement layer
+
+Three behavioural rules are enforced by tooling, not prose (canonical
+scripts: [`framework/hooks/README.md`](../framework/hooks/README.md);
+introduced by IMP-20260610-mechanize-framework-guardrails):
+
+| Layer | Mechanism | Enforces |
+|---|---|---|
+| Harness hooks (Claude Code, Copilot CLI, Codex CLI) | adapter configs rendered by `ai-profile-init` | spec-status guard (PreToolUse), stamp refresh (PostToolUse), `ai doctor --fast` (SessionStart) |
+| Git pre-commit (`make install-git-hooks`) | `scripts/git-hooks/pre-commit` | secrets scan + stamp freshness for every client, incl. IDE agents |
+| CI / `make check` | `validate-specs`, `lint-rules`, `validate-anchors`, `tests` | artifact-level invariants |
+
+A hook denial is not an obstacle to route around — it is the rule firing.
+Fix the state (e.g., advance the spec through its gate), don't bypass the
+hook. `scripts/ai-doctor.sh` (`make doctor`) verifies profile symlinks and
+manifest consistency; run it whenever `<system>/` path resolution misbehaves.
+All remaining boundaries rules stay prose-enforced — hooks narrow the gap,
+they do not replace judgment.
 
 ## Pre-flight checklist (before any file edit)
 
@@ -216,6 +235,32 @@ in this order:
 Other framework files MUST cross-reference this section rather than
 duplicating the field list.
 
+## Canonical rules: the one-hop convention
+
+Mandatory rules (MUST / Always / Never) live in exactly two canonical
+files — `framework/boundaries.md` and
+`framework/spec-workflows/spec-lifecycle.md` — or in a reference file
+those two link **directly**. The invariant:
+
+> An agent reading `boundaries.md` or `spec-lifecycle.md` MUST reach any
+> mandatory rule's full statement in **at most one link hop**. Chains of
+> two or more hops are where agents drift.
+
+When editing framework rules:
+
+- **Adding a rule:** state it fully in one of the two canonical files, or
+  in a file they already link directly (e.g. `splitting-rules.md`,
+  `bounded-autonomy-rules.md`). Do not bury it deeper.
+- **Moving a rule:** keep its `<a id="...">` anchor with the statement and
+  update the phrase entry in `docs/rule-canonical-map.md` in the same
+  commit (the map is machine-read by `make lint-rules`).
+- **Citing a rule:** link to its anchor; never restate the text —
+  `make lint-rules` fails on verbatim duplicates, and
+  `make validate-anchors` fails on links to renamed or missing anchors.
+
+The invariant was verified to hold for the full rule corpus on 2026-06-10
+(IMP-20260610-reduce-self-referential-overhead, T1 trace).
+
 ---
 
 ## Doc update trigger matrix
@@ -251,11 +296,12 @@ task (or a separate spec if the scope is large).
 
 ## Delegation contract
 
-System-scope sub-agents under [`framework/agents/`](../framework/agents/)
-expose a uniform delegation contract. When a workflow prompt is
-configured to delegate (e.g. `create-spec.prompt.md § Steps #3` →
-`spec-author`), the orchestrating agent's behaviour depends on its
-harness:
+Spec authoring, the Split check, and task decomposition run **inline in
+the main context** ([`writing-specs/references/authoring-steps.md`](../framework/skills/writing-specs/references/authoring-steps.md));
+they are not delegated. A sub-agent is used only on mechanical need
+(isolation / parallelism / read-only) — see the gate in
+[`framework/agents/README.md`](../framework/agents/README.md). The one
+bespoke sub-agent is the read-only `reviewer`.
 
 ### Claude Code path
 
@@ -269,40 +315,26 @@ Agent({
 })
 ```
 
-Three orchestration rules:
-1. **Self-contained prompt** — sub-agents start cold; include all paths,
-   inputs, and expected-output formats.
-2. **Single deliverable per call** — don't bundle "draft + run Split
-   check" into one invocation; `spec-author` and `splitter` are
-   separate by design.
-3. **No nested delegation** — sub-agents MUST NOT invoke their own
-   sub-agents. Keeps the call graph one level deep.
-
-Main-thread savings: ~32% on a typical Specify walk-through (measured
-in `tests/subagents-target.md`). The agent body is never loaded into
-the main thread on this path.
+Three orchestration rules: the prompt MUST be **self-contained**
+(sub-agents start cold — include all paths, inputs, expected-output
+formats), produce a **single deliverable**, and never **nest delegation**
+(keep the call graph one level deep).
 
 ### Copilot / Codex fallback path
 
-These harnesses do not implement an `Agent`-style sub-call. Every
-delegating prompt step includes a one-line fallback note:
+These harnesses do not implement an `Agent`-style sub-call. The
+principle is harness-independent: run the agent as a **separate
+empty-context session** whose only inputs are the brief the contract
+names. For the `reviewer` that is the spec + `git diff` + the
+`reviewing-changes` skill.
 
-> *Fallback (no `Agent` tool): inline the agent's Steps from its file.*
-
-The implementing agent opens `framework/agents/<name>.md` directly and
-follows its Steps in the main context. Main-thread savings on the
-fallback path: ~18% (smaller, because the agent body now joins the
-main load — but the prompt's slimmed Steps still avoid pulling in
-the docs-references previously inline).
-
-### Task-start preflight + `precedent-finder`
+### Task-start preflight (precedent files)
 
 The pre-flight checklist's "precedent files read" item (per
-[`boundaries.md § Always do #4`](../framework/boundaries.md)) maps to
-the `precedent-finder` agent. When delegation is available, invoke it
-with the task's Files column as input; it returns the nearest
-existing files per new path. On non-Claude harnesses, read the agent's
-search ladder inline.
+[`boundaries.md § Always do #4`](../framework/boundaries.md)) is the
+main agent's own `Grep`/`Glob` over the task's Files column — or the
+built-in read-only explore sub-agent returning a summary for heavy
+digging. There is no bespoke precedent agent.
 
 ### Agent contract reference
 

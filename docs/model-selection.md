@@ -41,7 +41,7 @@ On the first session of any engagement, agents MUST:
 
 - **Use for:** Architecture decisions, DDD boundaries, prompt design,
   cross-module bugs requiring pattern tracing, multi-step planning,
-  catching edge cases.
+  catching edge cases, spec-conformance review (the `reviewer` sub-agent).
 - **Characteristics:** Deep reasoning, long-context comprehension, nuanced
   decision-making. Slowest, highest cost.
 - **Sweet spot:** Tasks where *getting it right the first time* saves hours

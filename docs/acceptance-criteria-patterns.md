@@ -1,6 +1,6 @@
 # Acceptance Criteria Patterns
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-06-12*
 
 Patterns for writing Given/When/Then acceptance criteria — structure, core patterns, common mistakes, and a coverage checklist. Adapt to your domain; these are starting points, not prescriptions.
 
@@ -106,6 +106,7 @@ Then the first succeeds and the second receives a conflict error
 | Multiple scenarios in one AC | AC with 3 different When clauses | Split into 3 ACs |
 | No FR reference | "AC-5: User sees dashboard" | "AC-5: User sees dashboard (FR-7)" |
 | Untestable outcome | "Then the UI looks good" | "Then the component renders within the design-system grid" |
+| Numerical floor as proof | "Then the validator reports ≥5 findings" | Require the *artifact* instead: "Then the backtest capture exists at tests/backtest-baseline.md (non-empty)". Use ≥N only when N has a real reason (perf SLA, throughput target) — a clean corpus can legitimately yield 0 findings |
 
 ---
 

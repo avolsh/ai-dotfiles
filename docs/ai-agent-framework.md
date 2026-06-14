@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-06-14*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -42,6 +42,7 @@ ai-dotfiles/
 │       └── codex/                 ← Pre-built — CODEX_HOME target
 ├── scripts/
 │   ├── ai-switch.sh               ← Switches active profile, persists env, links shared state
+│   ├── lib/profile-links.sh       ← Single source of truth for profile wiring (switch + init)
 │   └── ai-profile-init.sh         ← Renders profile tool subdirs (one-time per profile)
 ├── Makefile                       ← Entry-point wrapper; run `make help`
 ├── docs/
@@ -89,40 +90,49 @@ each successful `ai <profile>` switch.
 
 ## Skills — what the AI knows
 
-Skills are on-demand knowledge modules. The AI loads them when needed,
-not all at once.
+Skills are on-demand knowledge modules — conditionally-relevant
+procedures the AI loads when needed, not all at once. They are also a
+**shared language**: well-codified procedures mean a task means the same
+thing on every harness, and make any future parallelization cheaper.
 
-| Skill | What it teaches the AI |
-|---|---|
-| **agent-protocol** | How to load context, run checklists, format output |
-| **writing-specs** | How to write specs, ask questions, plan tasks |
-| **model-selection** | Which AI model tier (fast/default/deep) to use per task |
-| **bootstrapping-project** | How to set up a new project with the framework |
-| **writing-docs** | Doc conventions, glossary format, freshness rules |
+The full catalog lives in
+[`framework/skills/README.md`](../framework/skills/README.md) — the single
+source of truth. It covers the system-scope methodology skills, the vendored
+tech-stack skills (TypeScript, Go, REST/GraphQL, Postgres, Kubernetes, cloud
+infra), cross-cutting disciplines (frontend-design, TDD, systematic-debugging,
+git-worktrees), their provenance, and coverage notes for stacks sourced
+elsewhere (Figma, Cloudflare) or not yet covered (Java, MongoDB).
 
-Projects can add their own skills (e.g., `testing-with-jest`,
-`building-ddd-contexts`, `running-pipeline-steps`).
+The operating protocol the AI follows is documented separately in
+[`agent-protocol.md`](agent-protocol.md). Projects can also add their own
+skills (e.g., `testing-with-jest`, `building-ddd-contexts`,
+`running-pipeline-steps`).
 
-## Sub-agents — delegated stage workers
+## Sub-agents — the exception, not a tier
 
-While skills are knowledge the main thread loads, **sub-agents** are
-workers the main thread *delegates to*. Each agent runs in its own
-context with its own tool allowlist; the orchestrating prompt keeps
-only the agent's structured output. Net effect: main-context token
-load drops by ~32% on a typical Specify walk-through (measured —
-`tests/subagents-target.md`).
+The base model is **one main agent**. Context is carried by the
+**artifacts** — the spec and the plan — not by a cast of agent roles.
+Sub-agents are not a next tier of seniority; they earn their existence
+only on a **mechanical need**: context isolation, parallelism, or
+read-only privilege. Role decomposition (author / architect / developer
+as separate agents) is an anti-pattern — it serializes coupled decisions
+and isolates context that belongs together. Spec authoring, the Split
+check, and task decomposition therefore run **inline in the main
+context** (see [`writing-specs/references/authoring-steps.md`](../framework/skills/writing-specs/references/authoring-steps.md)).
 
-| Agent | Stage | Model | Delegated from |
-|---|---|---|---|
-| `spec-author` | Specify | deep | `create-spec.prompt.md § Steps #3` |
-| `splitter` | Specify | deep | `create-spec.prompt.md § Steps #4` |
-| `task-planner` | Plan | deep | `plan-spec.prompt.md § Steps #3` |
-| `precedent-finder` | Task-start | default | invoked by the preflight checklist |
+The one bespoke sub-agent is the read-only **reviewer**:
 
-The contract — front-matter schema, body structure, delegation flow,
-fallback for non-Claude harnesses — lives at
+| Agent | When | Model | Tools | Purpose |
+|---|---|---|---|---|
+| `reviewer` | in-progress (recommended sub-step) | deep | read-only | Judges a change cold against its spec; returns `PASS` or `file:line → violated clause`. |
+
+Precedent search at task-start is the main agent's own `Grep`/`Glob` or
+the built-in read-only explore sub-agent — not a bespoke agent.
+
+The contract — front-matter schema, body structure, the subagent-need
+gate, fallback for non-Claude harnesses — lives at
 [`framework/agents/README.md`](../framework/agents/README.md). Delegation
-mechanics + Copilot/Codex fallback live at
+mechanics live at
 [`docs/agent-protocol.md § Delegation contract`](agent-protocol.md#delegation-contract).
 
 `make validate-specs` enforces the agent front-matter schema;
@@ -141,6 +151,21 @@ Three tiers of rules, from gentle to absolute:
 
 Full list: [`framework/boundaries.md`](../framework/boundaries.md).
 
+### Enforcement pyramid
+
+The highest-leverage rules are enforced mechanically, in three layers
+(earliest first); everything else remains prose-enforced:
+
+1. **Harness hooks** — canonical scripts in
+   [`framework/hooks/`](../framework/hooks/README.md), wired into Claude
+   Code, Copilot CLI, and Codex CLI via adapter configs rendered by
+   `ai-profile-init`: spec-status guard (PreToolUse), stamp refresh
+   (PostToolUse), `ai doctor --fast` (SessionStart).
+2. **Git pre-commit** (`make install-git-hooks`) — secrets scan + stamp
+   freshness for every client, including IDE agents without CLI hooks.
+3. **CI / `make check`** — `validate-specs`, `lint-rules`,
+   `validate-anchors`, plus all script self-tests (`make tests`).
+
 ## The spec workflow
 
 All work follows four statuses with human gates between each, then a
@@ -154,6 +179,12 @@ The four statuses are tracked in the spec front-matter; `archived/` is a
 **directory move**, not a separate status. See
 [Spec Workflow Guide](spec-workflow-guide.md) for the full walkthrough
 with diagrams.
+
+Three lanes scale the ceremony to the risk, smallest first: **Direct**
+(≤2 files / ≤30 lines, no spec — Bottom Line + improvements-log entry),
+**Trivial** (one combined gate), **Standard** (full gate sequence).
+`low`/`trivial`-risk closures may run review-after (batch-reviewed) — see
+[`spec-lifecycle.md`](../framework/spec-workflows/spec-lifecycle.md#direct-lane).
 
 ### Spec types
 
@@ -186,6 +217,10 @@ hidden debt.
 | Regenerate project `AGENTS.md` after editing `copilot-instructions.md` | `make sync-agents` (per project) |
 | Verify no drift (used by CI) | `make sync-agents-check` |
 | Validate spec corpus (front-matter, deps, naming, freshness, links, English-only, status invariants) | `make validate-specs` |
+| Verify active-profile invariants (symlinks, manifest) | `make doctor` |
+| Install the git pre-commit backstop (secrets, stamps) | `make install-git-hooks` |
+| Run all script self-tests | `make tests` |
+| Report framework-vs-product spec share by month | `make spec-metrics` |
 
 ## Key principles
 

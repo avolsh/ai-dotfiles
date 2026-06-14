@@ -52,57 +52,15 @@ if [ -z "${AI_PROFILE:-}" ]; then
   exit 3
 fi
 
-# --- 2. Link each tool template into the profile's tool subdir ---
-link_tool_template() {
-  local tool="$1"
-  local filename="$2"
-  local template="$AI_DOTFILES/framework/templates/system/$tool/$filename"
-  local target_dir="$profile_dir/$tool"
-  local target_file="$target_dir/$filename"
+# --- 2. Wire the profile via the shared library (FR-1) ---
+# All linking and rendering semantics live in scripts/lib/profile-links.sh —
+# the single source of truth shared with ai-switch.sh.
+# shellcheck source=lib/profile-links.sh
+. "$(dirname "$0")/lib/profile-links.sh"
 
-  if [ ! -f "$template" ]; then
-    _err "template missing: $template"
-    return 3
-  fi
-
-  mkdir -p "$target_dir"
-
-  if [ -e "$target_file" ] || [ -L "$target_file" ]; then
-    rm -rf "$target_file"
-  fi
-  ln -sfn "$template" "$target_file"
-
-  _log "linked: $target_file"
-}
-
-link_tool_template claude  CLAUDE.md
-link_tool_template copilot copilot-instructions.md
-link_tool_template codex   AGENTS.md
-
-# --- 3. Create framework symlinks inside each tool subdir ---
-link_framework() {
-  local tool="$1"
-  local target_dir="$profile_dir/$tool"
-  local ref
-
-  for ref in spec-workflows prompts templates skills agents; do
-    if [ -d "$AI_DOTFILES/framework/$ref" ]; then
-      if [ -L "$target_dir/$ref" ]; then
-        rm -f "$target_dir/$ref"
-      fi
-      ln -sfn "$AI_DOTFILES/framework/$ref" "$target_dir/$ref"
-    fi
-  done
-  if [ -f "$AI_DOTFILES/framework/boundaries.md" ]; then
-    if [ -L "$target_dir/boundaries.md" ]; then
-      rm -f "$target_dir/boundaries.md"
-    fi
-    ln -sfn "$AI_DOTFILES/framework/boundaries.md" "$target_dir/boundaries.md"
-  fi
-}
-
-link_framework claude
-link_framework copilot
-link_framework codex
+if ! ai_links_wire_profile "$AI_DOTFILES" "$profile_dir"; then
+  _err "profile wiring failed for $profile_dir"
+  exit 4
+fi
 
 printf '✓ profile=%s initialized at %s\n' "$profile" "$profile_dir"

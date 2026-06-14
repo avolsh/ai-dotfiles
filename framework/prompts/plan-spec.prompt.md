@@ -12,8 +12,8 @@ Plan stage — decompose approved requirements into vertical-slice tasks. Lifecy
 ## Steps
 1. **Load context** — the spec file, [`model-selection/SKILL.md`](../skills/model-selection/SKILL.md), every `SKILL.md` listed in the spec's `skills` field, and project `docs/architecture/module-map.md`.
 2. **Transition status** — human approved requirements at the Specify gate; flip front-matter `status: specify → plan`; update `*Last updated:*`. This is the actual `specify → plan` lifecycle transition; task decomposition below runs at `status: plan`.
-3. **Decompose + safety-net split** — delegate to [`<system>/agents/task-planner.md`](../agents/task-planner.md). Inputs: `spec_path`, optional `module_map_path`. The agent returns `tasks_block` (ready to paste), `task_count`, `model_tier_distribution`, `dependency_chain`, and `safety_net_verdict`. If verdict = `re-Specify-recommended` (P1/P2/P3 fired): do NOT paste tasks; flip `status: plan → specify`; update `*Last updated:*`; surface the cited signal at the gate. *Fallback (no `Agent` tool): inline the agent's Steps from its file.*
-4. **Paste `tasks_block`** under `## Tasks`. The agent's output already includes the `> **Before starting Task 1, ...**` line and the 8-column table.
+3. **Decompose + safety-net split** — run inline per [`writing-specs/references/authoring-steps.md § C`](../skills/writing-specs/references/authoring-steps.md). If a safety-net signal (P1/P2/P3) fires: do NOT write tasks; flip `status: plan → specify`; update `*Last updated:*`; surface the cited signal at the gate.
+4. **Write the `## Tasks` block** per § C step 7 — the `> **Before starting Task 1, …**` line plus the 8-column table.
 5. **Refresh `## Cost Estimate`** so token range, gate count / minutes, and re-Specify tripwire reflect final task count + dependencies.
 6. **Gate** — post summary (task count + file count, cross-bounded-context concerns, model tier distribution, execution order, `## Summary` + refreshed `## Cost Estimate` confirmation). Wait for explicit plan approval; Task 1 begins on approval.
 
