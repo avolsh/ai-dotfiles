@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-06-11*
+*Last updated: 2026-06-14*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -95,17 +95,18 @@ procedures the AI loads when needed, not all at once. They are also a
 **shared language**: well-codified procedures mean a task means the same
 thing on every harness, and make any future parallelization cheaper.
 
-| Skill | What it teaches the AI |
-|---|---|
-| **agent-protocol** | How to load context, run checklists, format output |
-| **writing-specs** | How to write specs, ask questions, plan tasks (authoring/split/decomposition run inline) |
-| **reviewing-changes** | The spec-conformance review checklist (coverage / scope / contract / bugs / minimality) |
-| **model-selection** | Which AI model tier (fast/default/deep) to use per task |
-| **bootstrapping-project** | How to set up a new project with the framework |
-| **writing-docs** | Doc conventions, glossary format, freshness rules |
+The full catalog lives in
+[`framework/skills/README.md`](../framework/skills/README.md) — the single
+source of truth. It covers the system-scope methodology skills, the vendored
+tech-stack skills (TypeScript, Go, REST/GraphQL, Postgres, Kubernetes, cloud
+infra), cross-cutting disciplines (frontend-design, TDD, systematic-debugging,
+git-worktrees), their provenance, and coverage notes for stacks sourced
+elsewhere (Figma, Cloudflare) or not yet covered (Java, MongoDB).
 
-Projects can add their own skills (e.g., `testing-with-jest`,
-`building-ddd-contexts`, `running-pipeline-steps`).
+The operating protocol the AI follows is documented separately in
+[`agent-protocol.md`](agent-protocol.md). Projects can also add their own
+skills (e.g., `testing-with-jest`, `building-ddd-contexts`,
+`running-pipeline-steps`).
 
 ## Sub-agents — the exception, not a tier
 

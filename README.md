@@ -1,6 +1,6 @@
 # ai-dotfiles
 
-*Last updated: 2026-05-13*
+*Last updated: 2026-06-14*
 
 Personal AI Agent Framework dotfiles — skills, spec-workflows, prompts, and
 identity profiles for GitHub Copilot, Claude Code, and OpenAI Codex CLI.
@@ -17,7 +17,7 @@ identity profiles for GitHub Copilot, Claude Code, and OpenAI Codex CLI.
 ```
 ai-dotfiles/
 ├── framework/              ← Tool-agnostic, identity-agnostic
-│   ├── skills/             ← Reusable knowledge modules
+│   ├── skills/             ← Reusable knowledge modules (catalog: skills/README.md)
 │   ├── spec-workflows/     ← Spec lifecycle, types, templates, questions
 │   ├── prompts/            ← Workflow trigger prompts ("create CR", "plan", …)
 │   ├── templates/          ← Bootstrap templates
