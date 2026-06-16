@@ -14,8 +14,7 @@ Plan stage — decompose approved requirements into vertical-slice tasks. Lifecy
 2. **Transition status** — human approved requirements at the Specify gate; flip front-matter `status: specify → plan`; update `*Last updated:*`. This is the actual `specify → plan` lifecycle transition; task decomposition below runs at `status: plan`.
 3. **Decompose + safety-net split** — run inline per [`writing-specs/references/authoring-steps.md § C`](../skills/writing-specs/references/authoring-steps.md). If a safety-net signal (P1/P2/P3) fires: do NOT write tasks; flip `status: plan → specify`; update `*Last updated:*`; surface the cited signal at the gate.
 4. **Write the `## Tasks` block** per § C step 7 — the `> **Before starting Task 1, …**` line plus the 8-column table.
-5. **Refresh `## Cost Estimate`** so token range, gate count / minutes, and re-Specify tripwire reflect final task count + dependencies.
-6. **Gate** — post summary (task count + file count, cross-bounded-context concerns, model tier distribution, execution order, `## Summary` + refreshed `## Cost Estimate` confirmation). Wait for explicit plan approval; Task 1 begins on approval.
+5. **Gate** — post summary (task count + file count, cross-bounded-context concerns, model tier distribution, execution order). Wait for explicit plan approval; Task 1 begins on approval.
 
 ## Hard rules
 - Never write tasks without approved requirements above them. Never exceed 5 files per task row or merge unrelated work to hit ≤12 total. If § 3 signals fire, flip back to `specify` — never force-fit. No advance to `plan` while `depends-on:` siblings are unmet — see [`spec-lifecycle.md § Rules #10`](../spec-workflows/spec-lifecycle.md#depends-on-blocks-plan).

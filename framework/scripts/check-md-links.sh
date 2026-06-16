@@ -26,7 +26,10 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 if [[ $# -gt 0 ]]; then
   files=("$@")
 else
-  mapfile -t files < <(
+  files=()
+  while IFS= read -r file; do
+    files+=("$file")
+  done < <(
     {
       [[ -d "$ROOT/framework" ]] && find "$ROOT/framework" -type f -name '*.md' \
         -not -path "$ROOT/framework/templates/*" \
@@ -89,4 +92,3 @@ fi
 
 echo "Markdown link check passed (scope: ${#files[@]} files)."
 exit 0
-

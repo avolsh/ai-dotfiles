@@ -1,6 +1,6 @@
 # Spec Templates Guide
 
-*Last updated: 2026-06-12*
+*Last updated: 2026-06-16*
 
 Companion to the slimmed spec templates at
 [`framework/spec-workflows/templates/`](../framework/spec-workflows/templates/).
@@ -115,26 +115,6 @@ Row format:
 - **Decision** — what changed in the spec on this iteration
 
 The validator reports backflips without a corresponding row as drift (best-effort static check; see `scripts/validate-specs.py` for the current heuristic).
-
-## `## Cost Estimate`
-
-Filled at Specify and refreshed at Plan against the approved task count.
-Sets expectations consistently across specs so reviewers can compare
-size at a glance.
-
-| Estimate row | Semantics |
-|---|---|
-| Token range | Rough order-of-magnitude estimate for end-to-end agent token spend (e.g., `50k-150k`, `200k-400k`). |
-| Human attention | Gate count and approximate minutes per gate (e.g., `7 gates: 1 specify + 1 plan + 4 task + 1 closure; ~10 min/gate`). |
-| Re-Specify tripwire | Condition that forces returning the spec to Specify rather than absorbing scope creep silently — e.g., "defect turns out to span multiple bounded contexts", or "root cause requires a baseline change". |
-
-**Who refreshes:** the agent refreshes the row values at Plan stage
-(`plan-spec.prompt.md` Step 5) after the task table is approved; humans
-refresh only on scope change. **Tripwire wording:** name the condition,
-not the consequence (the consequence — return to Specify — is fixed by
-the lifecycle).
-
----
 
 ## `## Architecture` — Visualize trigger rules
 
