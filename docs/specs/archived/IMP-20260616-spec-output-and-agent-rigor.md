@@ -2,7 +2,7 @@
 id: IMP-20260616-spec-output-and-agent-rigor
 type: IMP
 date: 2026-06-16
-status: in-progress
+status: done
 owner: avolsh
 risk: low
 affected-repos:
@@ -129,7 +129,7 @@ Keep-as-one. T1 fires (three independently-testable FR clusters: slimming FR-1�
 | T3 | Remove every remaining Cost-Estimate mandate/fill/refresh/summarize outside templates and lifecycle (FR-4). | `framework/prompts/plan-spec.prompt.md`, `docs/spec-templates-guide.md` | `docs/spec-format.md` *(T1)* | T1 | writing-docs | fast | ✅ done |
 | T4 | Add the Figma design-system-first hard rule (discover→reuse→no-duplication, build library when missing, caption library key) to the Visualize prompt; link it (not restate) from the lifecycle Visualize sub-step; remove Cost-Estimate from the lifecycle (FR-6, FR-7, FR-4). | `framework/prompts/visualize-spec.prompt.md`, `framework/spec-workflows/spec-lifecycle.md` | Figma MCP skills (`figma-generate-library`, working-with-design-systems) | — | writing-specs, writing-docs | default | ✅ done |
 | T5 | Add the author-challenge behavioural rule (don't treat the author as always right; surface doubt, verify claims, propose alternatives before complying) to boundaries.md (FR-8). | `framework/boundaries.md` | — | — | writing-docs | default | ✅ done |
-| T6 | Produce the corpus analysis over all 54 canonical archived specs and the 3-spec ≥30% redraft demonstration as closure evidence (FR-5, AC-4, AC-6). | `docs/specs/archived/artifacts/IMP-20260616-corpus-analysis.md` *(new)* | all three archived roots; `docs/writing-specs.md` *(T1)* | T1, T2, T3, T4 | writing-specs, writing-docs | deep | ☐ pending |
+| T6 | Produce the corpus analysis over all 54 canonical archived specs and the 3-spec ≥30% redraft demonstration as closure evidence (FR-5, AC-4, AC-6). | `docs/specs/archived/artifacts/IMP-20260616-corpus-analysis.md` *(new)* | all three archived roots; `docs/writing-specs.md` *(T1)* | T1, T2, T3, T4 | writing-specs, writing-docs | deep | ✅ done |
 
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
@@ -147,3 +147,23 @@ Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 - **Stability-window waiver granted** by owner `avolsh` at the requirements gate (2026-06-16), per boundaries.md § Ask first #6 (freeze until 2026-07-12).
 - Documentation/convention only; no code, no data reshaping. Archived specs keep their Cost Estimate sections — the change is forward-looking.
 - Run `make sync-agents` / `make sync-system-templates` if any rendered agent file inherits the touched guidance.
+
+## Closure (2026-06-16)
+
+Synchronous closure (risk: medium), owner-approved.
+
+| AC | Status | Evidence |
+|---|---|---|
+| AC-1 budget + formatting | ✅ | `writing-specs.md` § Length budget (≤120 physical-line rule, caps, escape hatch) + Format/cluster rules; `spec-format.md` FR rule 5/6, AC rule 5 |
+| AC-2 gated compression | ✅ | `authoring-steps.md` § A step 12 (runs before requirements gate, records before/after); `writing-specs.md` self-review checklist item |
+| AC-3 Cost Estimate removed | ✅ | `grep -rl "Cost Estimate" framework/ docs/` (excl. `docs/specs/`) → clean; removed from 3 templates, authoring-steps, plan-spec.prompt, spec-lifecycle, spec-format, spec-templates-guide |
+| AC-4 ≥30% reduction | ✅ | artifact: 3 redrafts at 41% / 54% / 57%, no FR or observable outcome dropped |
+| AC-5 design-system-first | ✅ | `visualize-spec.prompt.md` § Hard rules (discover→reuse→build-library, caption library key); `spec-lifecycle.md` links, does not restate |
+| AC-6 corpus evidence | ✅ | `artifacts/IMP-20260616-corpus-analysis.md` — all 54 specs, per-corpus body/Requirements/Acceptance/Cost-Estimate/H2/over-budget metrics |
+| AC-7 author-challenge | ✅ | `boundaries.md` § Always do #15 "Challenge before complying" |
+
+**Verification:** `make validate-specs` / `lint-rules` / `validate-anchors` all green. FR-8 rule lives in `boundaries.md` (`@`-imported at runtime), so no system-template re-render needed.
+
+**Divergences / flags:**
+- **`make links-check` was already red before this spec** — 10 broken links in untouched upstream skills (`modern-javascript-patterns`, `nodejs-backend-patterns` → sibling `advanced-patterns.md` via a wrong `references/` prefix). Pre-existing, out of scope; flagged for a separate Direct-lane fix.
+- **Pre-existing `_canonical.md` drift** in the 3 rendered system templates (a research-spec routing row + two pointer lines) surfaced when running `sync-system-templates`; reverted to keep this closure unbundled. Flagged for a separate sync/commit.
