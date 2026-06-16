@@ -28,17 +28,12 @@ If unsure — don't elect. Standard track is the safe default.
 # BUG-YYYYMMDD-<title>
 *Last updated: YYYY-MM-DD*
 ## Summary
+<!-- ≤6 lines total -->
 - **Goal:** <One sentence describing what this bug spec is trying to fix.>
 - **Scope:** <One short paragraph describing the defect and verification.>
 - **Out of scope:** <One sentence describing related issues excluded.>
-## Cost Estimate
-
-| Estimate | Value |
-|---|---|
-| Token range | <e.g., 50k-150k> |
-| Human attention | <N gates>: <gate list>; <min/gate> |
-| Re-Specify tripwire | <condition(s) that force re-Specify> |
 ## Bug Description
+<!-- ≤12 lines. -->
 <One paragraph describing the incorrect behavior. If `domain-refs:` is omitted, justify in one line.>
 ## Steps to Reproduce
 1. <step>
@@ -53,11 +48,13 @@ If unsure — don't elect. Standard track is the safe default.
 ## Architecture
 Skipped — isolated bug fix.
 ## Fix Criteria
+<!-- One Given/When/Then block per Fix-Criteria cluster, ≤6 lines each. -->
 ### AC-1: Bug is fixed (regression test required — see docs/spec-templates-guide.md § BUG scenario skeleton)
 Given <precondition>
 When <action>
 Then <expected outcome>
 ## Out of Scope
+<!-- One line per item. -->
 - OS-1: <related issues NOT fixed by this BUG spec>
 ## Split Decision
 <Fill during Specify. See docs/spec-templates-guide.md § Split Decision.>

@@ -1,10 +1,10 @@
 # Spec Format
 
-*Last updated: 2026-06-03*
+*Last updated: 2026-06-16*
 
 Quick reference for spec sections, requirement keywords, acceptance criteria, and the review checklist. For templates, see [`framework/spec-workflows/templates/`](../framework/spec-workflows/templates/).
 
-**Trivial-lane specs** (electing `risk: trivial` or `severity: trivial`) use a reduced version of these sections — one-line Goal, ≤3 FRs, exactly 1 AC, omitted Cost Estimate, single-row Tasks table at the combined `specify+plan` gate. See [`framework/spec-workflows/spec-lifecycle.md § Trivial lane`](../framework/spec-workflows/spec-lifecycle.md#trivial-lane) for the full reduced-content table and eligibility rules.
+**Trivial-lane specs** (electing `risk: trivial` or `severity: trivial`) use a reduced version of these sections — one-line Goal, ≤3 FRs, exactly 1 AC, single-row Tasks table at the combined `specify+plan` gate. See [`framework/spec-workflows/spec-lifecycle.md § Trivial lane`](../framework/spec-workflows/spec-lifecycle.md#trivial-lane) for the full reduced-content table and eligibility rules.
 
 **RES specs** (Research / Spike / POC / vibe-coding) use a different section set — Hypothesis / Kill Criteria / Iteration Log / Decision / Outcome instead of Problem Statement / Requirements / Acceptance Criteria — and add four RES-only front-matter fields (`hypothesis:`, `kill-criteria:`, `code-location:`, `outcome:`). Field constraints + Iteration Log format: [`spec-templates-guide.md § RES-only front-matter fields`](spec-templates-guide.md#res-only-front-matter-fields). Lifecycle (the iterative `specify ⇄ in-progress → done` loop): [`spec-lifecycle.md § RES exception`](../framework/spec-workflows/spec-lifecycle.md#res-exception).
 
@@ -43,6 +43,8 @@ Each requirement MUST be:
 2. **Testable** — you can write a test that proves it works or not.
 3. **Numbered** — sequential `FR-N` format for traceability.
 4. **Specific** — no ambiguous adjectives ("fast", "secure", "user-friendly").
+5. **One line** — each FR fits one physical line; a multi-clause FR needs a one-line justification ([`writing-specs.md § Length budget`](writing-specs.md#length-budget)).
+6. **Non-restating** — do not repeat in prose what a table or schema already specifies.
 
 ```markdown
 - FR-1: The system MUST accept login via email and password.
@@ -81,6 +83,7 @@ Rules:
 2. Every AC MUST be testable by a machine.
 3. No subjective language.
 4. One scenario per AC.
+5. **Cluster, don't repeat** — write one Given/When/Then block per FR / Fix-Criteria cluster, not one per FR.
 
 ```markdown
 ### AC-1: Successful login (FR-1, FR-3)

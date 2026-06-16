@@ -1,6 +1,6 @@
 # Authoring Steps — inline procedures
 
-*Last updated: 2026-06-05*
+*Last updated: 2026-06-16*
 
 The main agent runs these procedures **inline, in the same context** —
 spec authoring, the Split check, and task decomposition are not delegated
@@ -29,13 +29,13 @@ the spec body through `## Out of Scope`; leaves `## Split Decision` for
 3. **Compose filename + path.** `<TYPE>-<YYYYMMDD>-<title>.md` under `<project_root>/docs/specs/active/`.
 4. **Build front-matter** per [`spec-lifecycle.md § Front-matter schema`](../../../spec-workflows/spec-lifecycle.md). `status: specify`; `risk` default `low`, escalate to `medium` if scope crosses bounded contexts or schemas, `high` if it adds a bounded context; set `domain-refs:` from any baselines; leave `siblings:`/`depends-on:` to § B.
 5. **Fill `## Summary`** — Goal (one sentence), Scope (one short paragraph), Out of scope (one sentence), from Q1.
-6. **Fill `## Cost Estimate`** — token range, gate count, re-Specify tripwire conditions distilled from the answers.
-7. **Fill the problem section** — Current State + Proposed Improvement (IMP) or Problem Statement (CR): what exists, why it needs change, concrete evidence. Keep prose tight; the FR/AC contract carries the weight.
-8. **Fill `## Requirements`** — one FR per discrete capability, MUST per RFC 2119, numbered FR-1, FR-2, …
-9. **Fill `## Acceptance Criteria`** — Given/When/Then, one AC per FR (or one per jointly-verified cluster), numbered AC-1, …
-10. **Fill `## Out of Scope`** — explicit OS-1, OS-2, … from Q1's out-of-scope answer.
-11. **Fill `## Architecture`** — `Skipped — <reason>`, or `Pending — Visualize sub-step` when a [Visualize trigger](../../../spec-workflows/spec-lifecycle.md#visualize-triggers) fires.
-12. **Leave `## Split Decision`** as `Pending` until § B runs; **leave `## Tasks`** as `Pending — Plan stage only.` — never write rows here ([Rule #2](../../../spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify)).
+6. **Fill the problem section** — Current State + Proposed Improvement (IMP) or Problem Statement (CR): what exists, why it needs change, concrete evidence. Keep prose tight; the FR/AC contract carries the weight.
+7. **Fill `## Requirements`** — one FR per discrete capability, one physical line each, MUST per RFC 2119, numbered FR-1, FR-2, …
+8. **Fill `## Acceptance Criteria`** — Given/When/Then, one block per FR / Fix-Criteria cluster (not per FR), numbered AC-1, …
+9. **Fill `## Out of Scope`** — explicit OS-1, OS-2, … from Q1's out-of-scope answer.
+10. **Fill `## Architecture`** — `Skipped — <reason>`, or `Pending — Visualize sub-step` when a [Visualize trigger](../../../spec-workflows/spec-lifecycle.md#visualize-triggers) fires.
+11. **Leave `## Split Decision`** as `Pending` until § B runs; **leave `## Tasks`** as `Pending — Plan stage only.` — never write rows here ([Rule #2](../../../spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify)).
+12. **Compression pass** — apply [`writing-specs.md § Compression pass`](../../../../docs/writing-specs.md); verify the body meets the § Length budget (≤120 physical lines, or a one-line justification); record the body line count before and after.
 13. **Write the file** atomically; set `*Last updated: <date>*` under the H1.
 
 ## B. Split check (Specify, mandatory)
@@ -67,7 +67,6 @@ Plan-stage safety net ([`splitting-rules.md § 3`](splitting-rules.md)).
 5. **Per task, build the row** — Description (what/why + FR/AC numbers); Files (exact paths, ≤5, mark `*(new)*`); Source files (read-only, optional, uncapped); Depends on (earlier task IDs or `—`); Skills (subset of spec `skills:`); Model (`fast`/`default`/`deep` per [`docs/model-selection.md`](../../../../docs/model-selection.md), default `default`); Status `☐ pending`.
 6. **Apply the safety net** — P1 (>12 tasks), P2 (>2 bounded contexts span the table with no shared AC; needs module map, else `unknown`), P3 (a task group with zero dependencies on others). If any fires, do NOT write the table — flip `status: plan → specify` and re-run the Split check.
 7. **Format `## Tasks`** — first the line `> **Before starting Task <T1>, set status: in-progress in the front-matter above.**`, then the 8-column table: `| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |`.
-8. **Refresh `## Cost Estimate`** so token range, gate count, and the re-Specify tripwire reflect the final task count + dependencies.
 
 ## D. Research authoring (RES)
 

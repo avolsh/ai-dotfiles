@@ -29,31 +29,27 @@ If unsure — don't elect. Standard track is the safe default.
 # IMP-YYYYMMDD-<title>
 *Last updated: YYYY-MM-DD*
 ## Summary
+<!-- ≤6 lines total -->
 - **Goal:** <One sentence.>
 - **Scope:** <One short paragraph.>
 - **Out of scope:** <One sentence.>
-## Cost Estimate
-
-| Estimate | Value |
-|---|---|
-| Token range | <e.g., 200k-400k> |
-| Human attention | <N gates>: <gate list>; <min/gate> |
-| Re-Specify tripwire | <condition(s) that force re-Specify> |
 ## Current State
-<What exists today; why it needs improvement; concrete evidence.>
+<!-- ≤12 lines. What exists today; why it needs improvement; concrete evidence. -->
 ## Proposed Improvement
-<What changes and why. **Measurable benefit:** <metric + baseline + target>.>
+<!-- ≤12 lines. What changes and why. Measurable benefit: metric + baseline + target. -->
 ## Requirements
+<!-- One line per FR. Multi-clause FR needs a one-line justification. -->
 - FR-1: The system MUST ...
 ## Acceptance Criteria
+<!-- One Given/When/Then block per FR / Fix-Criteria cluster, ≤6 lines each. -->
 ### AC-1: <scenario> (FR-1)
 Given <precondition>
 When <action>
 Then <outcome>
-And the measurable benefit is verified: <how>
 ## Architecture
 <Fill during Visualize when triggered, else `Skipped — <reason>`. See docs/spec-templates-guide.md § Architecture.>
 ## Out of Scope
+<!-- One line per item. -->
 - OS-1: <item> — <reason>
 ## Split Decision
 <Fill during Specify. See docs/spec-templates-guide.md § Split Decision.>

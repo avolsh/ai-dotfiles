@@ -2,7 +2,7 @@
 id: IMP-20260616-spec-output-and-agent-rigor
 type: IMP
 date: 2026-06-16
-status: specify
+status: in-progress
 owner: avolsh
 risk: low
 affected-repos:
@@ -29,7 +29,7 @@ model-suggestion: default
 # IMP-20260616-spec-output-and-agent-rigor
 *Last updated: 2026-06-16*
 
-> Blocked by the framework stability window (boundaries.md § Ask first #6, until 2026-07-12) — needs an explicit owner waiver before Plan. No `## Cost Estimate` — this IMP applies FR-4 to itself.
+> Stability-window waiver (boundaries.md § Ask first #6) granted by owner `avolsh` at the requirements gate, 2026-06-16. No `## Cost Estimate` — this IMP applies FR-4 to itself.
 
 ## Summary
 - **Goal:** Make Specify produce specs 30–50% shorter, make the Visualize step reuse a Figma design system instead of duplicating UI primitives, and make the agent challenge the author instead of complying by default.
@@ -118,7 +118,18 @@ Skipped — convention/guidance change at the spec-authoring and agent-behaviour
 Keep-as-one. T1 fires (three independently-testable FR clusters: slimming FR-1…FR-5, Figma FR-6…FR-7, author-stance FR-8), but exception **E5 (documentation corpus)** dominates: zero behavioural code, all artifacts are markdown under the framework sharing one closure metric and one conformance pass; the three clusters were bundled by explicit owner decision. Scope-breadth acknowledged.
 
 ## Tasks
-Pending — Plan stage only.
+> **Before starting T1, set `status: in-progress` in the front-matter above.**
+>
+> P3 note: T4 (Figma) and T5 (author-stance) have no dependency on the slimming chain — the P3 safety-net signal is **acknowledged and overridden** by the owner's E5 keep-as-one decision (§ Split Decision), not flipped back to Specify.
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| T1 | Define the deterministic length budget + per-section caps + escape hatch (FR-1), the gated Compression-pass step + self-review item (FR-2), and one-line-FR / one-G-W-T-per-cluster / no-prose-restating-tables rules (FR-3); remove Cost-Estimate authoring there. | `docs/writing-specs.md`, `docs/spec-format.md`, `framework/skills/writing-specs/references/authoring-steps.md`, `framework/skills/writing-specs/SKILL.md` | corpus stats (§ Current State); `docs/spec-templates-guide.md` | — | writing-specs, writing-docs | deep | ✅ done |
+| T2 | Add the FR-1/FR-3 caps as inline section hints and remove the `## Cost Estimate` section from the CR/IMP/BUG templates (FR-3, FR-4). | `framework/spec-workflows/templates/CR-TEMPLATE.md`, `framework/spec-workflows/templates/IMP-TEMPLATE.md`, `framework/spec-workflows/templates/BUG-TEMPLATE.md` | `docs/writing-specs.md` *(T1)* | T1 | writing-specs, writing-docs | default | ✅ done |
+| T3 | Remove every remaining Cost-Estimate mandate/fill/refresh/summarize outside templates and lifecycle (FR-4). | `framework/prompts/plan-spec.prompt.md`, `docs/spec-templates-guide.md` | `docs/spec-format.md` *(T1)* | T1 | writing-docs | fast | ☐ pending |
+| T4 | Add the Figma design-system-first hard rule (discover→reuse→no-duplication, build library when missing, caption library key) to the Visualize prompt; link it (not restate) from the lifecycle Visualize sub-step; remove Cost-Estimate from the lifecycle (FR-6, FR-7, FR-4). | `framework/prompts/visualize-spec.prompt.md`, `framework/spec-workflows/spec-lifecycle.md` | Figma MCP skills (`figma-generate-library`, working-with-design-systems) | — | writing-specs, writing-docs | default | ☐ pending |
+| T5 | Add the author-challenge behavioural rule (don't treat the author as always right; surface doubt, verify claims, propose alternatives before complying) to boundaries.md (FR-8). | `framework/boundaries.md` | — | — | writing-docs | default | ☐ pending |
+| T6 | Produce the corpus analysis over all 54 canonical archived specs and the 3-spec ≥30% redraft demonstration as closure evidence (FR-5, AC-4, AC-6). | `docs/specs/archived/artifacts/IMP-20260616-corpus-analysis.md` *(new)* | all three archived roots; `docs/writing-specs.md` *(T1)* | T1, T2, T3, T4 | writing-specs, writing-docs | deep | ☐ pending |
 
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
@@ -133,6 +144,6 @@ Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 - `framework/boundaries.md` — author-challenge rule.
 
 ## Rollout / migration notes
-- **Stability-window waiver required:** boundaries.md § Ask first #6 freezes framework-scope changes until 2026-07-12; this spec needs an explicit owner waiver (record it at the requirements gate) or it stays blocked.
+- **Stability-window waiver granted** by owner `avolsh` at the requirements gate (2026-06-16), per boundaries.md § Ask first #6 (freeze until 2026-07-12).
 - Documentation/convention only; no code, no data reshaping. Archived specs keep their Cost Estimate sections — the change is forward-looking.
 - Run `make sync-agents` / `make sync-system-templates` if any rendered agent file inherits the touched guidance.
