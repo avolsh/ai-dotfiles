@@ -108,7 +108,7 @@ Given the new guide at HEAD
 When a reader follows the front-matter pointer or the new template's "see guide" links
 Then the guide documents: optional-field semantics, Cost Estimate, Architecture trigger rules, Split Decision wording, Tasks-stage rule, and Agent instructions content
 
-## Architecture
+## Design
 
 Skipped — convention/refactor at the spec-template layer; no bounded-context, schema, or pipeline impact.
 

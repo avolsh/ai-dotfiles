@@ -138,7 +138,7 @@ Given the validator at HEAD
 When `grep -E "^(import|from) " scripts/validate-specs.py` runs
 Then every imported module is in Python stdlib (or PyYAML if explicitly approved in Plan)
 
-## Architecture
+## Design
 
 Skipped — adds a tooling script + Makefile target + CI workflow. No bounded-context, schema, or pipeline impact on the framework itself; new code is leaf-level under `scripts/`.
 

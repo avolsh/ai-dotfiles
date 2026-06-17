@@ -145,7 +145,7 @@ When the metric target runs
 Then it prints per-month counts and the framework-vs-product share, classifying
 specs by `affected-repos` (ai-dotfiles → framework; product repos → product), and
 the current baseline is recorded in the closure evidence.
-## Architecture
+## Design
 Skipped — infrastructure retrofit reusing the established canonical-source →
 rendered-copies pattern (`_canonical.md` → three instruction files) for hook
 scripts → per-tool adapter configs; no new bounded context, no schema change.

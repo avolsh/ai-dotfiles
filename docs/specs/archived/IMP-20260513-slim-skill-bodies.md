@@ -138,7 +138,7 @@ Given the slimmed SKILL.md and prompt files at HEAD
 When every markdown link in `framework/skills/*/SKILL.md` is resolved
 Then every target file exists at HEAD
 
-## Architecture
+## Design
 
 Skipped — convention/refactor at the skill-documentation layer; no bounded-context, schema, or pipeline impact.
 

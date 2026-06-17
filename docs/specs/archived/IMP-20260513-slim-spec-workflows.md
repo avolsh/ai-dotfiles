@@ -119,7 +119,7 @@ Given the slim complete at HEAD
 When every markdown link inside `framework/spec-workflows/*.md` is resolved
 Then every target file exists at HEAD
 
-## Architecture
+## Design
 
 Skipped — convention/refactor at the workflow-definitions layer; no bounded-context, schema, or pipeline impact.
 

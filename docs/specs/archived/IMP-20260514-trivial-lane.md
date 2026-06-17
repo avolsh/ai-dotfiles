@@ -157,7 +157,7 @@ When the wall-clock gate times are recorded
 Then total gate time is ≤10 min
 And the ≥66% reduction vs. baseline 30 min is documented
 
-## Architecture
+## Design
 
 ```mermaid
 stateDiagram-v2
