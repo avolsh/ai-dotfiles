@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-06-14*
+*Last updated: 2026-06-16*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -163,3 +163,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** `ai personal` failed with "profile wiring failed" and left no active profile. Root cause: `scripts/lib/profile-links.sh` used two bash-only idioms that silently misbehave under zsh, the shell `ai` sources it into: (1) `for x in $VAR` — zsh does not word-split unquoted parameter expansions, so the refs/tools loops ran once with the whole string as one token; (2) `"$src"/.[!.]*` — zsh's default `nomatch` aborts the glob when no dotfiles exist. The entire hermetic test suite passed because it ran under `bash`; the real entry point is zsh. This is exactly the sourced-shell hazard FR-12/Agent-instructions flagged, missed by bash-only testing.
 - **What was changed:** Replaced both with portable forms — `_ai_links_words` (quoted `printf | tr`) feeding `while read` loops, and `find -mindepth 1 -maxdepth 1` instead of the dotglob. Added a cross-shell section to `profile-links.test.sh` that re-runs `ai_links_wire_profile` under `zsh` (when present) and asserts every ref link lands incl. a CLI-owned real-dir case; mutation-verified it fails on the bash-only form. Verified real `ai personal` → `✓ profile=personal`.
 - **Suggested follow-up:** Any shell library sourced by `ai` MUST be exercised under zsh in tests, not just bash. Consider running the whole switch/links suite under both shells in CI.
+
+### 2026-06-16 — Spec output budget, Figma design-system rule, author-challenge stance
+
+- **Spec / task:** IMP-20260616-spec-output-and-agent-rigor (all 6 tasks)
+- **Category:** process / tooling
+- **What was found:** A 54-spec corpus analysis (3 roots) showed body avg 283 / median 192.5 / max 1162, with 48/54 over 120 lines; mass concentrated in Requirements + Acceptance/Fix Criteria. The framework had qualitative compression guidance but **no measurable length budget** and no gated step enforcing it; `## Cost Estimate` was fixed overhead in 33/54 specs; the Visualize step routed UI to Figma but never required design-system reuse; and `boundaries.md` had no rule telling agents to challenge a questionable instruction.
+- **What was changed:** Added a deterministic ≤120 physical-line body budget + per-section caps + gated Compression-pass step + self-review item (`writing-specs.md`, `authoring-steps.md`, `spec-format.md`); one-line FRs / clustered ACs / no-prose-restating rules + inline template cap hints; removed `## Cost Estimate` framework-wide (templates, prompts, lifecycle, guides); added the Figma design-system-first hard rule (`visualize-spec.prompt.md`, lifecycle links to it); added `boundaries.md` Always-do #15 "Challenge before complying". Closure artifact redrafted 3 representative specs at 41% / 54% / 57% reduction with no FR/outcome loss.
+- **Suggested follow-up:** (1) Pre-existing `make links-check` failure — 10 broken links in upstream `modern-javascript-patterns` / `nodejs-backend-patterns` (sibling `advanced-patterns.md` reached via a wrong `references/` prefix) — fix via Direct lane. (2) Pre-existing `_canonical.md` → rendered-system-template drift (research-spec routing row + two pointer lines) — re-render and commit separately. (3) Consider a future `validate-specs` soft check that warns when an authored spec body exceeds 120 physical lines without a justification line.

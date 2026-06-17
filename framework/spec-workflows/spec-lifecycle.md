@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-06-10*
+*Last updated: 2026-06-16*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -220,7 +220,6 @@ A trivial spec body has the same H2 sections as a standard spec but with reduced
 | Section                  | Trivial-lane content                                                   |
 |--------------------------|------------------------------------------------------------------------|
 | `## Summary`             | One-line Goal. No Scope / Out of scope paragraphs.                     |
-| `## Cost Estimate`       | Omitted.                                                               |
 | `## Problem Statement`   | One paragraph; no separate Current State / Proposed Improvement split. |
 | `## Requirements`        | ≤3 FRs (typically 1).                                                  |
 | `## Acceptance Criteria` | Exactly 1 AC.                                                          |
@@ -304,7 +303,7 @@ Run inside Specify before the requirements gate when **any** apply:
 
 Skip only when all are false. Record in `## Architecture` as a single line: `Skipped — <reason>`.
 
-**Output format.** Use **Mermaid** for structure, data flow, schema, and step ordering. For UI surfaces use **Figma** instead of Mermaid — link the frames (file key + node IDs) and embed screenshots; a Mermaid flowchart with subgraphs is acceptable only for navigation/composition, not visual design.
+**Output format.** Use **Mermaid** for structure, data flow, schema, and step ordering. For UI surfaces use **Figma** — design-system-first rules (discover → reuse → build library when missing) and caption format: [`visualize-spec.prompt.md § Hard rules`](../prompts/visualize-spec.prompt.md).
 
 ## Split sub-step (Specify)
 
