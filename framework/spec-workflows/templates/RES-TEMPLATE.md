@@ -78,7 +78,7 @@ Log entries if the conclusion depended on a particular pivot.>
   carries the real implementation. The referenced spec MUST exist
   (validator-enforced). Throwaway code in `research/<spec-id>/` MUST NOT
   be merged into `src/` without this promotion + the sibling being `done`.>
-## Architecture
+## Design
 <Fill during Visualize when triggered, else `Skipped — exploratory; architecture decisions deferred to promoted CR/IMP if applicable`.>
 ## Split Decision
 <Fill during Specify. RES specs typically stay as one because the loop

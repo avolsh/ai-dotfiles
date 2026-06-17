@@ -16,7 +16,7 @@ Specify stage for RES — iterative research/spike/POC/vibe-coding lane. Hard ga
 2. **Ask exactly 5 questions** per [`res-questions.md`](../spec-workflows/questions/res-questions.md). All 5 are mandatory in the first round: hypothesis (Q1), smallest experiment (Q2), kill criteria (Q3), sandbox path (Q4), deliverable shape (Q5). Wait for answers.
 3. **Create the spec** — run inline per [`writing-specs/references/authoring-steps.md § D`](../skills/writing-specs/references/authoring-steps.md) (RES), using the 5 answers from Step 2.
 4. **Split check** — **SKIPPED for RES.** The iterative loop absorbs scope changes that would normally trigger a split; splitting a RES mid-loop is almost always wrong (see [`RES-TEMPLATE.md § Split Decision`](../spec-workflows/templates/RES-TEMPLATE.md)). `## Split Decision` is auto-filled with *"Kept as one — RES iterative loop"* per § D step 6.
-5. **Visualize** — typically SKIPPED for RES: write `Skipped — exploratory; architecture decisions deferred to promoted CR/IMP if applicable` in `## Architecture` (§ D step 5). Override only if the spike specifically tests an architecture proposal.
+5. **Visualize** — typically SKIPPED for RES: write `Skipped — exploratory; architecture decisions deferred to promoted CR/IMP if applicable` in `## Design` (§ D step 5). Override only if the spike specifically tests an architecture proposal.
 6. **Gate** — post per-spec summary (ID + path, hypothesis verbatim, kill-criteria shape, sandbox path, deliverable shape, `domain-refs:` or net-new justification). Wait for explicit approval. Then hand off to [`plan-spec.prompt.md`](plan-spec.prompt.md) — RES tasks are typically light ("set up sandbox", "run experiment N", "record findings").
 
 ## Hard rules

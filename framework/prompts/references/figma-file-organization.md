@@ -3,7 +3,7 @@
 *Last updated: 2026-06-17*
 
 Reference for the [Visualize sub-step](../visualize-spec.prompt.md). Applies
-whenever a spec's `## Architecture` links Figma frames, or when creating /
+whenever a spec's `## Design` links Figma frames, or when creating /
 restructuring a Figma file for a project. Goal: a sidebar that is scannable
 at a glance and a design system that product files can consume without
 duplication.

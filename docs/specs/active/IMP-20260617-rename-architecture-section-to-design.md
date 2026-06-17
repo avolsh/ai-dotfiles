@@ -2,7 +2,7 @@
 id: IMP-20260617-rename-architecture-section-to-design
 type: IMP
 date: 2026-06-17
-status: plan
+status: in-progress
 owner: alex
 risk: medium
 affected-repos:
@@ -24,7 +24,7 @@ skills:
 model-suggestion: default
 ---
 # IMP-20260617-rename-architecture-section-to-design
-*Last updated: 2026-06-17 (Plan)*
+*Last updated: 2026-06-17*
 ## Summary
 - **Goal:** Rename the spec `## Architecture` section to `## Design` everywhere it appears or is referenced.
 - **Scope:** Canonical framework templates, workflow prompts, the `writing-specs` skill, framework guide docs, and every existing spec carrying a literal `## Architecture` header (ai-dotfiles archived + workspace archived + `tobevisit-content`). Header rename plus all prose/anchor references; lands atomically.
@@ -52,7 +52,7 @@ Then none remain; each now names `## Design`, while unrelated "architecture" pro
 Given canonical edits are complete
 When the framework sync targets and their drift check run
 Then rendered copies match canonical and the check passes.
-## Architecture
+## Design
 <!-- Renamed to `## Design` by this IMP's own FR-1/FR-4 at implementation time. -->
 Skipped — mechanical documentation-convention rename; no structural or visual design to model. No Visualize trigger fires.
 ## Out of Scope
@@ -67,9 +67,9 @@ Keep-as-one. T3 fires (clusters span `ai-dotfiles` + `tobevisit-content`), but e
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|-------------|-------|--------------------------|------------|--------|-------|--------|
-| 1 | Rename `## Architecture` H2 → `## Design` (incl. inline guidance comment + any "See … § Architecture" prose) in the four canonical templates. (FR-1) | `env/ai-dotfiles/framework/spec-workflows/templates/{CR,IMP,BUG,RES}-TEMPLATE.md` | — | — | writing-specs | fast | ☐ pending |
-| 2 | Update every spec-section reference (`## Design`, `§ Design`, "Fill `## Design`") in the five workflow prompts. (FR-2) | `env/ai-dotfiles/framework/prompts/{create-spec,plan-spec,visualize-spec,bug-triage,research-spec}.prompt.md` | template files (T1) | — | writing-specs | default | ☐ pending |
-| 3 | Update section references in the figma reference + `writing-specs` authoring steps. (FR-2) | `env/ai-dotfiles/framework/prompts/references/figma-file-organization.md`, `env/ai-dotfiles/framework/skills/writing-specs/references/authoring-steps.md` | — | — | writing-specs | fast | ☐ pending |
+| 1 | Rename `## Architecture` H2 → `## Design` (incl. inline guidance comment + any "See … § Architecture" prose) in the four canonical templates. (FR-1) | `env/ai-dotfiles/framework/spec-workflows/templates/{CR,IMP,BUG,RES}-TEMPLATE.md` | — | — | writing-specs | fast | ✅ done (2026-06-17) |
+| 2 | Update every spec-section reference (`## Design`, `§ Design`, "Fill `## Design`") in the five workflow prompts. (FR-2) | `env/ai-dotfiles/framework/prompts/{create-spec,plan-spec,visualize-spec,bug-triage,research-spec}.prompt.md` | template files (T1) | — | writing-specs | default | ✅ done (2026-06-17) |
+| 3 | Update section references in the figma reference + `writing-specs` authoring steps. (FR-2) | `env/ai-dotfiles/framework/prompts/references/figma-file-organization.md`, `env/ai-dotfiles/framework/skills/writing-specs/references/authoring-steps.md` | — | — | writing-specs | fast | ✅ done (2026-06-17) |
 | 4 | Rename the `## Architecture` heading + body refs to `## Design` in guide docs, incl. the section-ordering label and any inbound `#…` anchor links; leave generic-architecture prose (e.g. `writing-docs.md` `docs/architecture/`) untouched. (FR-3) | `env/ai-dotfiles/docs/{spec-format,spec-templates-guide,spec-workflow-guide,writing-specs}.md`, `env/ai-dotfiles/framework/spec-workflows/spec-lifecycle.md` | — | — | writing-specs | default | ☐ pending |
 | 5 | Mechanical header swap `^## Architecture` → `## Design` across both ai-dotfiles-side archived corpora (31 files); bodies untouched. (FR-4) | `env/ai-dotfiles/docs/specs/archived/*.md`, `docs/specs/archived/*.md` | — | — | writing-specs | fast | ☐ pending |
 | 6 | Mechanical header swap `^## Architecture` → `## Design` across `tobevisit-content` specs (17 files); cross-repo, bodies untouched. (FR-4) | `src/github.com/tobeverse/tobevisit-content/docs/specs/**/*.md` | — | — | writing-specs | fast | ☐ pending |

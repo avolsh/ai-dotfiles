@@ -7,7 +7,7 @@ description: "Plan stage — decompose an approved spec into vertical-slice task
 Plan stage — decompose approved requirements into vertical-slice tasks. Lifecycle: [`spec-lifecycle.md`](../spec-workflows/spec-lifecycle.md). Task and writing-style rules: [`docs/writing-specs.md § Plan stage`](../../docs/writing-specs.md#plan-stage-detail).
 
 ## Preconditions
-- Spec at `status: specify`, requirements approved by the human, `## Architecture` populated or `Skipped — <reason>`.
+- Spec at `status: specify`, requirements approved by the human, `## Design` populated or `Skipped — <reason>`.
 
 ## Steps
 1. **Load context** — the spec file, [`model-selection/SKILL.md`](../skills/model-selection/SKILL.md), every `SKILL.md` listed in the spec's `skills` field, and project `docs/architecture/module-map.md`.

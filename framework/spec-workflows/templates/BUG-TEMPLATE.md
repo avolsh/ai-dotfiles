@@ -45,7 +45,7 @@ If unsure — don't elect. Standard track is the safe default.
 - <environment | branch/commit | date first observed | config — whatever is relevant>
 ## Root Cause
 <Filled during Specify once investigation is complete. If unknown: "Under investigation" + list suspects.>
-## Architecture
+## Design
 Skipped — isolated bug fix.
 ## Fix Criteria
 <!-- One Given/When/Then block per Fix-Criteria cluster, ≤6 lines each. -->

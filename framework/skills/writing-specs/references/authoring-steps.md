@@ -1,6 +1,6 @@
 # Authoring Steps — inline procedures
 
-*Last updated: 2026-06-16*
+*Last updated: 2026-06-17*
 
 The main agent runs these procedures **inline, in the same context** —
 spec authoring, the Split check, and task decomposition are not delegated
@@ -33,7 +33,7 @@ the spec body through `## Out of Scope`; leaves `## Split Decision` for
 7. **Fill `## Requirements`** — one FR per discrete capability, one physical line each, MUST per RFC 2119, numbered FR-1, FR-2, …
 8. **Fill `## Acceptance Criteria`** — Given/When/Then, one block per FR / Fix-Criteria cluster (not per FR), numbered AC-1, …
 9. **Fill `## Out of Scope`** — explicit OS-1, OS-2, … from Q1's out-of-scope answer.
-10. **Fill `## Architecture`** — `Skipped — <reason>`, or `Pending — Visualize sub-step` when a [Visualize trigger](../../../spec-workflows/spec-lifecycle.md#visualize-triggers) fires.
+10. **Fill `## Design`** — `Skipped — <reason>`, or `Pending — Visualize sub-step` when a [Visualize trigger](../../../spec-workflows/spec-lifecycle.md#visualize-triggers) fires.
 11. **Leave `## Split Decision`** as `Pending` until § B runs; **leave `## Tasks`** as `Pending — Plan stage only.` — never write rows here ([Rule #2](../../../spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify)).
 12. **Compression pass** — apply [`writing-specs.md § Compression pass`](../../../../docs/writing-specs.md); verify the body meets the § Length budget (≤120 physical lines, or a one-line justification); record the body line count before and after.
 13. **Write the file** atomically; set `*Last updated: <date>*` under the H1.
@@ -56,11 +56,11 @@ the human decides at the gate.
 
 ## C. Task decomposition (Plan)
 
-Run at `status: plan` (requirements + ACs approved, Architecture filled,
+Run at `status: plan` (requirements + ACs approved, Design filled,
 Split Decision filled). Produces the `## Tasks` block. Apply the
 Plan-stage safety net ([`splitting-rules.md § 3`](splitting-rules.md)).
 
-1. **Verify prerequisites** — Requirements, Acceptance Criteria, Split Decision, Architecture all populated.
+1. **Verify prerequisites** — Requirements, Acceptance Criteria, Split Decision, Design all populated.
 2. **Build the FR→AC map.**
 3. **Cluster into vertical slices** — each owns ≥1 FR and ends at a verifiable AC/green build moment. A slice spanning >5 files is over-bundled — split it.
 4. **Order by dependency** — earlier tasks produce what later tasks consume; scaffolding first, verification/closure last; aim for a near-linear chain.
@@ -78,7 +78,7 @@ answers ([`questions/res-questions.md`](../../../spec-workflows/questions/res-qu
 2. **Template + path** — `RES-TEMPLATE.md`; `RES-<YYYYMMDD>-<title>.md` under `docs/specs/active/`.
 3. **Front-matter (RES schema)** — standard fields + `status: specify`, `model-suggestion: deep`, and RES-only `hypothesis:` (Q1), `kill-criteria:` (Q3), `code-location:` (Q4), `outcome:` (blank). Do **not** set `risk:`/`severity:`.
 4. **Fill** `## Summary`, `## Hypothesis` (Q1, falsifiable), `## Kill Criteria` (Q3, explicit shape). Leave `## Iteration Log` empty (header rows only), `## Decision` and `## Outcome` as placeholders.
-5. **`## Architecture`** — `Skipped — exploratory …` (or `Pending — Visualize sub-step` only if the spike tests an architecture proposal).
+5. **`## Design`** — `Skipped — exploratory …` (or `Pending — Visualize sub-step` only if the spike tests an architecture proposal).
 6. **`## Split Decision`** — auto-fill `Kept as one — RES iterative loop (per spec-lifecycle.md § RES exception)`; RES does not run § B.
 7. **Leave `## Tasks`** as `Pending — Plan stage only.`; write the file atomically with the `*Last updated:*` stamp.
 
