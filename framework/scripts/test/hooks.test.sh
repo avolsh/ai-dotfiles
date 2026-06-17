@@ -94,6 +94,23 @@ expect "scan flags staged AWS key" 1 "$rc"
 echo "$out" | grep -q "leak.txt" || { echo "FAIL: finding must cite the file" >&2; fails=$((fails+1)); }
 git -C "$repo" rm -q --cached leak.txt
 
+printf 'openai_key = "%s%s"\n' "sk-" "abcdefghijklmnopqrstuvwxyz123456" > "$repo/openai-leak.txt"
+git -C "$repo" add openai-leak.txt
+set +e
+out="$(cd "$repo" && "$SCAN" 2>&1)"; rc=$?
+set -e
+expect "scan flags staged OpenAI key" 1 "$rc"
+echo "$out" | grep -q "openai-leak.txt" || { echo "FAIL: OpenAI finding must cite the file" >&2; fails=$((fails+1)); }
+git -C "$repo" rm -q --cached openai-leak.txt
+
+printf '5. [Task complexity estimation](#ta%s%s)\n' "s" "k-complexity-estimation" > "$repo/clean-anchor.md"
+git -C "$repo" add clean-anchor.md
+set +e
+(cd "$repo" && "$SCAN" >/dev/null 2>&1); rc=$?
+set -e
+expect "scan allows Markdown task anchor" 0 "$rc"
+git -C "$repo" rm -q --cached clean-anchor.md
+
 echo 'SECRET=1' > "$repo/.env"
 git -C "$repo" add -f .env
 set +e

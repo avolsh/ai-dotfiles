@@ -179,3 +179,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** The closure-time `make check` passed links, install, spec, rule, anchor, hook, doctor, pre-commit, metrics, and profile-link checks, then `scripts/test/ai-switch.test.sh` failed at its FR-12 hash table (`declare -A`, line 220) with `_ai_link_shared_state: unbound variable`. macOS `/bin/bash` 3.2 does not support associative arrays; this docs-only IMP does not touch the failing script or shared-state engine.
 - **What was changed:** No out-of-scope code fix and no unchanged rerun. The required `make sync-agents-check` closure checks remain green; the portability failure is recorded in the IMP's Closure Evidence.
 - **Suggested follow-up:** Replace the associative hash table with a Bash 3.2-compatible key/value list, or explicitly require and invoke a modern Bash for the suite; add a macOS Bash 3.2 test lane so the declared local runtime is exercised.
+
+### 2026-06-17 — Secret scanner now distinguishes keys from Markdown anchors
+
+- **Spec / task:** Direct lane (owner-approved commit-blocker fix)
+- **Category:** tooling
+- **What was found:** The OpenAI key pattern began at the `sk-` suffix inside `task-complexity-estimation`, so a harmless archived-spec table-of-contents anchor blocked commits as a secret.
+- **What was changed:** Added a non-word left boundary to the `sk-` alternative and regression coverage proving a real standalone key is rejected while the Markdown anchor is allowed.
+- **Suggested follow-up:** None — both the hook unit suite and pre-commit integration suite cover the behavior.
