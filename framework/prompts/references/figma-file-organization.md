@@ -111,11 +111,18 @@ space/100  space/200  space/300             radius/sm  radius/md  radius/lg
   **List → Detail → Edit → states**.
 - Don't make one page per screen (sidebar explosion) and don't pile every
   domain onto a flat page — Sections carry the domain grouping.
-- **Automation note:** a Figma **Section's children use section-relative
-  coordinates**, not absolute. When placing frames into a Section
-  programmatically, set each child's `x`/`y` in *local* grid coordinates
-  (e.g. `x = 60 + (i%2)*1540`, `y = 160 + ⌊i/2⌋*1000`); absolute values
-  overflow the section bounds and the frames scatter off-canvas.
+- **Automation note — coordinates:** a Figma **Section's children use
+  section-relative coordinates**, not absolute. When placing frames into a
+  Section programmatically, set each child's `x`/`y` in *local* grid
+  coordinates (e.g. `x = 60 + (i%2)*1540`, `y = 160 + ⌊i/2⌋*1000`); absolute
+  values overflow the section bounds and the frames scatter off-canvas.
+- **Automation note — a grown frame must not burst its section.** When you
+  resize a screen frame taller (e.g. adding a section of content), the frame
+  must stay inside its host Section **and** the Section must not collide with
+  the next one. Grow the Section to `frameRelativeY + frameHeight + padding`,
+  then verify with a read: `frameBottom ≤ sectionBottom` **and**
+  `sectionBottom < nextSection.y` (canvas coords). Resizing a frame without
+  this check overlaps the neighbouring Section.
 
 ### Frame level — mandatory ID tag
 
@@ -155,7 +162,37 @@ Examples: `[W-01] Countries — List`, `[W-02] Countries — Edit · Validation 
   you fix naming, duplication, and future Code Connect in one move — far
   better than renaming N copies by hand.
 
-## 5. Quick checklist (Visualize sub-step)
+## 5. Build mechanics (`use_figma` write API)
+
+Construction rules for *generating* frames programmatically — the companion to
+the discovery half of the design-system-first rule in
+[`visualize-spec.prompt.md`](../visualize-spec.prompt.md).
+
+- **Enumerate before you write.** Before the first `use_figma` write, list every
+  `COMPONENT` / `COMPONENT_SET` in the file (walk `figma.root`) and note which
+  catalog each lives in. You cannot reuse what you did not look up — skipping
+  this is what leads to redrawing primitives that already exist.
+- **Instance, never copy.** A repeated pill/badge/chip → `comp.createInstance()`
+  (override `fills` + nested text), not a hand-drawn rounded rectangle. A
+  repeated card/row → make **one component** and instance it per record; never
+  paste the same node N times. This is the §4 "componentize over copies" rule
+  applied at build time.
+- **Auto-layout owns spacing.** Any new component or section frame uses
+  `layoutMode` + `itemSpacing` + padding (and `layoutSizingHorizontal = "FILL"`
+  for fluid children). **Never hand-compute child `x`/`y` offsets** — manual
+  absolute positioning is what produces cramped, mis-aligned, and overflowing
+  frames. Let auto-layout hug content; read back `node.height` afterwards if you
+  need it.
+- **`throw` rolls back the whole write.** Ending a script with `throw` (e.g. the
+  throw-to-read-id trick) discards every mutation in that call. Surface an
+  id/size in a **separate read-only call**, or **measure-then-resize inline** in
+  the same non-throwing script — never `throw` to read a value you still need to
+  apply.
+- **`figma.currentPage = page` throws** — use `await figma.setCurrentPageAsync(page)`.
+  You rarely need to switch pages: `getNodeByIdAsync` + screenshot-by-node-id
+  work cross-page.
+
+## 6. Quick checklist (Visualize sub-step)
 
 - [ ] Pages follow one numeric + Title Case taxonomy; ≤ ~9 top-level pages.
 - [ ] Platform is the top axis (`10 Web`/`20 iOS`/…); no empty platform pages;
@@ -171,3 +208,9 @@ Examples: `[W-01] Countries — List`, `[W-02] Countries — Edit · Validation 
 - [ ] Components page organized into category catalog frames (Form Controls /
       Layout / Data Display / Icons), no loose components; icons in their own frame.
 - [ ] No content parked off-canvas to dodge creating a page.
+- [ ] Existing components enumerated before writing; repeated pills/cards built
+      as instances of one component, not hand-drawn copies.
+- [ ] New components/sections use auto-layout for spacing; no hand-computed
+      child `x`/`y`.
+- [ ] Any frame grown taller keeps `frameBottom ≤ sectionBottom < nextSection.y`
+      (host section grown, neighbour not overlapped).
