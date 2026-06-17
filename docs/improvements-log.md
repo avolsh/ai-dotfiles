@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-06-16*
+*Last updated: 2026-06-17*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -171,3 +171,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** A 54-spec corpus analysis (3 roots) showed body avg 283 / median 192.5 / max 1162, with 48/54 over 120 lines; mass concentrated in Requirements + Acceptance/Fix Criteria. The framework had qualitative compression guidance but **no measurable length budget** and no gated step enforcing it; `## Cost Estimate` was fixed overhead in 33/54 specs; the Visualize step routed UI to Figma but never required design-system reuse; and `boundaries.md` had no rule telling agents to challenge a questionable instruction.
 - **What was changed:** Added a deterministic ≤120 physical-line body budget + per-section caps + gated Compression-pass step + self-review item (`writing-specs.md`, `authoring-steps.md`, `spec-format.md`); one-line FRs / clustered ACs / no-prose-restating rules + inline template cap hints; removed `## Cost Estimate` framework-wide (templates, prompts, lifecycle, guides); added the Figma design-system-first hard rule (`visualize-spec.prompt.md`, lifecycle links to it); added `boundaries.md` Always-do #15 "Challenge before complying". Closure artifact redrafted 3 representative specs at 41% / 54% / 57% reduction with no FR/outcome loss.
 - **Suggested follow-up:** (1) Pre-existing `make links-check` failure — 10 broken links in upstream `modern-javascript-patterns` / `nodejs-backend-patterns` (sibling `advanced-patterns.md` reached via a wrong `references/` prefix) — fix via Direct lane. (2) Pre-existing `_canonical.md` → rendered-system-template drift (research-spec routing row + two pointer lines) — re-render and commit separately. (3) Consider a future `validate-specs` soft check that warns when an authored spec body exceeds 120 physical lines without a justification line.
+
+### 2026-06-17 — ai-switch test uses Bash 4 associative arrays on macOS Bash 3.2
+
+- **Spec / task:** IMP-20260617-rename-architecture-section-to-design / T7
+- **Category:** tooling
+- **What was found:** The closure-time `make check` passed links, install, spec, rule, anchor, hook, doctor, pre-commit, metrics, and profile-link checks, then `scripts/test/ai-switch.test.sh` failed at its FR-12 hash table (`declare -A`, line 220) with `_ai_link_shared_state: unbound variable`. macOS `/bin/bash` 3.2 does not support associative arrays; this docs-only IMP does not touch the failing script or shared-state engine.
+- **What was changed:** No out-of-scope code fix and no unchanged rerun. The required `make sync-agents-check` closure checks remain green; the portability failure is recorded in the IMP's Closure Evidence.
+- **Suggested follow-up:** Replace the associative hash table with a Bash 3.2-compatible key/value list, or explicitly require and invoke a modern Bash for the suite; add a macOS Bash 3.2 test lane so the declared local runtime is exercised.
