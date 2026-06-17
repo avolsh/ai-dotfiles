@@ -2,7 +2,7 @@
 id: IMP-20260617-rename-architecture-section-to-design
 type: IMP
 date: 2026-06-17
-status: in-progress
+status: done
 owner: alex
 risk: medium
 affected-repos:
@@ -73,7 +73,7 @@ Keep-as-one. T3 fires (clusters span `ai-dotfiles` + `tobevisit-content`), but e
 | 4 | Rename the `## Architecture` heading + body refs to `## Design` in guide docs, incl. the section-ordering label and any inbound `#…` anchor links; leave generic-architecture prose (e.g. `writing-docs.md` `docs/architecture/`) untouched. (FR-3) | `env/ai-dotfiles/docs/{spec-format,spec-templates-guide,spec-workflow-guide,writing-specs}.md`, `env/ai-dotfiles/framework/spec-workflows/spec-lifecycle.md` | — | — | writing-specs | default | ✅ done (2026-06-17) |
 | 5 | Mechanical header swap `^## Architecture` → `## Design` across both ai-dotfiles-side archived corpora (31 files); bodies untouched. (FR-4) | `env/ai-dotfiles/docs/specs/archived/*.md`, `docs/specs/archived/*.md` | — | — | writing-specs | fast | ✅ done (2026-06-17) |
 | 6 | Mechanical header swap `^## Architecture` → `## Design` across `tobevisit-content` specs (17 files); cross-repo, bodies untouched. (FR-4) | `src/github.com/tobeverse/tobevisit-content/docs/specs/**/*.md` | — | — | writing-specs | fast | ✅ done (2026-06-17) |
-| 7 | Regenerate rendered copies via `make sync-*`, then verify AC-1 (`grep -rn "^## Architecture"` over in-scope surfaces = 0), AC-2 (no dangling `§ Architecture` refs), AC-3 (drift check passes). Flip `status: done`. (FR-5, AC-1/2/3) | — *(runs `make sync-*` + verification greps; no hand edits)* | all files from T1–T6 | 1, 2, 3, 4, 5, 6 | writing-specs | default | ⏳ awaiting closure approval (2026-06-17) |
+| 7 | Regenerate rendered copies via `make sync-*`, then verify AC-1 (`grep -rn "^## Architecture"` over in-scope surfaces = 0), AC-2 (no dangling `§ Architecture` refs), AC-3 (drift check passes). Flip `status: done`. (FR-5, AC-1/2/3) | — *(runs `make sync-*` + verification greps; no hand edits)* | all files from T1–T6 | 1, 2, 3, 4, 5, 6 | writing-specs | default | ✅ done (2026-06-17) |
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 ## Docs updates required
@@ -88,7 +88,7 @@ Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 | AC | Evidence |
 |---|---|
 | AC-1 | Literal `^## Architecture$` searches returned 0 across canonical framework surfaces and all three spec corpora. `## Design` counts: 4 templates, 21 ai-dotfiles specs (20 archived + this IMP), 11 workspace archived specs, 17 tobevisit-content specs. |
-| AC-2 | Targeted searches for `## Architecture`, `§ Architecture`, `Architecture section`, and authoring/placement variants returned 0 across prompts, authoring steps, and guide/lifecycle docs. Remaining canonical `architecture` hits are generic (`docs/architecture/`, ADRs, trigger concepts, unrelated skills) and stay unchanged. |
+| AC-2 | Targeted searches for `## Architecture`, `§ Architecture`, `Architecture section`, authoring/placement variants, and `#architecture` links returned 0 across prompts, authoring steps, guide/lifecycle docs, and the three spec corpora. Remaining canonical `architecture` hits are generic (`docs/architecture/`, ADRs, trigger concepts, unrelated skills) and stay unchanged. |
 | AC-3 | Ran `make sync-system-templates` in ai-dotfiles and `make sync-agents` in workspace + tobevisit-content; all completed idempotently. All three `make sync-agents-check` targets passed; ai-dotfiles reported `validate-specs`, `lint-rules`, and `validate-anchors` green. Profile prompt/spec-workflow catalogs resolve to canonical framework paths via symlinks. |
 
 Reviewer sub-step: **PASS** (coverage, scope, contract, bugs, minimality). Additional `make check` passed links/install/spec/rule/anchor and six self-test suites before a pre-existing macOS Bash 3.2 portability failure at `scripts/test/ai-switch.test.sh:220`; this IMP does not touch that code, and the follow-up is logged in `docs/improvements-log.md`.
