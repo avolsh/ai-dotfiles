@@ -1,6 +1,6 @@
 # Spec Workflow — How We Work
 
-*Last updated: 2026-06-10*
+*Last updated: 2026-06-17*
 
 Every change — feature, bug fix, or improvement — follows the same
 four-status lifecycle. Each status transition ends with a **human gate**:
@@ -43,7 +43,7 @@ flowchart LR
    `## Split Decision` in every resulting spec.
 
 5. If the change affects architecture, database, or data flow → the AI
-   draws **Mermaid diagrams** in an `## Architecture` section (per spec,
+   draws **Mermaid diagrams** in a `## Design` section (per spec,
    after any split is resolved).
 
 **🔒 Gate:** You read the spec(s) and approve. Nothing else happens until
@@ -160,7 +160,7 @@ When `head -9 docs/spec-format.md | tail -1` runs
 Then output is "Quick reference for spec sections, requirement keywords, ..."
 
 ## Out of Scope —
-## Architecture
+## Design
 Skipped — trivial lane.
 
 ## Split Decision
@@ -310,7 +310,7 @@ During Specify, diagrams are **mandatory** when any of the following is true:
 - A database schema or API contract changes
 - A pipeline step is added or reordered
 
-If none apply, the AI writes `Skipped — <reason>` under `## Architecture`.
+If none apply, the AI writes `Skipped — <reason>` under `## Design`.
 
 ---
 
@@ -402,4 +402,3 @@ flowchart TD
 **You are always in control.** The AI never skips a gate, never writes
 code before you approve the spec, and never moves to the next task
 without your explicit "continue."
-

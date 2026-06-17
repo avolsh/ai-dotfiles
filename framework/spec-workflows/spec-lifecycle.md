@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-06-16*
+*Last updated: 2026-06-17*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -48,7 +48,7 @@ Omit the fields when the spec is autonomous.
 ```mermaid
 stateDiagram-v2
     [*] --> specify: spec file created
-    specify --> plan: requirements approved\n(+ architecture if triggered)
+    specify --> plan: requirements approved\n(+ design if triggered)
     plan --> in_progress: plan approved,\nTask 1 starts
     in_progress --> done: all tasks pass,\nclosure approved
     done --> [*]: file moved to archived/
@@ -57,7 +57,7 @@ stateDiagram-v2
 | Transition             | Precondition                                                                                                     | Agent action                                                                |
 |------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
 | `[start]` → `specify`  | Human asked for a new spec                                                                                       | Copy template, fill front-matter, write title — status `specify` from birth |
-| `specify` → `plan`     | Human approved requirements (and architecture if Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                         |
+| `specify` → `plan`     | Human approved requirements (and design if Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                               |
 | `plan` → `in-progress` | Human approved the plan, first task begins                                                                       | Flip status **before** the first file edit of Task 1                        |
 | `in-progress` → `done` | Every AC has evidence, tests pass, docs updated. Closure approval is synchronous for `medium`/`high` risk; `low`/`trivial` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
 | `done` → `archived/`   | Immediately after closure                                                                                        | Move file from `docs/specs/active/` to `docs/specs/archived/`               |
@@ -224,7 +224,7 @@ A trivial spec body has the same H2 sections as a standard spec but with reduced
 | `## Requirements`        | ≤3 FRs (typically 1).                                                  |
 | `## Acceptance Criteria` | Exactly 1 AC.                                                          |
 | `## Out of Scope`        | One line, OR `—` if Goal is self-bounding.                             |
-| `## Architecture`        | Always `Skipped — trivial lane`.                                       |
+| `## Design`              | Always `Skipped — trivial lane`.                                       |
 | `## Split Decision`      | Always `Kept as one — trivial lane (E4 by elective)`.                  |
 | `## Tasks`               | Exactly one row at the combined gate.                                  |
 
@@ -301,7 +301,7 @@ Run inside Specify before the requirements gate when **any** apply:
 - Adds or reorders a pipeline step.
 - Adds or changes a user-facing UI surface (screen, view, component).
 
-Skip only when all are false. Record in `## Architecture` as a single line: `Skipped — <reason>`.
+Skip only when all are false. Record in `## Design` as a single line: `Skipped — <reason>`.
 
 **Output format.** Use **Mermaid** for structure, data flow, schema, and step ordering. For UI surfaces use **Figma** — design-system-first rules (discover → reuse → build library when missing) and caption format: [`visualize-spec.prompt.md § Hard rules`](../prompts/visualize-spec.prompt.md).
 

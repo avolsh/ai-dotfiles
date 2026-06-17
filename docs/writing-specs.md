@@ -1,6 +1,6 @@
 # Writing Specs
 
-*Last updated: 2026-06-16*
+*Last updated: 2026-06-17*
 
 Consolidated guidance for spec-driven work: lifecycle pointer, stage walk-throughs (Specify, Plan), writing-style rules, RFC 2119 keywords, the self-review additions, template usage, and anti-patterns. Topic-specific deep dives live in the linked docs.
 
@@ -22,7 +22,7 @@ Process diagram and gate rules:
 
 | # | Stage | Status | Prompt | Produces |
 |---|---|---|---|---|
-| 1 | Specify (+ Visualize sub-step) | `specify` | [`create-spec.prompt.md`](../framework/prompts/create-spec.prompt.md) / [`bug-triage.prompt.md`](../framework/prompts/bug-triage.prompt.md) | Requirements, ACs, Architecture (if triggered) |
+| 1 | Specify (+ Visualize sub-step) | `specify` | [`create-spec.prompt.md`](../framework/prompts/create-spec.prompt.md) / [`bug-triage.prompt.md`](../framework/prompts/bug-triage.prompt.md) | Requirements, ACs, Design (if triggered) |
 | 2 | Plan | `plan` | [`plan-spec.prompt.md`](../framework/prompts/plan-spec.prompt.md) | Vertical-slice tasks table |
 | 3 | Task execution | `in-progress` | — (per-task preflight + Bottom Line) | Code + tests per task |
 | 4 | Closure | `done` → `archived/` | — | Evidence, file moved |
@@ -48,7 +48,7 @@ Apply to all spec text during Specify and Plan.
 
 ### Length budget
 
-- **Standard-track spec body ≤120 physical lines** — counted from the first line after the front-matter close (`---`) to EOF, **including** blank lines, the H1, and the `*Last updated:*` line. **Exclude** lines inside fenced diagram blocks (```` ```mermaid ````, Figma embeds) under `## Architecture`, and the entire `## Closure` section.
+- **Standard-track spec body ≤120 physical lines** — counted from the first line after the front-matter close (`---`) to EOF, **including** blank lines, the H1, and the `*Last updated:*` line. **Exclude** lines inside fenced diagram blocks (```` ```mermaid ````, Figma embeds) under `## Design`, and the entire `## Closure` section.
 - Per-section soft caps: Summary ≤6; Current State / Problem Statement ≤12; Proposed Improvement ≤12; one line per FR; one Given/When/Then block (≤6 lines) per FR / Fix-Criteria cluster; one line per Out-of-Scope item.
 - Exceeding any cap is allowed only with a **one-line justification at the top of that section**. Trivial / RES lanes inherit these caps where the section exists.
 
@@ -117,7 +117,7 @@ Mandatory step in spec authoring ([`authoring-steps.md § A`](../framework/skill
 6. Run **Visualize sub-step** if any trigger applies — per spec, after
    the split is resolved
    (see [`spec-lifecycle.md § Visualize sub-step`](../framework/spec-workflows/spec-lifecycle.md#visualize-triggers)).
-7. **Gate:** human approves requirements (and architecture, if populated).
+7. **Gate:** human approves requirements (and design, if populated).
 
 ## Plan stage (detail)
 

@@ -1,6 +1,6 @@
 # Spec Templates Guide
 
-*Last updated: 2026-06-16*
+*Last updated: 2026-06-17*
 
 Companion to the slimmed spec templates at
 [`framework/spec-workflows/templates/`](../framework/spec-workflows/templates/).
@@ -116,9 +116,9 @@ Row format:
 
 The validator reports backflips without a corresponding row as drift (best-effort static check; see `scripts/validate-specs.py` for the current heuristic).
 
-## `## Architecture` — Visualize trigger rules
+## `## Design` — Visualize trigger rules
 
-The `## Architecture` section is filled during the Visualize sub-step
+The `## Design` section is filled during the Visualize sub-step
 of Specify. Fill it when **any** of these apply:
 
 - Risk is `medium` or `high` (CR / IMP only).
@@ -144,7 +144,7 @@ When filled, embed Mermaid diagrams (`flowchart`, `sequenceDiagram`,
 use Figma instead: link the frames (file key + node IDs) and embed
 screenshots rather than drawing the visual design in Mermaid.
 
-**BUG specs** usually skip Architecture. Fill it only if the fix
+**BUG specs** usually skip Design. Fill it only if the fix
 reveals an architectural issue (e.g., a boundary violation that must be
 corrected as part of the fix). Otherwise leave the section as
 `Skipped — isolated bug fix`.
