@@ -1,6 +1,6 @@
 # Figma file organization — naming & structure conventions
 
-*Last updated: 2026-06-17*
+*Last updated: 2026-07-21*
 
 Reference for the [Visualize sub-step](../visualize-spec.prompt.md). Applies
 whenever a spec's `## Design` links Figma frames, or when creating /
@@ -116,13 +116,18 @@ space/100  space/200  space/300             radius/sm  radius/md  radius/lg
   Section programmatically, set each child's `x`/`y` in *local* grid
   coordinates (e.g. `x = 60 + (i%2)*1540`, `y = 160 + ⌊i/2⌋*1000`); absolute
   values overflow the section bounds and the frames scatter off-canvas.
-- **Automation note — a grown frame must not burst its section.** When you
-  resize a screen frame taller (e.g. adding a section of content), the frame
-  must stay inside its host Section **and** the Section must not collide with
-  the next one. Grow the Section to `frameRelativeY + frameHeight + padding`,
-  then verify with a read: `frameBottom ≤ sectionBottom` **and**
-  `sectionBottom < nextSection.y` (canvas coords). Resizing a frame without
-  this check overlaps the neighbouring Section.
+- **Automation note — no frame may burst its section.** Applies to **every**
+  frame you add, move, or resize — not just one you grew. The frame must stay
+  inside its host Section **and** the Section must not collide with its
+  neighbours. Grow the host to fit, then verify with a read:
+  `frameBox ⊆ sectionBox` for every child **and** no two Section boxes
+  intersect (canvas coords). Skipping this is what produces frames sitting on
+  top of a neighbouring section's screens.
+- **Automation note — free space comes from the section box, never from
+  sibling extents.** `max(child.y + child.height)` answers "where does content
+  end", **not** "where may I write" — the section can end sooner, and past its
+  edge you are writing into the next section's canvas territory. Derive the
+  slot from `section.width`/`section.height`, then grow the section.
 
 ### Frame level — mandatory ID tag
 
@@ -191,6 +196,44 @@ the discovery half of the design-system-first rule in
 - **`figma.currentPage = page` throws** — use `await figma.setCurrentPageAsync(page)`.
   You rarely need to switch pages: `getNodeByIdAsync` + screenshot-by-node-id
   work cross-page.
+- **Grow sections sideways, not downward.** Sections are stacked vertically and
+  all start at `x = 0`, so free canvas exists to the **right** of every one of
+  them and nowhere below. Adding a column costs one `resizeWithoutConstraints`
+  on the host; adding a row means reflowing every section beneath it. Default
+  to a new column at `x = section.width`, `y = 160` (the standard top row).
+
+### Placement recipe — compute, verify, then hand over
+
+Placement is derived and asserted **in the same write call**, never eyeballed
+and never confirmed only by a later screenshot. A screenshot shows one frame;
+the assertion covers the whole page.
+
+```js
+// 1. Slot from the SECTION box (not sibling extents), as a new right-hand column
+const gutter = 60, topRow = 160;
+frame.x = section.width;                       // section-relative
+frame.y = topRow;
+section.resizeWithoutConstraints(
+  section.width + frame.width + gutter, section.height);
+
+// 2. Assert before returning — containment + neighbour separation
+const box = n => { const b = n.absoluteBoundingBox;
+  return {x:b.x, y:b.y, x2:b.x+b.width, y2:b.y+b.height}; };
+const secs = figma.currentPage.children.filter(c => c.type === "SECTION");
+const escapes = secs.flatMap(s => { const sb = box(s);
+  return s.children.filter(c => { const b = box(c);
+    return b.x < sb.x || b.y < sb.y || b.x2 > sb.x2 || b.y2 > sb.y2; })
+    .map(c => `${s.name} ⊅ ${c.name}`); });
+const hits = secs.flatMap((a,i) => secs.slice(i+1).filter(b => {
+  const A = box(a), B = box(b);
+  return A.x < B.x2 && B.x < A.x2 && A.y < B.y2 && B.y < A.y2;
+}).map(b => `${a.name} ∩ ${b.name}`));
+if (escapes.length || hits.length) throw new Error(JSON.stringify({escapes, hits}));
+return { createdNodeIds: [frame.id], escapes, hits };
+```
+
+`throw` on a failed assertion is deliberate: the write rolls back whole (see
+the `throw` rule above), so a bad placement never reaches the canvas.
 
 ## 6. Quick checklist (Visualize sub-step)
 
@@ -212,5 +255,7 @@ the discovery half of the design-system-first rule in
       as instances of one component, not hand-drawn copies.
 - [ ] New components/sections use auto-layout for spacing; no hand-computed
       child `x`/`y`.
-- [ ] Any frame grown taller keeps `frameBottom ≤ sectionBottom < nextSection.y`
-      (host section grown, neighbour not overlapped).
+- [ ] Every frame added, moved, or resized asserted in-script: every child
+      inside its host Section box, no two Section boxes intersecting. Slot taken
+      from the section box as a new right-hand column — never from sibling
+      extents, never a new row.
