@@ -235,6 +235,22 @@ return { createdNodeIds: [frame.id], escapes, hits };
 `throw` on a failed assertion is deliberate: the write rolls back whole (see
 the `throw` rule above), so a bad placement never reaches the canvas.
 
+**Assert inside the frame too, not only across sections.** Section containment
+passes happily while new content overlaps a sibling *within* the frame or
+overflows its bottom edge. Extend the same check to the frame's children —
+every child inside `0,0 → main.width,height`, and each absolutely-positioned
+child against each flow child.
+
+**Read the parent's `layoutMode` before assigning `x`/`y`.** Appending to an
+auto-layout parent puts the node in the flow and silently ignores your
+coordinates — it lands stacked at the end instead of where you asked. Either
+place it in the flow deliberately (`insertChild` at the right index) or set
+`layoutPositioning = "ABSOLUTE"` first. Two traps follow from this: removing a
+flow child **reflows every sibling below it**, so coordinates read before the
+removal are stale; and `resize()` pins **both** axes, so a card that should
+grow with its content needs `layoutSizingVertical = "HUG"` afterwards or it
+stays at its literal height while the content spills out.
+
 ## 6. Quick checklist (Visualize sub-step)
 
 - [ ] Pages follow one numeric + Title Case taxonomy; ≤ ~9 top-level pages.
