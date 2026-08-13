@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-06-17*
+*Last updated: 2026-08-13*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -187,3 +187,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** The OpenAI key pattern began at the `sk-` suffix inside `task-complexity-estimation`, so a harmless archived-spec table-of-contents anchor blocked commits as a secret.
 - **What was changed:** Added a non-word left boundary to the `sk-` alternative and regression coverage proving a real standalone key is rejected while the Markdown anchor is allowed.
 - **Suggested follow-up:** None — both the hook unit suite and pre-commit integration suite cover the behavior.
+
+### 2026-08-13 — `validate-specs.py` can only ever validate its own repo
+
+- **Spec / task:** IMP-20260813-config-and-duplication-rules, Specify (discovered while authoring four sibling specs in `tobevisit-content`)
+- **Category:** `tooling`
+- **What was found:** `main()` resolves the corpus root with `find_repo_root(Path(__file__).resolve().parent)` and ignores `argv` entirely, so the walk always terminates at `ai-dotfiles/docs/specs` no matter where the script is invoked from. Running it with `tobevisit-content` as the working directory reports `OK (22 spec(s))` — the ai-dotfiles corpus — while that project holds 58. The output is indistinguishable from a real pass over the project's specs, which is the dangerous part: an agent that runs it from a project root and reads "OK" has evidence for a claim the run never tested. The eleven registered checks — naming pattern, front-matter schema, dependency graph — therefore cover one of the workspace's four spec corpora, and every project spec written since the validator landed has been unvalidated by construction. Same shape as the 2026-08-12 `verify-baselines.sh` entry: a checker whose name implies coverage it does not have, passing loudly.
+- **What was changed:** none — logged, and the four new `tobevisit-content` specs were checked against the front-matter schema by hand instead. The fix is out of this spec's scope (it ships framework rules, not framework tooling).
+- **Suggested follow-up:** Accept an optional path argument and fall back to the current working directory before `__file__`, so `python3 validate-specs.py <repo>` validates that repo; then wire it into each project's `make sync-agents-check` the way `lint-rules` is wired into the framework's. Worth pairing with a guard that prints the resolved root and the corpus size on every run — both failures in this class were invisible because the tool never said what it had actually looked at. General rule for this repo's checkers: a validator MUST print the root it resolved, and MUST NOT resolve that root from its own install location when it is meant to be pointed at something.
