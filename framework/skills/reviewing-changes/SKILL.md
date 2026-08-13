@@ -39,7 +39,27 @@ Judge the change on exactly five dimensions:
 3. **Contract** — public interfaces, schemas, outputs, and cross-layer
    contracts match what the spec specifies. Flag drift.
 4. **Bugs** — correctness defects: logic errors, unhandled edge cases,
-   broken invariants, regressions.
+   broken invariants, regressions. Apply these checks, and flag what
+   fires:
+   - a caught error is stored as a finished state — a checkpoint, a
+     completion timestamp, a `processed` flag — so the query that would
+     have retried the record no longer selects it
+     ([`boundaries.md § Always do #17`](../../boundaries.md#classify-caught-failures));
+   - a technical failure and a genuinely empty answer land on the same
+     stored value, with nothing recording which of the two occurred;
+   - one sentinel — an empty collection, `null`, a zero count, an empty
+     output file — stands for more than one state in the same field;
+   - an external call declares no timeout, no size or page bound, or
+     reads response fields without checking the response shape;
+   - a business uniqueness rule rests on a read-then-write query with no
+     store constraint behind it;
+   - shared work is read and then marked, rather than claimed by a single
+     atomic transition before it is acted on;
+   - a write's reported outcome goes unread — an update or delete by
+     identity that matched nothing, or a batch with per-item failures,
+     passes as success;
+   - a long-running operation re-derives its settings at completion time
+     instead of reading the snapshot it started under.
 5. **Minimality** — no unnecessary complexity, duplication, or dead
    code; the change is the smallest that satisfies the spec. Apply
    these checks, and flag what fires:
@@ -86,6 +106,8 @@ human closure gate.
 ## References
 
 - [`framework/agents/reviewer.md`](../../agents/reviewer.md) — the read-only sub-agent that runs this checklist.
+- [`framework/skills/handling-external-failures/SKILL.md`](../handling-external-failures/SKILL.md) — the boundary half of dimension 4: outcome classification, checkpoints, sentinel overloading, call bounds.
+- [`framework/skills/designing-durable-state/SKILL.md`](../designing-durable-state/SKILL.md) — the store half of dimension 4: store-enforced uniqueness, atomic claims, read write outcomes, run snapshots.
 - [`framework/skills/avoiding-duplication/SKILL.md`](../avoiding-duplication/SKILL.md) — the duplication half of dimension 5: axis of variation, single-sourced vocabularies, mapper round-trips, accepted copies.
 - [`framework/skills/configuring-applications/SKILL.md`](../configuring-applications/SKILL.md) — the configuration half: layering, one validated accessor, dead keys, secrets never reaching a log.
 - [`docs/writing-skills.md`](../../../docs/writing-skills.md) — skill authoring conventions.

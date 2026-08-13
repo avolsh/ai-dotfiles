@@ -113,3 +113,14 @@ Verbatim phrases observed:
 - boundaries #16 (heading clause): *"Name the shared cause before the third copy."*
 - boundaries #16 (rule statement): *"in more than two places, stop and name the shared cause before applying it"*
 - boundaries #16 (outcome clause): *"The outcome may be a shared fix or an accepted duplication"*
+
+### R12 — Classify a caught failure, never settle it
+
+| | |
+|---|---|
+| **Canonical location** | `framework/boundaries.md § Always do #17` |
+
+Verbatim phrases observed:
+- boundaries #17 (heading clause): *"Classify a caught failure — never settle it."*
+- boundaries #17 (rule statement): *"is recorded as retryable, permanent, or valid-empty, or it propagates"*
+- boundaries #17 (outcome clause): *"completed state, a checkpoint, or an empty result, each of which removes the record"*

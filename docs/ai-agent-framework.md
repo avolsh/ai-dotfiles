@@ -99,8 +99,11 @@ The full catalog lives in
 [`framework/skills/README.md`](../framework/skills/README.md) — the single
 source of truth. It covers the system-scope methodology skills — including
 `configuring-applications` (how configuration is layered, typed, and kept out
-of logs) and `avoiding-duplication` (when repeated code is a drift defect and
-when a copy is the cheaper answer) — the vendored
+of logs), `avoiding-duplication` (when repeated code is a drift defect and
+when a copy is the cheaper answer), `handling-external-failures` (how a
+boundary result becomes a stored fact without a technical failure passing for
+a business answer) and `designing-durable-state` (uniqueness, claims, and
+write outcomes that hold under concurrency) — the vendored
 tech-stack skills (TypeScript, Go, REST/GraphQL, Postgres, Kubernetes, cloud
 infra), cross-cutting disciplines (frontend-design, TDD, systematic-debugging,
 git-worktrees), their provenance, and coverage notes for stacks sourced

@@ -38,6 +38,11 @@
     in more than two places, stop and name the shared cause before applying it, recording the decision in the Bottom
     Line. The outcome may be a shared fix or an accepted duplication — it may not be a third silent copy. Depth: [
     `skills/avoiding-duplication`](skills/avoiding-duplication/SKILL.md).
+17. <a id="classify-caught-failures"></a>**Classify a caught failure — never settle it.** A failure caught at a
+    process boundary is recorded as retryable, permanent, or valid-empty, or it propagates. It is never written as a
+    completed state, a checkpoint, or an empty result, each of which removes the record from the backlog that would
+    retry it. Depth: [`skills/handling-external-failures`](skills/handling-external-failures/SKILL.md), [
+    `skills/designing-durable-state`](skills/designing-durable-state/SKILL.md).
 
 ## Ask first
 
