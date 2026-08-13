@@ -1,6 +1,6 @@
 # Model Selection
 
-*Last updated: 2026-07-21*
+*Last updated: 2026-08-13*
 
 Recommendations for choosing AI models by **capability tier**, not by model name. Model names change frequently; the decision logic stays stable. Covers the model-freshness gate, capability tiers, decision flowchart, IDE setup, and the current model mapping appendix.
 
@@ -87,13 +87,13 @@ Start a task
 
 ## Appendix: Current model mapping
 
-*Verified: 2026-07-21*
+*Verified: 2026-08-13*
 
 | Tier | Model | Notes |
 |------|-------|-------|
 | Fast | Claude Haiku 4.5 | Fastest latency, lowest cost |
 | Default | Claude Sonnet 5 | Workhorse for 70-80% of tasks |
-| Deep | Claude Opus 4.8 | Slowest, use for high-stakes decisions |
+| Deep | Claude Opus 5 | Slowest, use for high-stakes decisions |
 
 > Update only this table when model names change. The tiers and flowchart
 > above remain stable.

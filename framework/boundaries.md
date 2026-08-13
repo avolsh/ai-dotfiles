@@ -1,8 +1,8 @@
 # Boundaries
 
-*Last updated: 2026-06-16*
+*Last updated: 2026-08-13*
 
-<!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
+<!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R11; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
 > **System-scope** rules for all AI agents. Projects MAY extend via their `_canonical.md` § Boundaries
 > (rendered into all three agent files by `make sync-agents`); project rules win on conflict. Three tiers,
@@ -34,6 +34,10 @@
 13. **Log process improvements immediately** to the project's `docs/improvements-log.md` — do not defer.
 14. **Verify pipeline output** when the task touches a workflow step.
 15. **Challenge before complying.** Do not treat the author as always correct. When an instruction, assumption, or proposed approach appears factually wrong, suboptimal, or has a materially better alternative: (1) verify any checkable claim against the codebase or framework docs first; (2) surface the doubt with evidence; (3) propose the alternative(s). Use the § Escalation protocol format when stopping; a brief inline note suffices when proceeding with a caveat.
+16. <a id="named-shared-cause"></a>**Name the shared cause before the third copy.** When the same fix must be applied
+    in more than two places, stop and name the shared cause before applying it, recording the decision in the Bottom
+    Line. The outcome may be a shared fix or an accepted duplication — it may not be a third silent copy. Depth: [
+    `skills/avoiding-duplication`](skills/avoiding-duplication/SKILL.md).
 
 ## Ask first
 

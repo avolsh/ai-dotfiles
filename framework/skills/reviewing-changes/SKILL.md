@@ -5,7 +5,7 @@ description: "Spec-conformance review checklist for a code change (diff). Use wh
 
 # Reviewing Changes
 
-*Last updated: 2026-06-05*
+*Last updated: 2026-08-13*
 
 The shared review language for the framework. Both the read-only
 [`reviewer`](../../agents/reviewer.md) sub-agent (Claude) and a separate
@@ -41,7 +41,23 @@ Judge the change on exactly five dimensions:
 4. **Bugs** — correctness defects: logic errors, unhandled edge cases,
    broken invariants, regressions.
 5. **Minimality** — no unnecessary complexity, duplication, or dead
-   code; the change is the smallest that satisfies the spec.
+   code; the change is the smallest that satisfies the spec. Apply
+   these checks, and flag what fires:
+   - the same fix lands in more than two places with no named shared
+     cause ([`boundaries.md § Always do #16`](../../boundaries.md#named-shared-cause));
+   - a closed vocabulary (statuses, categories, codes) is restated at a
+     site that derives nothing, so adding a member breaks no build;
+   - a field-enumerating mapper crossing a persistence boundary has no
+     round-trip test;
+   - a configuration key arrives with no reader — or an admin control
+     writes a key nothing reads;
+   - configuration is merged, defaulted, or re-read outside the single
+     declared merge site, or reached through casts rather than one
+     validated typed accessor;
+   - a secret-bearing configuration value reaches a log, an error
+     message, or telemetry — including from a debug branch.
+
+   Duplication the change explains is a decision, not a finding.
 
 ## What to ignore
 
@@ -70,4 +86,6 @@ human closure gate.
 ## References
 
 - [`framework/agents/reviewer.md`](../../agents/reviewer.md) — the read-only sub-agent that runs this checklist.
+- [`framework/skills/avoiding-duplication/SKILL.md`](../avoiding-duplication/SKILL.md) — the duplication half of dimension 5: axis of variation, single-sourced vocabularies, mapper round-trips, accepted copies.
+- [`framework/skills/configuring-applications/SKILL.md`](../configuring-applications/SKILL.md) — the configuration half: layering, one validated accessor, dead keys, secrets never reaching a log.
 - [`docs/writing-skills.md`](../../../docs/writing-skills.md) — skill authoring conventions.

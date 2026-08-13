@@ -1,6 +1,6 @@
 # Rule Canonical Map
 
-*Last updated: 2026-06-10*
+*Last updated: 2026-08-13*
 
 > **Machine-read by `scripts/lint-rules.py` — not human-maintained prose.**
 > Parser contract: a rule section starts with `### R<N> —`; it must contain a
@@ -102,3 +102,14 @@ Verbatim phrases observed:
 Verbatim phrases observed:
 - spec-lifecycle #8: *"Visualize is a sub-step of Specify (not a status). When triggered, complete it before asking for the requirements gate."*
 - visualize-spec.prompt: *"Status stays at `specify` — Visualize is not a separate status."*
+
+### R11 — Name the shared cause before the third copy
+
+| | |
+|---|---|
+| **Canonical location** | `framework/boundaries.md § Always do #16` |
+
+Verbatim phrases observed:
+- boundaries #16 (heading clause): *"Name the shared cause before the third copy."*
+- boundaries #16 (rule statement): *"in more than two places, stop and name the shared cause before applying it"*
+- boundaries #16 (outcome clause): *"The outcome may be a shared fix or an accepted duplication"*

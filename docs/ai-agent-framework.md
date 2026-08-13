@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-06-14*
+*Last updated: 2026-08-13*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -97,7 +97,10 @@ thing on every harness, and make any future parallelization cheaper.
 
 The full catalog lives in
 [`framework/skills/README.md`](../framework/skills/README.md) — the single
-source of truth. It covers the system-scope methodology skills, the vendored
+source of truth. It covers the system-scope methodology skills — including
+`configuring-applications` (how configuration is layered, typed, and kept out
+of logs) and `avoiding-duplication` (when repeated code is a drift defect and
+when a copy is the cheaper answer) — the vendored
 tech-stack skills (TypeScript, Go, REST/GraphQL, Postgres, Kubernetes, cloud
 infra), cross-cutting disciplines (frontend-design, TDD, systematic-debugging,
 git-worktrees), their provenance, and coverage notes for stacks sourced

@@ -1,6 +1,6 @@
 # Authoring Steps — inline procedures
 
-*Last updated: 2026-06-17*
+*Last updated: 2026-08-13*
 
 The main agent runs these procedures **inline, in the same context** —
 spec authoring, the Split check, and task decomposition are not delegated
@@ -27,7 +27,7 @@ the spec body through `## Out of Scope`; leaves `## Split Decision` for
 1. **Validate inputs.** `spec_type ∈ {CR, IMP}`; `title` matches `[a-z0-9-]+`; `date` is `YYYY-MM-DD`; mandatory Q1+Q2 answers non-empty. If two answers imply different scopes, STOP and surface the contradiction — do not draft. (RES → § D.)
 2. **Locate template.** `<system>/spec-workflows/templates/<TYPE>-TEMPLATE.md`.
 3. **Compose filename + path.** `<TYPE>-<YYYYMMDD>-<title>.md` under `<project_root>/docs/specs/active/`.
-4. **Build front-matter** per [`spec-lifecycle.md § Front-matter schema`](../../../spec-workflows/spec-lifecycle.md). `status: specify`; `risk` default `low`, escalate to `medium` if scope crosses bounded contexts or schemas, `high` if it adds a bounded context; set `domain-refs:` from any baselines; leave `siblings:`/`depends-on:` to § B.
+4. **Build front-matter** per [`spec-lifecycle.md § Front-matter schema`](../../../spec-workflows/spec-lifecycle.md). `status: specify`; `risk` default `low`, escalate to `medium` if scope crosses bounded contexts or schemas, `high` if it adds a bounded context; set `domain-refs:` from any baselines; leave `siblings:`/`depends-on:` to § B. Select `skills:` by walking **both scopes' catalogs** — the project's skills catalog first, then [`framework/skills/README.md`](../../README.md) — against what the change actually touches, rather than carrying over the previous spec's list out of habit. `skills:` is the only mechanism that loads a skill at every stage and task, and a task row's `Skills` column can only ever be a *subset* of it, so a skill missing here is unreachable everywhere downstream.
 5. **Fill `## Summary`** — Goal (one sentence), Scope (one short paragraph), Out of scope (one sentence), from Q1.
 6. **Fill the problem section** — Current State + Proposed Improvement (IMP) or Problem Statement (CR): what exists, why it needs change, concrete evidence. Keep prose tight; the FR/AC contract carries the weight.
 7. **Fill `## Requirements`** — one FR per discrete capability, one physical line each, MUST per RFC 2119, numbered FR-1, FR-2, …
