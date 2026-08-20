@@ -1,6 +1,6 @@
 # Figma file organization — naming & structure conventions
 
-*Last updated: 2026-07-21*
+*Last updated: 2026-08-20*
 
 Reference for the [Visualize sub-step](../visualize-spec.prompt.md). Applies
 whenever a spec's `## Design` links Figma frames, or when creating /
@@ -30,7 +30,7 @@ duplication.
 - **Platform first, domain second.** The top axis is the platform (`Web` /
   `iOS` / `Android`). Only create a platform page you actually ship — **never
   an empty `iOS` page "for later"**. Inside a platform page, group product
-  domains as Figma **Sections** (`Reference Data`, `Billing`, …), not as more
+  domains as Figma **Sections** (`Billing`, `Inventory`, …), not as more
   pages. This keeps the sidebar shallow while staying scannable.
 - **Do** keep names short and stable (`10 Web`, not `Web screens v2 FINAL`).
 - **Don't** put version numbers or dates in page names — use Figma file
@@ -106,7 +106,7 @@ space/100  space/200  space/300             radius/sm  radius/md  radius/lg
 ### Page → Section → Frame
 
 - **Page = platform** (`10 Web`, `20 iOS`, `30 Android`). **Section = domain**
-  inside that platform (`Reference Data`, `Places`, `Settings`, …). **Frame =
+  inside that platform (`Billing`, `Inventory`, `Settings`, …). **Frame =
   screen** inside the section. Order frames left→right by flow:
   **List → Detail → Edit → states**.
 - Don't make one page per screen (sidebar explosion) and don't pile every
@@ -150,8 +150,8 @@ Every root (screen) frame is named:
   resize); breakpoints, if needed, are a `· sm/md/lg` suffix, not digits.
 - Use the **product's user-facing vocabulary**; never embed `v2`/`FINAL`/dates.
 
-Examples: `[W-01] Countries — List`, `[W-02] Countries — Edit · Validation error`,
-`[W-11] Ingestion · Step 1 — Console`.
+Examples: `[W-01] Invoice — List`, `[W-02] Invoice — Edit · Validation error`,
+`[W-11] Import · Step 1 — Console`.
 
 ### Layer level (inside frames)
 
@@ -251,7 +251,86 @@ removal are stale; and `resize()` pins **both** axes, so a card that should
 grow with its content needs `layoutSizingVertical = "HUG"` afterwards or it
 stays at its literal height while the content spills out.
 
-## 6. Quick checklist (Visualize sub-step)
+## 6. Spec embeds & file versioning
+
+How a spec references Figma, and how a file key is retired. Companion to the
+Visualize hard rules in [`visualize-spec.prompt.md`](../visualize-spec.prompt.md).
+
+### Screenshot embeds — link-wrapped, never stored
+
+Figma screenshot URLs are **short-lived by design**: `get_screenshot` returns
+a short-lived URL, and `download_assets` states outright that URLs are
+temporary. A bare `![alt](asset-url)` therefore rots into unrecoverable alt
+text, and the frame it documented becomes unreachable from the rendered page.
+
+Every frame in a spec's `## Design` is a **link-wrapped image**:
+
+```markdown
+[![[W-12] Invoice — List](https://www.figma.com/api/mcp/asset/<uuid>)](https://www.figma.com/design/<fileKey>?node-id=<node-id>)
+```
+
+- **Alt text = the frame's `[<ID>] <Entity> — <View> · <state>` name** (§ 4).
+  An expired image then still renders as a named screen, and it stays
+  clickable — the reader loses the picture, never the reference.
+- **Outer URL = the node link.** It carries `fileKey` + `node-id`, which is
+  exactly what `get_screenshot` needs, so a spec regenerates its own images
+  with no metadata stored anywhere else.
+- **Never store the image.** No exported PNG/WebP committed to a repository,
+  no upload to object storage or a CDN. The image is *regenerable*, not
+  archived — that is what makes storing it unnecessary.
+- **Regenerate at the gate.** Before a spec goes to the requirements gate, and
+  whenever a spec with dead images is re-opened, re-run `get_screenshot` for
+  every node URL under `## Design` and replace the image URLs in place.
+  Freshness is a property of the process, not of the moment a frame was drawn.
+
+### File versioning — freeze, never rewrite
+
+A node link resolves against a **live** file: the design it shows keeps
+changing after the spec closes. Cutting a copy is what makes a closed spec's
+links truthful again.
+
+- **The copy is the successor, not the archive.** Duplicate the current file,
+  continue work in the duplicate, leave the predecessor untouched. The reverse
+  — copying as an archive and continuing in the original — forces retro-edits
+  of keys in closed specs. Never do it.
+- **Ask every run.** Before its first read of the project's declared key, the
+  Visualize sub-step asks whether to continue with the current file or adopt a
+  new one; the default is continue. The question fires on **every** run
+  because only the human knows a milestone has been cut.
+- **Rotate before any further call.** A supplied key updates the version table
+  first; the rest of the run then reads and writes that key alone.
+- **One declaration site.** Every key the project **owns** — current and
+  superseded — lives in its `docs/architecture/design-system.md` version
+  table. A key belongs to exactly one project: another project's file that
+  this repo only reads is a **citation, not a declaration**, and stays with
+  the fact that cites it.
+
+  | File key | Version | Status | Frozen on |
+  |---|---|---|---|
+  | `<key>` | v0.2 | current | — |
+  | `<key>` | v0.1 | frozen | 2026-08-20 |
+
+  No other live doc repeats a key; prose elsewhere points at the table.
+- **Freezing is an act, not a label.** Rename the predecessor
+  `… v0.1 · frozen`, move it to the archive project, and update its
+  `00 Cover` status. A file nobody actually froze keeps drifting, and the
+  whole scheme buys nothing.
+- **Never retro-edit archived specs.** They keep the key they were designed
+  against; that key is now frozen, so their links are correct by construction.
+
+### Caveats
+
+- **Node IDs survive duplication** — a spec written against `node-id=51:2`
+  finds the same node in the successor file. Verify once per rotation: the
+  scheme depends on it.
+- **A subscribed library still drifts.** Once the design system is promoted to
+  a separate published library (§ 3), freezing the product file does not
+  freeze what it renders — the library keeps publishing into it. Freeze the
+  pair, or accept the drift knowingly.
+- **The Figma plan caps files per team.** A copy-per-milestone cadence spends
+  that budget. Check the ceiling before committing to a rotation rhythm.
+
+## 7. Quick checklist (Visualize sub-step)
 
 - [ ] Pages follow one numeric + Title Case taxonomy; ≤ ~9 top-level pages.
 - [ ] Platform is the top axis (`10 Web`/`20 iOS`/…); no empty platform pages;
@@ -275,3 +354,11 @@ stays at its literal height while the content spills out.
       inside its host Section box, no two Section boxes intersecting. Slot taken
       from the section box as a new right-hand column — never from sibling
       extents, never a new row.
+- [ ] Every Figma frame in `## Design` is a link-wrapped image whose alt text
+      is the frame's `[<ID>] <Entity> — <View> · <state>` name; no screenshot
+      file committed to a repository or uploaded to external storage.
+- [ ] Screenshots regenerated immediately before the requirements gate.
+- [ ] The file-key question asked before the first Figma read; any new key
+      rotated into the version table before any further Figma call.
+- [ ] A superseded file renamed `· frozen`, moved to the archive project, and
+      its `00 Cover` status updated.

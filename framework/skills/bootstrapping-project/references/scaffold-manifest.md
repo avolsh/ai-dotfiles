@@ -1,6 +1,6 @@
 # Scaffold Manifest
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-08-20*
 
 Manifest of artifacts the `bootstrapping-project` skill scaffolds. Walkthroughs, rationale, and rules live in [`docs/bootstrapping-project.md`](../../../../docs/bootstrapping-project.md). Placeholders use `<angle-brackets>` — replace every one before writing.
 
@@ -56,6 +56,7 @@ If neither a project nor a workspace root has `CLAUDE.md` / `AGENTS.md`, agents 
 |---|---|
 | `docs/architecture/system-overview.md` | High-level diagram and data flow |
 | `docs/architecture/code-conventions.md` | Linting, naming, file layout |
+| `docs/architecture/design-system.md` | Design-system authority for projects with a UI. Carries the **Figma version table** — the single declaration site for every file key, current and frozen. Required before a spec's Visualize sub-step can reference Figma. See [`figma-file-organization.md § 6`](../../../prompts/references/figma-file-organization.md). |
 | `docs/domain/README.md` | Per-feature domain baselines (FRs, invariants, NFRs, OS, current-state authority). See [`docs/baseline-citations.md`](../../../../docs/baseline-citations.md). |
 | `.github/copilot/instructions/<filetype>.md` | Copilot `applyTo`-filtered per-filetype instructions (`typescript.md`, `tests.md`, `docs.md`). |
 | `.github/copilot/skills/<name>/SKILL.md` | Project-scope skills |

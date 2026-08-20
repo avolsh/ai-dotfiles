@@ -1,6 +1,6 @@
 # Spec Templates Guide
 
-*Last updated: 2026-06-17*
+*Last updated: 2026-08-20*
 
 Companion to the slimmed spec templates at
 [`framework/spec-workflows/templates/`](../framework/spec-workflows/templates/).
@@ -141,8 +141,13 @@ Skipped — <reason>
 When filled, embed Mermaid diagrams (`flowchart`, `sequenceDiagram`,
 `erDiagram`) for structure/flow/schema — under 30 nodes per diagram per
 [`writing-docs.md`](writing-docs.md) § Core rules. For **UI surfaces**,
-use Figma instead: link the frames (file key + node IDs) and embed
-screenshots rather than drawing the visual design in Mermaid.
+use Figma instead: embed each frame as a **link-wrapped image** — the
+screenshot URL inside, the node URL outside, the frame's
+`[<ID>] <Entity> — <View> · <state>` name as alt text — rather than drawing
+the visual design in Mermaid. Screenshot files are never committed; an
+expired URL degrades into a clickable node reference that regenerates it.
+Format and the file-versioning procedure:
+[`figma-file-organization.md § 6`](../framework/prompts/references/figma-file-organization.md).
 
 **BUG specs** usually skip Design. Fill it only if the fix
 reveals an architectural issue (e.g., a boundary violation that must be
