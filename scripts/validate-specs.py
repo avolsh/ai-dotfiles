@@ -1160,8 +1160,11 @@ def check_agent_front_matter(agents: Iterable[Agent]) -> list[Finding]:
 
 
 def main(argv: list[str]) -> int:
-    here = Path(__file__).resolve().parent
-    root = find_repo_root(here)
+    # An optional path argument lets a consuming project validate its own specs:
+    # the walk-up starts there instead of at this file, which otherwise always
+    # resolves to ai-dotfiles and silently reports on the wrong corpus.
+    start = Path(argv[1]).resolve() if len(argv) > 1 else Path(__file__).resolve().parent
+    root = find_repo_root(start)
     specs, discovery_findings = discover_specs(root)
     agents, agent_discovery_findings = discover_agents(root)
 
