@@ -93,6 +93,8 @@ Verbatim phrases observed:
 Verbatim phrases observed:
 - spec-lifecycle: *"A spec with unmet `depends-on:` MUST stay at `specify` (never flip to `plan`) until all listed siblings reach `done`."*
 - plan-spec.prompt: *"Never advance to `plan` while `depends-on:` siblings are unmet."*
+- spec-lifecycle #10 (staleness half, added by IMP-20260826-decomposition-and-staleness-procedures): *"When the last spec in `depends-on:` reaches `done`, `## Current State` MUST be re-verified against the code before the spec advances to `plan`."*
+- spec-lifecycle #10 (tombstone clause): *"A finding the closed dependency superseded is tombstoned in place, not left standing"*
 
 ### R8 — Visualize stays at `status: specify`
 
@@ -136,3 +138,27 @@ Verbatim phrases observed:
 - spec-lifecycle #5 (closure clause): *"**An observation-shaped criterion is closed only by a test that renders its surface, or by recorded manual evidence.**"*
 - spec-lifecycle #5 (exclusion clause): *"**A suite that cannot reach the surface is not evidence for it.**"*
 - spec-lifecycle #5 (manual-evidence clause): *"**Manual evidence MUST record the observation, the surface, the observer and the date.**"*
+
+### R14 — The task cap counts decisions, not written files
+
+| | |
+|---|---|
+| **Canonical location** | `framework/skills/writing-specs/references/authoring-steps.md § C step 5` |
+
+Verbatim phrases observed:
+- authoring-steps § C.5: *"The ≤5 cap counts files the task decides about; the Files column lists every file the task writes."*
+- authoring-steps § C.5: *"The cap and the column measure different things, so a row listing more than 5 files is not by itself a split signal."*
+- authoring-steps § C.5: *"A claim a contract test must execute cannot stay inside a private function"*
+- authoring-steps § C.3 (pre-IMP-20260826 wording — kept tracked to catch reverts): *"A slice spanning >5 files is over-bundled — split it."*
+- plan-spec.prompt (pre-IMP-20260826 wording — kept tracked to catch reverts): *"Never exceed 5 files per task row"*
+- writing-specs.md (pre-IMP-20260826 wording — kept tracked to catch reverts): *"Each task: description, max 5 files, dependencies, model suggestion,"*
+
+### R15 — An adjudicated cluster is overridden at Plan, not re-run
+
+| | |
+|---|---|
+| **Canonical location** | `framework/skills/writing-specs/references/authoring-steps.md § C step 6` |
+
+Verbatim phrases observed:
+- authoring-steps § C.6: *"A P-signal whose cluster matches a trigger already adjudicated at the Specify gate is recorded as an override under `## Split Decision`, not re-run."*
+- authoring-steps § C.6 (pre-IMP-20260826 wording — kept tracked to catch reverts): *"If any fires, do NOT write the table — flip `status: plan → specify` and re-run the Split check."*

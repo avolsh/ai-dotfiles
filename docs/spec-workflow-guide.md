@@ -1,6 +1,6 @@
 # Spec Workflow — How We Work
 
-*Last updated: 2026-06-17*
+*Last updated: 2026-08-27*
 
 Every change — feature, bug fix, or improvement — follows the same
 four-status lifecycle. Each status transition ends with a **human gate**:
@@ -54,7 +54,8 @@ you say "approved."
 **Goal:** Break the approved spec into small, buildable tasks.
 
 1. The AI decomposes requirements into **vertical-slice tasks** (each
-   touches ≤ 5 files and includes its own tests).
+   makes ≤ 5 decisions — a count that ignores extra files your project's
+   conventions add automatically — and includes its own tests).
 2. Each task gets: description, files, dependencies, model tier, skills.
 3. The tasks appear in a `## Tasks` table inside the spec.
 

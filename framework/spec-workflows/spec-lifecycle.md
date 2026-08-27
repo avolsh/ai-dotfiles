@@ -111,8 +111,18 @@ for the full rule set and Iteration Log mandate.
    [`splitting-rules.md § 2`](../skills/writing-specs/references/splitting-rules.md))
    is a mandatory sub-step of Specify — complete it before Visualize and
    record the outcome under `## Split Decision` in every affected spec.
-10. <a id="depends-on-blocks-plan"></a>A spec with unmet `depends-on:` MUST stay at `specify` (never flip to
-    `plan`) until all listed siblings reach `done`.
+10. <a id="depends-on-blocks-plan"></a>A spec with unmet `depends-on:` MUST stay at `specify` (never flip to `plan`) until all listed siblings reach `done`.
+
+    Waiting is not the only obligation the field carries. A spec written
+    against a dependency goes stale the moment that dependency closes —
+    the code it described is no longer the code that exists — so:
+
+    **When the last spec in `depends-on:` reaches `done`, `## Current State` MUST be re-verified against the code before the spec advances to `plan`.**
+    **A finding the closed dependency superseded is tombstoned in place, not left standing** — an FR the closed work already satisfies says so and cites the spec that closed it.
+
+    Re-verification is a read, not a rewrite: where the section still
+    holds, re-date it and record what was checked, so the next reader can
+    tell a verified section from an unexamined one.
 11. **Never** request the requirements gate without completing the Split check; record the outcome under
     `## Split Decision` first.
 12. **Never** bundle independently-testable features into one spec — split per [

@@ -1,6 +1,6 @@
 # Writing Specs
 
-*Last updated: 2026-06-17*
+*Last updated: 2026-08-27*
 
 Consolidated guidance for spec-driven work: lifecycle pointer, stage walk-throughs (Specify, Plan), writing-style rules, RFC 2119 keywords, the self-review additions, template usage, and anti-patterns. Topic-specific deep dives live in the linked docs.
 
@@ -125,8 +125,11 @@ Mandatory step in spec authoring ([`authoring-steps.md § A`](../framework/skill
    names an affected set by capability (e.g. "every prompt that delegates
    to X"), **grep for the full set** rather than trusting a hand-listed
    file enumeration — the list may be incomplete.
-2. Each task: description, max 5 files, dependencies, model suggestion,
-   required skills.
+2. Each task: description, the files it writes, max 5 **decisions** —
+   a count that excludes files a project convention adds mechanically
+   from a decision already in the row, see
+   [`authoring-steps.md § C`](../framework/skills/writing-specs/references/authoring-steps.md)
+   step 5 — dependencies, model suggestion, required skills.
 3. Use [`model-selection/SKILL.md`](../framework/skills/model-selection/SKILL.md)
    for model tier.
 4. Fill the `## Tasks` table in the spec.
