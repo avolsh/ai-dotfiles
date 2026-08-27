@@ -195,23 +195,36 @@ PYEOF
 run "$p"
 expect "FR-9 annotated, elliptical and trailing-slash paths under an existing tree are clean" 0 "$rc"
 
-# A cross-repo spec names files in a sibling project; there is no
-# project-root-relative form for those, and rewriting them as one would collide
-# with this project's own tree. They must not be reported.
-p="$(newproj inventory_crossrepo)"
-mkdir -p "$p/src" "$TMP/inventory_crossrepo_sibling/docs"
-echo "x" > "$TMP/inventory_crossrepo_sibling/docs/design-system.md"
-mkspec "$p" "IMP-20260826-cross-repo.md" <<'EOF'
+# Only active specs hold leases: spec-status-guard.sh reads docs/specs/active/
+# and nothing else, so an archived spec's inventory is inert. This also keeps
+# cross-repo entries — which have no project-root-relative form — out of the
+# findings without depending on a sibling repo being present on disk.
+p="$(newproj inventory_archived)"
+mkdir -p "$p/src"
+mkspec "$p" "IMP-20260826-anchor.md" </dev/null
+cat > "$p/docs/specs/archived/IMP-20260101-archived.md" <<'EOF'
+---
+id: IMP-20260101-archived
+type: IMP
+date: 2026-01-01
+status: done
+owner: alex
+risk: low
+affected-repos:
+  - demo
+affected-docs:
+  - src/github.com/tobeverse/other-repo/docs/design-system.md
+affected-code: []
+skills:
+  - writing-specs
+model-suggestion: default
+---
+# IMP-20260101-archived
+*Last updated: 2026-01-01*
 EOF
-python3 - "$p/docs/specs/active/IMP-20260826-cross-repo.md" <<'PYEOF'
-import pathlib, sys
-f = pathlib.Path(sys.argv[1])
-f.write_text(f.read_text().replace(
-    "affected-docs: []",
-    "affected-docs:\n  - inventory_crossrepo_sibling/docs/design-system.md"))
-PYEOF
 run "$p"
-expect "FR-9 a path into a sibling project is not reported" 0 "$rc"
+expect "FR-9 an archived spec's inventory is not judged" 0 "$rc"
+assert_silent "FR-9 no finding for the archived cross-repo path" "$out" "inventory_path_unresolvable"
 
 if [ "$fails" -eq 0 ]; then
   echo "scripts/validate-specs.py self-tests passed ✓"

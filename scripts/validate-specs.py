@@ -1044,21 +1044,16 @@ def _project_root(spec_path: Path) -> Path | None:
     return None
 
 
-def _resolves_outside_project(root: Path, entry: str) -> bool:
-    """True when `entry` names a real file in a sibling project, not in `root`."""
-    for ancestor in root.parents:
-        target = ancestor / entry
-        if not target.exists():
-            continue
-        resolved = target.resolve()
-        return root.resolve() not in resolved.parents and resolved != root.resolve()
-    return False
-
-
 def check_inventory_paths(specs: Iterable[Spec]) -> list[Finding]:
     """FR-9 — an inventory path that does not resolve from the project root."""
     findings: list[Finding] = []
     for spec in specs:
+        # spec-status-guard.sh iterates docs/specs/active/*.md and nothing else,
+        # so only an active spec's inventory is a lease at all. An archived
+        # spec's paths are inert, and judging them would flag cross-repo entries
+        # that have no project-root-relative form (see FR-9 in this spec).
+        if spec.path.parent.name != "active":
+            continue
         root = _project_root(spec.path)
         if root is None:
             continue
@@ -1078,14 +1073,6 @@ def check_inventory_paths(specs: Iterable[Spec]) -> list[Finding]:
                 # file since deleted, but its first segment still has to be one
                 # the guard would descend into from the project root.
                 if (root / entry.split("/")[0]).exists():
-                    continue
-                # A cross-repo spec (affected-repos names more than one) has no
-                # project-root-relative way to name a file in the sibling repo,
-                # and rewriting it as one would collide with this project's own
-                # tree. Exempt an entry that resolves from an ancestor into a
-                # *different* project; an entry that resolves back into this one
-                # is the roundabout self-reference FR-9 is about.
-                if _resolves_outside_project(root, entry):
                     continue
                 findings.append(
                     Finding(
