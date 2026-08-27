@@ -1,11 +1,11 @@
 ---
 name: "configuring-applications"
-description: "How application configuration is layered, typed, and kept safe — precedence between defaults, env vars and a runtime settings store; which settings may live in the store and which may not; dead config keys; and keeping secret-bearing values out of logs. Triggers: config, configuration, settings, env vars, feature flag, admin settings screen, secrets in logs."
+description: "How application configuration is layered, typed, and kept safe — precedence between defaults, env vars and a runtime settings store; which settings may live in the store and which may not; dead config keys; and keeping secret-bearing values out of logs. Triggers: config, configuration, settings, env vars, feature flag, admin settings screen, secrets in logs, env var not taking effect, wrong config value at runtime."
 ---
 
 # Configuring Applications
 
-*Last updated: 2026-08-13*
+*Last updated: 2026-08-27*
 
 Configuration is where a system's behaviour is decided without changing
 its code — which is exactly why an unstated configuration model produces
@@ -60,6 +60,21 @@ An `as` cast is not validation: it silences the compiler about a shape
 nobody checked, and every cast on a config document is a runtime failure
 waiting for the one deployment where the field is absent. If a config
 document needs repeated casts to be usable, the accessor is missing.
+
+Diagnose a value where the process reads it, never from the file it came
+from. Four layers sit between the two — the loader's quoting rules, the
+declared default, the store merge, and any parse function the value
+passes through — and each can make the file and the effective value
+differ, so the source file answers a question nobody asked. A suspect
+token was inspected first by reading `.env.local`, then through a shell
+pipeline; both misled, in opposite directions — the file read kept
+quotes `dotenv` strips, and the shell probe stripped quotes the loader
+keeps. What settled it was three lines that imported the settings module
+and printed the resolved value's length and prefix. That is a check run
+at a terminal, deliberately narrow: length and prefix tell two candidate
+values apart without putting the value anywhere it persists, which is
+what `## Secrets never reach a log` below governs — this paragraph does
+not relax it.
 
 ## A key with no readers is a defect
 

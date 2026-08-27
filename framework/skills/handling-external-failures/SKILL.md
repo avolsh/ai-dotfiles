@@ -1,11 +1,11 @@
 ---
 name: "handling-external-failures"
-description: "How a boundary result becomes a stored fact — classifying retryable vs permanent vs valid-empty, checkpointing only a validated success, keeping one meaning per sentinel, and bounding every external call. Triggers: API call failed, retry, catch block, empty result, timeout, third-party integration, marked processed but empty, pagination, error swallowed."
+description: "How a boundary result becomes a stored fact — classifying retryable vs permanent vs valid-empty, keeping the provider's own message beside the class, checkpointing only a validated success, keeping one meaning per sentinel, and bounding every external call. Triggers: API call failed, retry, catch block, empty result, timeout, third-party integration, marked processed but empty, pagination, error swallowed, error body dropped, only a status code to go on."
 ---
 
 # Handling External Failures
 
-*Last updated: 2026-08-13*
+*Last updated: 2026-08-27*
 
 Every call that leaves the process can fail in a way the type system
 cannot see: a timeout returns the same `[]` a genuinely empty query
@@ -51,6 +51,19 @@ Store the classification, not just its consequence: a record whose state
 is `failed-permanent (provider-404)` can be reasoned about later; a record
 that is merely `processed` with no results cannot be told apart from
 success.
+
+Store the provider's own message beside the class. A permanent outcome
+records what the provider actually said — its error message, or the
+reason field from its body — truncated to a bounded length, so a large
+error document cannot itself become the error. Class and cause are
+different information, and only the class is reconstructible from the
+outcome: a caller told `permanent` stops retrying correctly and still
+has no idea what to fix. An adapter that raised `Mapillary answered 400`
+classified it exactly right and dropped the sentence the provider had
+already written — `Invalid OAuth access token - Cannot parse access
+token` — which names the cause outright. Recovering it took two rounds
+of probing the API by hand for a string the process had been handed and
+thrown away.
 
 Whether a retryable outcome is retried immediately, deferred, or
 escalated after N attempts is a per-system decision. The rule is that the
