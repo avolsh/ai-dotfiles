@@ -1,6 +1,6 @@
 # Rule Canonical Map
 
-*Last updated: 2026-08-13*
+*Last updated: 2026-08-27*
 
 > **Machine-read by `scripts/lint-rules.py` — not human-maintained prose.**
 > Parser contract: a rule section starts with `### R<N> —`; it must contain a
@@ -48,7 +48,8 @@ Verbatim phrases observed:
 - boundaries: *"Never flip a spec's status without the preceding human gate."*
 - spec-lifecycle #3: *"Never flip to `plan` without explicit human approval of requirements."*
 - spec-lifecycle #4: *"Never flip to `in-progress` without explicit human approval of the plan."*
-- spec-lifecycle #5: *"Never flip to `done` while any acceptance criterion lacks documented evidence."*
+- spec-lifecycle #5 (pre-IMP-20260826-ui-surface-closure-evidence — kept tracked to catch reverts): *"Never flip to `done` while any acceptance criterion lacks documented evidence."*
+- spec-lifecycle #5 (evidence-kind clause): *"and never offer evidence that could not have failed for the"*
 
 ### R4 — Always update `*Last updated: YYYY-MM-DD*` stamp
 
@@ -124,3 +125,14 @@ Verbatim phrases observed:
 - boundaries #17 (heading clause): *"Classify a caught failure — never settle it."*
 - boundaries #17 (rule statement): *"is recorded as retryable, permanent, or valid-empty, or it propagates"*
 - boundaries #17 (outcome clause): *"completed state, a checkpoint, or an empty result, each of which removes the record"*
+
+### R13 — Evidence must be able to fail for the criterion it closes
+
+| | |
+|---|---|
+| **Canonical location** | `framework/spec-workflows/spec-lifecycle.md § Rules #5` |
+
+Verbatim phrases observed:
+- spec-lifecycle #5 (closure clause): *"**An observation-shaped criterion is closed only by a test that renders its surface, or by recorded manual evidence.**"*
+- spec-lifecycle #5 (exclusion clause): *"**A suite that cannot reach the surface is not evidence for it.**"*
+- spec-lifecycle #5 (manual-evidence clause): *"**Manual evidence MUST record the observation, the surface, the observer and the date.**"*

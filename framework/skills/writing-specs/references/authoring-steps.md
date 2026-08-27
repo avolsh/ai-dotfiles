@@ -1,6 +1,6 @@
 # Authoring Steps — inline procedures
 
-*Last updated: 2026-08-13*
+*Last updated: 2026-08-27*
 
 The main agent runs these procedures **inline, in the same context** —
 spec authoring, the Split check, and task decomposition are not delegated
@@ -31,7 +31,7 @@ the spec body through `## Out of Scope`; leaves `## Split Decision` for
 5. **Fill `## Summary`** — Goal (one sentence), Scope (one short paragraph), Out of scope (one sentence), from Q1.
 6. **Fill the problem section** — Current State + Proposed Improvement (IMP) or Problem Statement (CR): what exists, why it needs change, concrete evidence. Keep prose tight; the FR/AC contract carries the weight.
 7. **Fill `## Requirements`** — one FR per discrete capability, one physical line each, MUST per RFC 2119, numbered FR-1, FR-2, …
-8. **Fill `## Acceptance Criteria`** — Given/When/Then, one block per FR / Fix-Criteria cluster (not per FR), numbered AC-1, …
+8. **Fill `## Acceptance Criteria`** — Given/When/Then, one block per FR / Fix-Criteria cluster (not per FR), numbered AC-1, … Then mark every **observation-shaped** criterion — one whose `When` has a person operating a user-facing surface — with the evidence kind it will close under, as a trailing `Evidence: rendering test` or `Evidence: manual (observation, surface, observer, date)` line inside the block. A criterion carrying no such mark is asserting that a suite can reach it; if it cannot, the mark is what surfaces that now rather than at closure ([`spec-lifecycle.md § Rules #5`](../../../spec-workflows/spec-lifecycle.md#observation-shaped-evidence)). The requirements gate is not requested while any such criterion is unmarked.
 9. **Fill `## Out of Scope`** — explicit OS-1, OS-2, … from Q1's out-of-scope answer.
 10. **Fill `## Design`** — `Skipped — <reason>`, or `Pending — Visualize sub-step` when a [Visualize trigger](../../../spec-workflows/spec-lifecycle.md#visualize-triggers) fires.
 11. **Leave `## Split Decision`** as `Pending` until § B runs; **leave `## Tasks`** as `Pending — Plan stage only.` — never write rows here ([Rule #2](../../../spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify)).

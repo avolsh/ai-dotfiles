@@ -1,11 +1,11 @@
 # Spec Lifecycle
 
-*Last updated: 2026-06-17*
+*Last updated: 2026-08-27*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
 
-<!-- Anchors in this file (per `docs/rule-canonical-map.md`): R2 `never-tasks-table-at-specify` · R3 `never-flip-without-gate` · R6 `split-check-mandatory` · R7 `depends-on-blocks-plan` · R8 `visualize-not-a-status` · R10 `visualize-triggers` (anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). -->
+<!-- Anchors in this file (per `docs/rule-canonical-map.md`): R2 `never-tasks-table-at-specify` · R3 `never-flip-without-gate`, `observation-shaped-evidence` · R6 `split-check-mandatory` · R7 `depends-on-blocks-plan` · R8 `visualize-not-a-status` · R10 `visualize-triggers` (anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). -->
 
 ## Front-matter schema
 
@@ -59,7 +59,7 @@ stateDiagram-v2
 | `[start]` → `specify`  | Human asked for a new spec                                                                                       | Copy template, fill front-matter, write title — status `specify` from birth |
 | `specify` → `plan`     | Human approved requirements (and design if Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                               |
 | `plan` → `in-progress` | Human approved the plan, first task begins                                                                       | Flip status **before** the first file edit of Task 1                        |
-| `in-progress` → `done` | Every AC has evidence, tests pass, docs updated. Closure approval is synchronous for `medium`/`high` risk; `low`/`trivial` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
+| `in-progress` → `done` | Every AC has evidence that could have failed for it — an observation-shaped criterion needs evidence reaching its surface (see [§ Rules #5](#observation-shaped-evidence)); tests pass, docs updated. Closure approval is synchronous for `medium`/`high` risk; `low`/`trivial` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
 | `done` → `archived/`   | Immediately after closure                                                                                        | Move file from `docs/specs/active/` to `docs/specs/archived/`               |
 
 **No status is skipped. No status is revisited in place** — if the plan
@@ -77,8 +77,30 @@ for the full rule set and Iteration Log mandate.
 3. <a id="never-flip-without-gate"></a>**Never** flip to `plan` without explicit human approval of requirements.
 4. **Never** flip to `in-progress` without explicit human approval of the
    plan.
-5. **Never** flip to `done` while any acceptance criterion lacks documented
-   evidence.
+5. <a id="observation-shaped-evidence"></a>**Never** flip to `done` while any acceptance criterion lacks documented
+   evidence, and never offer evidence that could not have failed for the
+   criterion it closes.
+
+   A criterion is **observation-shaped** when its `When` describes a person
+   operating a user-facing surface — an operator opening a tab, a visitor
+   submitting a form. Its claim is about what appears on screen, so:
+
+   **An observation-shaped criterion is closed only by a test that renders its surface, or by recorded manual evidence.**
+   **A suite that cannot reach the surface is not evidence for it.**
+
+   However large or green, such a suite asserts on the layers underneath the
+   claim. Criteria whose `When` names a system action — a pipeline step, an
+   import, a request — are unaffected and close on the suite as before.
+
+   **Manual evidence MUST record the observation, the surface, the observer and the date.**
+
+   A reader who was not present can then weigh it instead of taking it on
+   trust. Undated evidence, or evidence with no named observer, does not
+   satisfy this rule.
+
+   The evidence kind is declared when the criterion is written, not
+   discovered here — see [`authoring-steps.md § A`](../skills/writing-specs/references/authoring-steps.md).
+
 6. Stamp-bump rule lives at [`boundaries.md § Always do #10`](../boundaries.md#last-updated-stamp); applies to every
    change of this lifecycle file too.
 7. Task-row-update rule lives at [`boundaries.md § Always do #11`](../boundaries.md#task-row-status-in-place); applies

@@ -1,6 +1,6 @@
 # Acceptance Criteria Patterns
 
-*Last updated: 2026-06-12*
+*Last updated: 2026-08-27*
 
 Patterns for writing Given/When/Then acceptance criteria — structure, core patterns, common mistakes, and a coverage checklist. Adapt to your domain; these are starting points, not prescriptions.
 
@@ -94,6 +94,30 @@ Given two users editing the same resource concurrently
 When both submit changes
 Then the first succeeds and the second receives a conflict error
 ```
+
+### On-screen observation
+
+A `When` naming a person at a surface makes the criterion a claim about what
+that person sees. Mark it with the evidence kind that can fail for it — the
+rule is at [`spec-lifecycle.md § Rules #5`](../framework/spec-workflows/spec-lifecycle.md#observation-shaped-evidence).
+
+```markdown
+### AC-8: The gallery attributes every photo (FR-8)
+Given a place whose record carries three provider photos
+When the operator opens the Media tab
+Then each thumbnail renders, and each carries its photographer and a working source link
+Evidence: manual (observation, surface, observer, date)
+```
+
+Closed on manual evidence, the Closure Evidence row reads:
+
+```markdown
+| AC-8 | Manual — opened `#/places/vln-01/media` on staging, 2026-08-24, avolsh.
+  All three thumbnails rendered; photographer shown on each; source links
+  resolved to Wikimedia file pages. |
+```
+
+Undated, or with no named observer, that row is not evidence.
 
 ---
 
