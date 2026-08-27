@@ -9,15 +9,15 @@ affected-repos:
   - ai-dotfiles
   - tobevisit-content
 affected-docs:
-  - env/ai-dotfiles/framework/spec-workflows/templates/CR-TEMPLATE.md
-  - env/ai-dotfiles/framework/spec-workflows/templates/IMP-TEMPLATE.md
-  - env/ai-dotfiles/framework/spec-workflows/templates/BUG-TEMPLATE.md
-  - env/ai-dotfiles/framework/spec-workflows/templates/RES-TEMPLATE.md
-  - env/ai-dotfiles/framework/prompts/*.prompt.md
-  - env/ai-dotfiles/framework/skills/writing-specs/references/authoring-steps.md
-  - env/ai-dotfiles/docs/spec-templates-guide.md
-  - env/ai-dotfiles/docs/spec-format.md
-  - env/ai-dotfiles/docs/specs/archived/*.md
+  - framework/spec-workflows/templates/CR-TEMPLATE.md
+  - framework/spec-workflows/templates/IMP-TEMPLATE.md
+  - framework/spec-workflows/templates/BUG-TEMPLATE.md
+  - framework/spec-workflows/templates/RES-TEMPLATE.md
+  - framework/prompts/*.prompt.md
+  - framework/skills/writing-specs/references/authoring-steps.md
+  - docs/spec-templates-guide.md
+  - docs/spec-format.md
+  - docs/specs/archived/*.md
 affected-code: []
 skills:
   - writing-specs

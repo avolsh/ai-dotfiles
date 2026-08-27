@@ -9,12 +9,12 @@ affected-repos:
   - ai-dotfiles
   - tobevisit-content
 affected-docs:
-  - env/ai-dotfiles/framework/prompts/visualize-spec.prompt.md
-  - env/ai-dotfiles/framework/prompts/references/figma-file-organization.md
-  - env/ai-dotfiles/framework/templates/project/docs/architecture/design-system.md
-  - env/ai-dotfiles/framework/skills/bootstrapping-project/references/scaffold-manifest.md
-  - env/ai-dotfiles/docs/decisions/ADR-0002-figma-file-versioning-and-screenshot-durability.md
-  - env/ai-dotfiles/docs/spec-templates-guide.md
+  - framework/prompts/visualize-spec.prompt.md
+  - framework/prompts/references/figma-file-organization.md
+  - framework/templates/project/docs/architecture/design-system.md
+  - framework/skills/bootstrapping-project/references/scaffold-manifest.md
+  - docs/decisions/ADR-0002-figma-file-versioning-and-screenshot-durability.md
+  - docs/spec-templates-guide.md
   - src/github.com/tobeverse/tobevisit-content/docs/architecture/design-system.md
   - src/github.com/tobeverse/tobevisit-content/docs/how-to/design-admin-ui-with-figma.md
 affected-code: []

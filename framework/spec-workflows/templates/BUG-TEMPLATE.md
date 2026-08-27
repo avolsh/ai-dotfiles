@@ -7,6 +7,8 @@ owner: <github-handle>
 severity: low | medium | high | critical
 affected-repos:
   - <repo-name>
+affected-docs:
+  - <path>
 affected-code:
   - <path>
 skills:

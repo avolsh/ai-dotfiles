@@ -55,6 +55,7 @@ tests:
 	./scripts/test/ai-doctor.test.sh
 	./scripts/test/pre-commit.test.sh
 	./scripts/test/spec-metrics.test.sh
+	./scripts/test/validate-specs.test.sh
 	./scripts/test/profile-links.test.sh
 	./scripts/test/ai-switch.test.sh
 

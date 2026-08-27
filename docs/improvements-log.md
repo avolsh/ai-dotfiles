@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-08-20*
+*Last updated: 2026-08-27*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -235,4 +235,20 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** The Visualize sub-step told the agent to "embed screenshots" from Figma, but the MCP tools that produce those URLs state plainly that they are short-lived (`get_screenshot` — "short-lived URL"; `download_assets` — "URLs are temporary"). The instruction and the tool contract contradicted each other, and nothing in the framework noticed for months: 49 dead image links accumulated across 12 archived specs, every sampled one returning 404. The markup made the decay unrecoverable — a bare image with the node link on a separate line as inline code, so a dead URL left no clickable path back to the frame. A second, independent defect hid underneath: node links resolve against a *live* file, so closed specs illustrated their design with whatever the file looked like later.
 - **What was changed:** Frames are now embedded as a link-wrapped image whose alt text is the frame's conventional name, so expiry degrades into a named clickable reference carrying `fileKey` + `node-id` — the exact input needed to regenerate the image. Regeneration moved to the requirements gate, making freshness a property of the process. File versioning added: Visualize asks every run whether to adopt a new key, the successor is the copy (never the archive), and the predecessor is frozen. Recorded in ADR-0002; reference mechanics in `figma-file-organization.md` § 6.
 - **Suggested follow-up:** When a prompt instructs the agent to persist anything an external tool returns, check the tool's own description for a lifetime claim before writing the rule — the contradiction here was visible in the tool schema the whole time. Two open items: the per-team Figma file ceiling is still unverified (a copy-per-milestone cadence spends it), and `scripts/validate-specs.py` `check_link_integrity` still matches links inside code spans and fenced blocks, so documenting link syntax requires `https://`-shaped placeholders.
+
+### 2026-08-27 — A safety net that fires on every well-formed cross-cutting spec
+
+- **Spec / task:** IMP-20260826-spec-guard-and-validator-gaps / Plan + T8
+- **Category:** `process`
+- **What was found:** The Plan-stage safety net P3 ("a task group with zero dependencies on other groups") fired on this spec exactly as T1 had fired at Specify — the guard cluster and the validator cluster share no file and no AC. The mechanical action is to write no tasks and flip back to `specify`, which lands on the same question the human had already answered at the Specify gate with both clusters named. The two checks are the same test run twice, so a recorded override at Specify guarantees a P3 fire at Plan; the prompt gives no way to carry the first decision forward, and the honest options were to force-fit a dependency, flip back into a loop, or stop and ask.
+- **What was changed:** stopped at the gate, surfaced P3 with both clusters named, and recorded the human's confirmation in `## Split Decision` alongside the original T1 override. Eight tasks were then written as two independent chains plus a closure task that spans both.
+- **Suggested follow-up:** Let `## Split Decision` record an override as *binding on both checks* — if the human elected a shape at Specify with the clusters named, P3 should cite that decision and proceed rather than re-ask. Failing that, `plan-spec.prompt.md` step 3 should say what to do when the fired signal is one the human has already adjudicated, instead of leaving the agent between a forbidden force-fit and a loop.
+
+### 2026-08-27 — Three baseline numbers in a spec body, none of them measured
+
+- **Spec / task:** IMP-20260826-spec-guard-and-validator-gaps / T2, T6, T8
+- **Category:** `anti-pattern`
+- **What was found:** The spec carried three quantitative claims used as closure targets, and implementing it disproved all three. Its measurable benefit said eight replayed guard collisions go "from 8 denials to 0" — the log's own eighth entry says plainly that occurrence is a genuine sequencing conflict the proposed rules would not fix, so the target is 8 → 1. Its rollout note said `tobevisit-content` was clean for the new REQ-ID check (22 files, 0 collisions); the implemented check finds 15 collisions across 7 files, including six consecutive IDs in one baseline. Its inventory metric read "24 of 28 archived specs"; the archived corpus is 24 specs, of which 2 use the offending form. Each number was plausible, none was produced by running anything, and each would have been asserted as met at closure.
+- **What was changed:** all three corrected in the spec body, with the measured figures and how they were obtained recorded under `## Closure Evidence`.
+- **Suggested follow-up:** A number in `## Current State`, `## Proposed Improvement` or `## Rollout` is a claim about a corpus, and the corpus is usually one command away at Specify time. Either run the command and cite it, or write the claim as an estimate and say so — "0 collisions today" and "expect this to land green" read identically to a reader deciding whether the work is needed.
 

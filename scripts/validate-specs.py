@@ -237,7 +237,7 @@ _LIST_FIELDS = (
     "skills",
     "siblings",
     "depends-on",
-    "cites-reqs",
+    "domain-refs",
 )
 
 # FR-1 check #3 — naming pattern (production-ready in F1).
@@ -1022,6 +1022,84 @@ def check_res_eligibility(specs: Iterable[Spec]) -> list[Finding]:
     return findings
 
 
+# FR-9 — inventory paths must be readable by spec-status-guard.sh, which
+# resolves affected-code / affected-docs from the project root that owns
+# docs/specs/active. A path written any other way (workspace-relative, say)
+# matches nothing there, so it is a lease the guard cannot see.
+_INVENTORY_FIELDS = ("affected-code", "affected-docs")
+
+
+def _guard_normalize(entry: str) -> str:
+    """Apply spec-status-guard.sh's own normalization to an inventory entry."""
+    entry = entry.split(" (")[0]  # strip annotations: "src/foo (new)"
+    if entry.endswith("/..."):  # strip ellipsis: "src/..."
+        entry = entry[: -len("/...")]
+    return entry.rstrip("/")
+
+
+def _project_root(spec_path: Path) -> Path | None:
+    for candidate in spec_path.parents:
+        if (candidate / "docs" / "specs").is_dir():
+            return candidate
+    return None
+
+
+def _resolves_outside_project(root: Path, entry: str) -> bool:
+    """True when `entry` names a real file in a sibling project, not in `root`."""
+    for ancestor in root.parents:
+        target = ancestor / entry
+        if not target.exists():
+            continue
+        resolved = target.resolve()
+        return root.resolve() not in resolved.parents and resolved != root.resolve()
+    return False
+
+
+def check_inventory_paths(specs: Iterable[Spec]) -> list[Finding]:
+    """FR-9 — an inventory path that does not resolve from the project root."""
+    findings: list[Finding] = []
+    for spec in specs:
+        root = _project_root(spec.path)
+        if root is None:
+            continue
+        line = spec.front_matter_end_line or 1
+        for field in _INVENTORY_FIELDS:
+            value = spec.front_matter.get(field)
+            if not isinstance(value, list):
+                continue
+            for raw in value:
+                if not isinstance(raw, str):
+                    continue
+                entry = _guard_normalize(raw.strip())
+                # Unfilled template placeholders are a schema concern, not this one.
+                if not entry or entry.startswith("<"):
+                    continue
+                # Judge the form, not the freshness: an archived spec may name a
+                # file since deleted, but its first segment still has to be one
+                # the guard would descend into from the project root.
+                if (root / entry.split("/")[0]).exists():
+                    continue
+                # A cross-repo spec (affected-repos names more than one) has no
+                # project-root-relative way to name a file in the sibling repo,
+                # and rewriting it as one would collide with this project's own
+                # tree. Exempt an entry that resolves from an ancestor into a
+                # *different* project; an entry that resolves back into this one
+                # is the roundabout self-reference FR-9 is about.
+                if _resolves_outside_project(root, entry):
+                    continue
+                findings.append(
+                    Finding(
+                        spec.path,
+                        line,
+                        "inventory_path_unresolvable",
+                        f"{field} entry {raw!r} does not resolve from the project "
+                        f"root {root.name!r}; spec-status-guard.sh matches paths "
+                        f"in that form, so this leases nothing",
+                    )
+                )
+    return findings
+
+
 CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_front_matter_schema,
     check_filename_id_parity,
@@ -1033,6 +1111,7 @@ CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_status_invariants,
     check_trivial_lane_eligibility,
     check_res_eligibility,
+    check_inventory_paths,
 ]
 
 
@@ -1155,6 +1234,56 @@ def check_agent_front_matter(agents: Iterable[Agent]) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
+# Domain baselines (docs/domain/*.md) — REQ-ID uniqueness
+# Added by IMP-20260826-spec-guard-and-validator-gaps (FR-8).
+# ---------------------------------------------------------------------------
+
+# A REQ-ID is *defined* by the trailing annotation on its requirement bullet —
+# `*(REQ-PCE-001)*` or `*(REQ-PCE-001; amended by ...)*`. The same ID named
+# anywhere else on the line is a citation, and an annotation that retires or
+# supersedes the ID is history the lifecycle requires to stay in the file
+# (docs/req-id-lifecycle.md § Deletion, § Supersession) — neither is a second
+# claim on the number.
+_REQ_DEF_RE = re.compile(r"\*\((REQ-[A-Z0-9]+(?:-[A-Z]+)*-\d+)([^)]*)\)")
+_REQ_HISTORY_RE = re.compile(
+    r"\b(retired|superseded|supersedes|deleted|tombstone)\b", re.IGNORECASE
+)
+
+
+def check_domain_req_ids(root: Path) -> list[Finding]:
+    """FR-8 — one REQ-ID defined more than once inside a single baseline file."""
+    findings: list[Finding] = []
+    domain = root / "docs" / "domain"
+    if not domain.is_dir():
+        return findings
+    for path in sorted(domain.glob("*.md")):
+        if path.name == "README.md":
+            continue
+        seen: dict[str, int] = {}
+        text = path.read_text(encoding="utf-8")
+        for lineno, line in enumerate(text.splitlines(), 1):
+            for m in _REQ_DEF_RE.finditer(line):
+                req_id, annotation = m.group(1), m.group(2)
+                if _REQ_HISTORY_RE.search(annotation) or _REQ_HISTORY_RE.search(
+                    line[: m.start()]
+                ):
+                    continue
+                if req_id in seen:
+                    findings.append(
+                        Finding(
+                            path,
+                            lineno,
+                            "domain_req_id_duplicate",
+                            f"REQ-ID {req_id} is defined again here; "
+                            f"first definition at line {seen[req_id]}",
+                        )
+                    )
+                else:
+                    seen[req_id] = lineno
+    return findings
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -1173,11 +1302,12 @@ def main(argv: list[str]) -> int:
     for check in CHECK_REGISTRY:
         findings.extend(check(specs))
     findings.extend(check_agent_front_matter(agents))
+    findings.extend(check_domain_req_ids(root))
 
     for f in findings:
         print(f.render(root))
 
-    total_checks = len(CHECK_REGISTRY) + 1  # +1 for check_agent_front_matter
+    total_checks = len(CHECK_REGISTRY) + 2  # + agent front-matter, + domain REQ-IDs
     if findings:
         print(
             f"\nvalidate-specs: {len(findings)} finding(s) across "
