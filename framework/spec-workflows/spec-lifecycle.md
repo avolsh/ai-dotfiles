@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-08-27*
+*Last updated: 2026-08-29*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -60,7 +60,7 @@ stateDiagram-v2
 | `specify` → `plan`     | Human approved requirements (and design if Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                               |
 | `plan` → `in-progress` | Human approved the plan, first task begins                                                                       | Flip status **before** the first file edit of Task 1                        |
 | `in-progress` → `done` | Every AC has evidence that could have failed for it — an observation-shaped criterion needs evidence reaching its surface (see [§ Rules #5](#observation-shaped-evidence)); tests pass, docs updated. Closure approval is synchronous for `medium`/`high` risk; `low`/`trivial` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
-| `done` → `archived/`   | Immediately after closure                                                                                        | Move file from `docs/specs/active/` to `docs/specs/archived/`               |
+| `done` → `archived/`   | Immediately after closure; every process the work started is already stopped ([§ Rules #14](#stop-processes-at-closure))                                                                                        | Move file from `docs/specs/active/` to `docs/specs/archived/`               |
 
 **No status is skipped. No status is revisited in place** — if the plan
 must change after `in-progress` begins, stop, flip status back to `plan`,
@@ -154,6 +154,24 @@ for the full rule set and Iteration Log mandate.
     in future specs; (c) the feature crosses bounded contexts. Otherwise
     seeding is OPTIONAL. The schema for the new file lives at
     [`docs/baseline-citations.md`](../../docs/baseline-citations.md).
+
+14. **Leave no process running.** <a id="stop-processes-at-closure"></a>
+    Before flipping a spec to `done`, **every process the work started MUST
+    be stopped** — dev and preview servers, databases and their containers,
+    watchers, tunnels, background builds, and any site or emulator brought up
+    to verify a surface. Stop them, then confirm the ports are free and the
+    containers are down; report what was stopped in the closure summary.
+
+    A process that outlives its spec is invisible: it holds a port the next
+    session needs, it pins a database the next spec expects to seed, and its
+    cost accrues to nobody's task. Diagnosis is worse than the waste — a
+    stale server serving an old bundle looks exactly like a code defect, and
+    a second server refused a port looks exactly like a broken config.
+
+    Two exceptions, both explicit: a process the human started themselves is
+    theirs to stop — ask, never kill it — and a process the spec's own
+    deliverable is meant to leave running is named in the closure summary as
+    such, with the reason.
 
 ## RES exception <a id="res-exception"></a>
 

@@ -1,6 +1,6 @@
 # Agent Protocol
 
-*Last updated: 2026-06-11*
+*Last updated: 2026-08-29*
 
 Operating procedures for AI agents working in any project that participates in the AI Agent Framework: path prefixes, two-scope model, context loading order, checklists, output conventions, and the on-demand reference material (determinism, schema sync, doc freshness, skills audit).
 
@@ -215,6 +215,10 @@ a spec. Each task must independently pass all checks before proceeding.
 - [ ] **Process improvements logged** -- if you noticed a protocol gap,
       anti-pattern, or better approach, append an entry to the project's
       improvements log immediately (do not defer).
+- [ ] **No process left running** — at spec closure, stop every dev/preview server, database
+      container, watcher and background build the work started, confirm the ports are free, and say
+      what was stopped. A process the human started is theirs: ask, never kill it. See
+      [`spec-lifecycle.md § Rules #14`](../framework/spec-workflows/spec-lifecycle.md#stop-processes-at-closure).
 - [ ] Post **"The Bottom Line"** using the canonical format below and
       wait for explicit human approval before starting the next task.
 
