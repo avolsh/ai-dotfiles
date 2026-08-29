@@ -1,6 +1,6 @@
 # Boundaries
 
-*Last updated: 2026-08-13*
+*Last updated: 2026-08-29*
 
 <!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R11; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
@@ -43,6 +43,13 @@
     completed state, a checkpoint, or an empty result, each of which removes the record from the backlog that would
     retry it. Depth: [`skills/handling-external-failures`](skills/handling-external-failures/SKILL.md), [
     `skills/designing-durable-state`](skills/designing-durable-state/SKILL.md).
+18. <a id="stop-what-you-started"></a>**Stop every process you started, before closing a spec.** Dev and
+    preview servers, database containers, watchers, background builds, sites and emulators brought up to verify a
+    surface — all stopped, ports confirmed free, and named in the closure summary. A process left running is
+    invisible: it holds a port the next session needs, pins a database the next spec expects to seed, and a stale
+    server answering with an old bundle looks exactly like a code defect. A process the *human* started is theirs —
+    ask, never kill it. Depth: [
+    `spec-lifecycle.md § Rules #14`](spec-workflows/spec-lifecycle.md#stop-processes-at-closure).
 
 ## Ask first
 
