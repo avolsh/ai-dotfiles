@@ -1,6 +1,6 @@
 # Boundaries
 
-*Last updated: 2026-08-29*
+*Last updated: 2026-08-30*
 
 <!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R11; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
@@ -50,6 +50,22 @@
     server answering with an old bundle looks exactly like a code defect. A process the *human* started is theirs —
     ask, never kill it. Depth: [
     `spec-lifecycle.md § Rules #14`](spec-workflows/spec-lifecycle.md#stop-processes-at-closure).
+19. **Read the exit status, not the tail.** A command's last lines are whatever it printed last,
+    which is not the same as what it did. A run that chains several tools prints several summaries
+    and only the final one reaches the tail; a summary line stands for exactly what it names and for
+    nothing else. Before reporting that a command passed, read its exit status, and when a printed
+    summary is the evidence, check that it names every part of the run. A suite reporting one of its
+    two projects looks identical, in a tail, to one reporting both.
+20. **An exported signature change is a breaking API change** whatever kind of file declares it. A
+    declaration that looks like a plain domain type is still compiled against by everything that
+    imports it, possibly in another project or another build. Ask who compiles against the symbol,
+    not what kind of file it lives in, and verify against each of them — narrowing to the one
+    directory the file sits in is how a green run comes to mean nothing.
+21. **No verification step rewrites the source it checks.** A step that reformats, regenerates or
+    autofixes while checking reports on what it just produced, not on what it was given, and the
+    defect it was meant to catch leaves no trace. Formatting, code generation and autofix are
+    developer commands, run deliberately and on their own; a verification sequence only reads and
+    judges.
 
 ## Ask first
 
@@ -59,12 +75,10 @@
 4. **Changing shared framework files** in `<system>/` — they affect every project in the workspace.
 5. **Changing cross-repo schemas or output formats** — coordinate via a single spec listing all repos in
    `affected-repos`.
-6. <a id="stability-window"></a>**Framework stability window (until 2026-07-12):** after
-   IMP-20260610-stabilize-profile-switching closed, framework-scope changes (`<system>/`, this file, spec
-   workflows, hooks, profile scripts) are limited to Direct-lane fixes ([
-   `spec-lifecycle.md § Direct lane`](spec-workflows/spec-lifecycle.md#direct-lane)) or an explicit owner waiver.
-   At the window end, review `make spec-metrics` — the framework-vs-product share decides whether the freeze
-   extends. Product-repo work is unaffected.
+6. <a id="stability-window"></a>**Framework stability window — closed 2026-07-12, not extended.** It ran
+   after IMP-20260610-stabilize-profile-switching and limited framework-scope changes to Direct-lane fixes.
+   It is recorded here only so the dates in specs written under it still resolve; it constrains nothing now.
+   Framework-scope changes are governed by #3 and #4 above, which is where a reader should stop.
 
 ## Never do
 

@@ -1,6 +1,6 @@
 # Bootstrapping a Project
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-08-30*
 
 How to scaffold a new project (or workspace root) so it complies with the AI Agent Framework: operating modes, workflow, verification, hard rules, file naming, content boundary, and anti-patterns. The artifact manifest (templates per file) lives in [`framework/skills/bootstrapping-project/references/scaffold-manifest.md`](../framework/skills/bootstrapping-project/references/scaffold-manifest.md).
 
@@ -39,12 +39,15 @@ A workspace root does **not** create:
    copies every template under `<system>/templates/project/` into cwd
    preserving directory structure (existing files are skipped) and
    `chmod +x`'s `.github/scripts/sync-agents.sh`.
-4. **Fill placeholders** in the scaffolded files (`<project-name>`,
-   `<language>`, `<build command>`, etc.) from the scan results.
-5. **Generate** `AGENTS.md` mechanically — run `make sync-agents` (which
-   invokes `.github/scripts/sync-agents.sh`). The bootstrap is not
-   complete until this step succeeds and `make sync-agents-check`
-   exits 0.
+4. **Fill placeholders in `_canonical.md`** (`<project-name>`, `<language>`,
+   `<verification-sequence command>`, the § Build and Run and § Verification by
+   Change Type tables, etc.) from the scan results. It is the only one of the
+   four instruction files a human edits; the other three are outputs.
+5. **Render** the three agent files mechanically — run `make sync-agents`
+   (which invokes `.github/scripts/sync-agents.sh`), writing `CLAUDE.md`,
+   `AGENTS.md` and `.github/copilot-instructions.md` as byte-identical copies
+   of `_canonical.md`. The bootstrap is not complete until this step succeeds
+   and `make sync-agents-check` exits 0.
 6. **Validate** — every link resolves, every referenced skill exists, and
    `grep -E '^@' AGENTS.md` returns no matches (Codex compatibility).
 7. **Register** in the workspace root `CLAUDE.md`, `AGENTS.md`, and
@@ -110,9 +113,12 @@ No underscores. No spaces. Lowercase only (except `ADR-`/`CR-`/`BUG-`/`IMP-` pre
 
 | Content | Location |
 |---|---|
-| Repo purpose, tech stack, build commands | `.github/copilot-instructions.md` |
-| Project-scope boundary rules | `.github/copilot-instructions.md` § Boundaries |
-| Skill & prompt resolution rule (two-scope) | `.github/copilot-instructions.md` § Skill & prompt resolution |
+| Repo purpose, tech stack, codebase layout | `_canonical.md` |
+| The verification sequence and what each step fails on | `_canonical.md` § Build and Run |
+| Which command a given kind of change must be verified with | `_canonical.md` § Verification by Change Type |
+| Project-scope boundary rules | `_canonical.md` § Boundaries |
+| Skill & prompt resolution rule (two-scope) | `_canonical.md` § Skill & prompt resolution |
+| `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md` | Nothing — rendered from `_canonical.md`, never hand-edited |
 | Deep procedural knowledge | `.github/copilot/skills/` |
 | Workflow templates | `.github/copilot/prompts/` |
 | Sync script | `.github/scripts/sync-agents.sh` |

@@ -1,6 +1,6 @@
 # Scaffold Manifest
 
-*Last updated: 2026-08-20*
+*Last updated: 2026-08-30*
 
 Manifest of artifacts the `bootstrapping-project` skill scaffolds. Walkthroughs, rationale, and rules live in [`docs/bootstrapping-project.md`](../../../../docs/bootstrapping-project.md). Placeholders use `<angle-brackets>` — replace every one before writing.
 
@@ -12,36 +12,38 @@ Templates root: `<system>/templates/`.
 
 ---
 
-## Required project artifacts (10)
+## Required project artifacts (11)
 
 All scaffolded by `ai-project`, which copies templates from `<system>/templates/project/` preserving directory structure. Bootstrap fails without these.
 
 | # | Path (relative to `<project>/`) | Template (relative to `<system>/templates/project/`) | Purpose |
 |---|---|---|---|
-| 1 | `.github/copilot-instructions.md` | `.github/copilot-instructions.md` | Canonical project instructions (~100 lines). **Freestanding — no `@`-imports.** Sections: Purpose, Tech Stack, Codebase Layout, Context Loading, Boundaries, Skill & prompt resolution, Available skills, Workflows, Build and Run. |
-| 2 | `AGENTS.md` | `AGENTS.md` (not-a-template marker) | **Generated mechanically** from `.github/copilot-instructions.md` by `.github/scripts/sync-agents.sh`. No hand edits, no `@`-imports — Codex requires self-contained content. Banner names `make sync-agents`. |
-| 3 | `CLAUDE.md` | `CLAUDE.md` | Slim. Exactly **one** `@`-import: `@.github/copilot-instructions.md`. |
-| 4 | `.github/scripts/sync-agents.sh` | `.github/scripts/sync-agents.sh` | Verbatim copy of canonical script. `chmod +x`. Regenerates `AGENTS.md` from `.github/copilot-instructions.md`. Supports `--check` for drift gates. |
-| 5 | `Makefile` | `Makefile` | Must expose `sync-agents` (calls the script) and `sync-agents-check` (`--check`). Required because the generated `AGENTS.md` banner says "Regenerate with: make sync-agents". |
-| 6 | `docs/README.md` | `docs/README.md` | Human entry point. Quick links to module map, active/archived specs, improvements log, architecture docs. |
-| 7 | `docs/specs/active/README.md` | `docs/specs/active/README.md` | Index for `specify` / `plan` / `in-progress` specs. |
-| 8 | `docs/specs/archived/README.md` | `docs/specs/archived/README.md` | Index for `done` specs. |
-| 9 | `docs/architecture/module-map.md` | `docs/architecture/module-map.md` | **Required day one.** Tables: Bounded Contexts, Cross-Cutting Files, Workflow → Context Mapping. Start minimal — one-line placeholder if no contexts exist yet. |
-| 10 | `docs/improvements-log.md` | `docs/improvements-log.md` | Append-only log. Format: date, spec/task, category, what was found, what was changed, suggested follow-up. |
+| 1 | `_canonical.md` | `_canonical.md` | **The canonical project instructions — the only one of these four a human edits.** Freestanding, no `@`-imports. Sections: Purpose, Tech Stack, Codebase Layout, Context Loading, Boundaries, Skill & prompt resolution, Available skills, Workflows, Verification by Change Type, Build and Run, Multi-agent file layout. The last two ship as skeletons: headings and placeholder tables, filled with the project's own commands at step 4 of the bootstrap. |
+| 2 | `AGENTS.md` | `AGENTS.md` (not-a-template marker) | **Rendered mechanically** from `_canonical.md` by `.github/scripts/sync-agents.sh`. No hand edits, no `@`-imports — Codex requires self-contained content. Banner names `make sync-agents`. |
+| 3 | `CLAUDE.md` | `CLAUDE.md` (not-a-template marker) | **Rendered mechanically** from `_canonical.md`, byte-identical to the other two. No hand edits. |
+| 4 | `.github/copilot-instructions.md` | `.github/copilot-instructions.md` (not-a-template marker) | **Rendered mechanically** from `_canonical.md`, byte-identical to the other two. No hand edits. |
+| 5 | `.github/scripts/sync-agents.sh` | `.github/scripts/sync-agents.sh` | Verbatim copy of canonical script. `chmod +x`. Renders all three agent files from `_canonical.md`. Supports `--check` for drift gates. |
+| 6 | `Makefile` | `Makefile` | Must expose `sync-agents` (calls the script) and `sync-agents-check` (`--check`). Required because the generated `AGENTS.md` banner says "Regenerate with: make sync-agents". |
+| 7 | `docs/README.md` | `docs/README.md` | Human entry point. Quick links to module map, active/archived specs, improvements log, architecture docs. |
+| 8 | `docs/specs/active/README.md` | `docs/specs/active/README.md` | Index for `specify` / `plan` / `in-progress` specs. |
+| 9 | `docs/specs/archived/README.md` | `docs/specs/archived/README.md` | Index for `done` specs. |
+| 10 | `docs/architecture/module-map.md` | `docs/architecture/module-map.md` | **Required day one.** Tables: Bounded Contexts, Cross-Cutting Files, Workflow → Context Mapping. Start minimal — one-line placeholder if no contexts exist yet. |
+| 11 | `docs/improvements-log.md` | `docs/improvements-log.md` | Append-only log. Format: date, spec/task, category, what was found, what was changed, suggested follow-up. |
 
 **Sync-script debt:** when the upstream canonical script changes, every already-bootstrapped project carries the older copy. Manual re-sync per project until a future spec automates it.
 
 ---
 
-## Workspace root artifacts (6)
+## Workspace root artifacts (7)
 
 Scaffolded by `ai-workspace` from `<system>/templates/workspace/`.
 
 | Path (relative to workspace root) | Template (relative to `<system>/templates/workspace/`) | Purpose |
 |---|---|---|
-| `CLAUDE.md` | `CLAUDE.md` | Slim. Single `@.github/copilot-instructions.md` import. |
-| `AGENTS.md` | `AGENTS.md` (not-a-template marker) | Self-contained. Generated mechanically from `.github/copilot-instructions.md`. |
-| `.github/copilot-instructions.md` | `.github/copilot-instructions.md` | Canonical workspace instructions — project table, routing, shared safety, cross-repo coordination, AI agent framework section. Documents `docs/` as the workspace-wide folder. |
+| `_canonical.md` | `_canonical.md` | Canonical workspace instructions, and the only one a human edits — project table, routing, shared safety, cross-repo coordination, AI agent framework section. Documents `docs/` as the workspace-wide folder. No § Build and Run or § Verification by Change Type: there is no build at the workspace level. |
+| `CLAUDE.md` | `CLAUDE.md` (not-a-template marker) | Rendered mechanically from `_canonical.md`. |
+| `AGENTS.md` | `AGENTS.md` (not-a-template marker) | Rendered mechanically from `_canonical.md`, self-contained. |
+| `.github/copilot-instructions.md` | `.github/copilot-instructions.md` (not-a-template marker) | Rendered mechanically from `_canonical.md`. |
 | `.github/scripts/sync-agents.sh` | `.github/scripts/sync-agents.sh` | Byte-identical to the project script. `chmod +x`. |
 | `Makefile` | `Makefile` | Framework targets only (`sync-agents`, `sync-agents-check`). No build/test at the workspace level. |
 | `docs/improvements-log.md` | `docs/improvements-log.md` | Workspace-wide append-only log. Project-scope improvements live in each project's own log. |
