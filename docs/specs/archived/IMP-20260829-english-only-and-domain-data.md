@@ -2,7 +2,7 @@
 id: IMP-20260829-english-only-and-domain-data
 type: IMP
 date: 2026-08-29
-status: specify
+status: done
 owner: alexvolsh
 risk: low
 affected-repos:
@@ -124,9 +124,60 @@ retire the rule rather than fix it, so they close together (**E1**, one read pat
 in a template and rides along under **E4**: it is the same root cause, a check and the artefact it
 judges disagreeing, and it is the reason every BUG spec starts invalid.
 
+**Plan-stage override (2026-08-30).** **P3** fires: Task 3 (FR-4, the template assertion) has zero
+dependencies on the FR-1..FR-3 group. It is recorded as an override, not re-run — the cluster is the
+one the Specify gate already named under **E4**, and the human elected that exception there. Table
+written at `status: plan`; the signal is surfaced at the Plan gate so it can still be rejected.
+
 ## Tasks
 
-Pending — Plan stage only.
+> **Before starting Task 1, set status: in-progress in the front-matter above.**
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| 1 | Fixtures first (FR-5). Add the three real-failure cases to the self-test harness: `Берестейський` in backticks plus a fenced Ukrainian block (AC-1); bare `⏳`, `📍`, `⬜`, `⤓` and an emoji (AC-2); an unquoted Ukrainian sentence in a Summary (AC-3). Run them against today's predicate and record that AC-1 and AC-2 fail — the harness must see the defect before it is narrowed away. | `scripts/test/validate-specs.test.sh` | `scripts/validate-specs.py`, `src/github.com/tobeverse/tobevisit-content/docs/specs/archived/` | — | writing-specs | default | ☑ done |
+| 2 | Narrow `check_english_only` (FR-1, FR-2, FR-3). Mask inline-code spans, fenced blocks and front-matter values before matching; then match on letter category rather than the complement of an allow-list, so a glyph is never a finding. An unquoted non-Latin letter run in prose is still reported, with line and excerpt. Task 1's three cases go green and the whole suite stays green. | `scripts/validate-specs.py` | `scripts/test/validate-specs.test.sh` | 1 | writing-specs | default | ☑ done |
+| 3 | Prove AC-5 instead of assuming it (FR-4). `BUG-TEMPLATE.md` already carries every `_REQUIRED_FIELDS` entry, so the defect FR-4 names is already closed; widen the harness's existing template assertion from `affected-docs` alone to every `schema_missing_field`, and add the field only if the widened assertion fails. | `scripts/test/validate-specs.test.sh`, `framework/spec-workflows/templates/BUG-TEMPLATE.md` | `scripts/validate-specs.py` | — | writing-specs | default | ☑ done |
+| 4 | AC-4 on the real corpus. Run the validator against `tobevisit-content` and record the count per class before and after — baseline measured 2026-08-30: 22 findings across 99 specs, 21 `english_only` + 1 `link_broken`. Adjudicate the residual: `CR-20260615-admin-configuration-management.md:97` quotes `так може` in unquoted prose, which FR-3 requires to keep firing. | this spec (Evidence) | `src/github.com/tobeverse/tobevisit-content/docs/specs/` | 2, 3 | writing-specs | default | ☑ done |
+| 5 | Docs (FR-1..FR-3). State the narrowed rule where "file output is English" is stated, or record that the existing wording already holds unchanged. | `docs/agent-protocol.md` | `framework/boundaries.md`, `scripts/validate-specs.py` | 2 | writing-specs | default | ☑ done |
+
+## Evidence
+
+Measured 2026-08-30, `tobevisit-content` corpus, per class before → after:
+
+| Class | Before | After |
+|---|---|---|
+| `english_only` | 21 | 1 |
+| `link_broken` | 1 | 1 |
+| **Total** (99 specs) | **22** | **2** |
+
+The baseline is larger than `## Current State` records (21 findings over 95
+specs, logged 2026-08-22/28) because the corpus grew; the shape is unchanged.
+
+- **AC-1, AC-2, AC-3** — `./scripts/test/validate-specs.test.sh`, three fixtures
+  drawn from the real failures. Written first and recorded failing against the
+  old predicate (AC-1 and AC-2 red, five assertions), green after.
+- **AC-4** — one run, counts above. `english_only` is 1, not 0: see the
+  divergence below. `link_broken` is untouched by design (OS-2).
+- **AC-5** — passes against `BUG-TEMPLATE.md` unmodified.
+- **Regression** — `make check` green: 29 specs, 1 agent, 13 checks, plus every
+  self-test suite.
+
+### Divergences
+
+- **FR-4's defect was already closed.** `BUG-TEMPLATE.md` already carries every
+  `_REQUIRED_FIELDS` entry plus `severity`; IMP-20260826 fixed it. Nothing was
+  added to the template. What was missing was the proof: the harness asserted
+  silence on `affected-docs` alone, so the template could have lost any other
+  field unnoticed. The assertion now covers all of `schema_missing_field`.
+- **AC-4 lands at 1, not 0.**
+  `CR-20260615-admin-configuration-management.md:97` writes `так може` in
+  unquoted prose — a human's non-committal answer quoted with straight double
+  quotes inside a Split Decision. FR-3 **requires** this to keep firing; the
+  check is right and the line is not. Reaching 0 is a one-line edit in
+  `tobevisit-content` (backticks around the quoted answer), which is that
+  repository's change — this spec's `affected-repos` is `ai-dotfiles` alone.
+  Left for the consuming repo, in the shape of OS-1.
 
 ## Agent instructions
 

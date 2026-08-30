@@ -34,6 +34,7 @@ from __future__ import annotations
 import datetime as _dt
 import re
 import sys
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
@@ -679,56 +680,98 @@ def check_link_integrity(specs: Iterable[Spec]) -> list[Finding]:
     return findings
 
 
-# Characters outside this set are flagged. The set covers:
-#   * ASCII (0x00-0x7F)
-#   * Latin-1 Supplement (0xA0-0xFF) — é, ñ, à, …
-#   * Latin Extended-A (0x100-0x17F)
-#   * Latin Extended-B (0x180-0x24F)
-#   * Greek + Coptic (0x370-0x3FF) — math/science symbols: Δ π μ ε σ Ω …
-#     Greek letters are universal in English math/engineering notation;
-#     flagging them produces false positives with no real signal.
-#   * General Punctuation (0x2000-0x206F) — em-dash, curly quotes, …
-#   * Currency Symbols (0x20A0-0x20CF)
-#   * Letterlike Symbols (0x2100-0x214F)
-#   * Arrows (0x2190-0x21FF)
-#   * Mathematical Operators (0x2200-0x22FF)
-#   * Box drawing (0x2500-0x257F) — for ASCII-art diagrams
-#   * Geometric Shapes (0x25A0-0x25FF) — checkboxes ☑ ☐
-#   * Misc Symbols (0x2600-0x26FF) — ✅ ❌
-#   * Dingbats (0x2700-0x27BF) — ✓ ✗
-_NON_ENGLISH_RE = re.compile(
-    r"[^\x00-\x7F"
-    r" -ɏ"
-    r"Ͱ-Ͽ"
-    r" -⁯"
-    r"₠-⃏"
-    r"℀-⅏"
-    r"←-⇿"
-    r"∀-⋿"
-    r"─-╿"
-    r"■-◿"
-    r"☀-⛿"
-    r"✀-➿"
-    r"]+"
+# IMP-20260829 — the rule is about *prose*, so the check has to know what a run
+# of characters is before it judges it. Three things it is not:
+#
+#   * Quoted data. A spec describing a Ukrainian corpus must be able to write
+#     `Берестейський` in backticks or drop a fixture into a fenced block; the
+#     word is the subject, not a lapse. Front-matter values need no handling
+#     here — `Spec.body` already excludes them.
+#   * A glyph. ⏳ 📍 ⬜ ⤓ and emoji belong to no letter category. A symbol is
+#     not a language, and neither is a superscript digit or a variation
+#     selector.
+#   * A letter this project writes English in. ASCII and the Latin supplements
+#     obviously; Greek too, because Δ π μ σ Ω are universal in English
+#     engineering notation; and the spacing modifiers, which carry
+#     transliteration (Indoneziysʹkyy) rather than a second script.
+#
+# What is left — an unquoted run of letters from another script, in a sentence —
+# is what the rule was written for, and is what AC-3 pins by counter-example.
+
+_ALLOWED_LETTER_RANGES = (
+    (0x0041, 0x005A),  # A-Z
+    (0x0061, 0x007A),  # a-z
+    (0x00C0, 0x024F),  # Latin-1 Supplement, Latin Extended-A and -B
+    (0x02B0, 0x02FF),  # Spacing Modifier Letters — ʹ in transliteration
+    (0x0370, 0x03FF),  # Greek and Coptic — math/science notation
+    (0x1E00, 0x1EFF),  # Latin Extended Additional
 )
+
+# Characters that may sit inside one foreign-language excerpt without ending it,
+# so the message quotes the phrase a reader can act on rather than its first
+# word. A Latin letter is not among them: it closes the run, which is what keeps
+# an English sentence from being reported as one long finding.
+_RUN_JOINERS = " \t\u00a0-\u2010\u2011\u2013\u2014'\u2019\u02bc"
+
+_INLINE_CODE_RE = re.compile(r"(`+)[^`]*?\1")
+_FENCE_RE = re.compile(r"^\s{0,3}(?:`{3,}|~{3,})")
+
+
+def _is_foreign_letter(ch: str) -> bool:
+    """True for a letter from a script this project does not write English in."""
+    if not unicodedata.category(ch).startswith("L"):
+        return False
+    cp = ord(ch)
+    return not any(lo <= cp <= hi for lo, hi in _ALLOWED_LETTER_RANGES)
+
+
+def _mask_inline_code(line: str) -> str:
+    """Blank out inline-code spans, preserving length so columns stay true."""
+    return _INLINE_CODE_RE.sub(lambda m: " " * len(m.group(0)), line)
+
+
+def _first_foreign_run(line: str) -> tuple[int, str] | None:
+    """First (column, excerpt) of foreign-script letters, or None.
+
+    A run survives the joiners above, so a whole clause is quoted back; any
+    other character — a Latin letter included — closes it.
+    """
+    start: int | None = None
+    stop = 0
+    for i, ch in enumerate(line):
+        if _is_foreign_letter(ch):
+            if start is None:
+                start = i
+            stop = i + 1
+        elif start is not None and ch not in _RUN_JOINERS:
+            return start, line[start:stop]
+    if start is not None:
+        return start, line[start:stop]
+    return None
 
 
 def check_english_only(specs: Iterable[Spec]) -> list[Finding]:
     """FR-1 #7 — boundaries.md § Always do #8: file output is English.
 
-    Flags any run of characters outside the allowed Unicode ranges
-    (ASCII, Latin supplements, common punctuation, math, arrows, box
-    drawing, dingbats — see _NON_ENGLISH_RE). One finding per offending
-    line, with the offending excerpt included for context.
+    Flags an unquoted run of letters from another script in a spec's prose.
+    Inline code, fenced blocks and front-matter values are data the spec is
+    reporting, and characters outside every letter category are not language;
+    neither is reported. One finding per offending line, with the excerpt.
     """
     findings: list[Finding] = []
     for spec in specs:
         body_start = spec.front_matter_end_line or 0
+        in_fence = False
         for i, line in enumerate(spec.body.splitlines(), start=1):
-            m = _NON_ENGLISH_RE.search(line)
-            if not m:
+            if _FENCE_RE.match(line):
+                in_fence = not in_fence
                 continue
-            excerpt = m.group(0)
+            if in_fence:
+                continue
+            hit = _first_foreign_run(_mask_inline_code(line))
+            if hit is None:
+                continue
+            col, excerpt = hit
             if len(excerpt) > 40:
                 excerpt = excerpt[:37] + "..."
             findings.append(
@@ -736,7 +779,7 @@ def check_english_only(specs: Iterable[Spec]) -> list[Finding]:
                     spec.path,
                     body_start + i,
                     "english_only",
-                    f"non-English run at col {m.start() + 1}: {excerpt!r}",
+                    f"non-English run at col {col + 1}: {excerpt!r}",
                 )
             )
     return findings

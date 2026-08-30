@@ -105,6 +105,9 @@ sed -e 's/BUG-YYYYMMDD-<kebab-case-title>/BUG-20260826-demo/' \
     "$tpl" > "$p/docs/specs/active/BUG-20260826-demo.md"
 run "$p"
 assert_silent "AC-4 a filled BUG template reports no missing affected-docs" "$out" "required field 'affected-docs' missing"
+# IMP-20260829 AC-5 — the same template, judged against the whole schema
+# rather than one field: a BUG written from it must not be born invalid.
+assert_silent "AC-5 a filled BUG template is missing no required field" "$out" "schema_missing_field"
 
 # ---------- FR-8: REQ-ID collisions inside one domain baseline ----------
 mkbaseline() { # $1 root, $2 filename, [body on stdin]
@@ -225,6 +228,59 @@ EOF
 run "$p"
 expect "FR-9 an archived spec's inventory is not judged" 0 "$rc"
 assert_silent "FR-9 no finding for the archived cross-repo path" "$out" "inventory_path_unresolvable"
+
+# ---------- FR-1..FR-3: english_only tells quoted data from foreign prose ----------
+# Drawn from tobevisit-content's real findings (IMP-20260829): a Ukrainian corpus
+# cannot describe itself if quoting its own subject is a finding, and a glyph is
+# not a language. What must still fail is a sentence written in another script.
+
+# AC-1 — quoted domain data: an inline-code run and a fenced block.
+p="$(newproj enquoted)"
+mkspec "$p" "IMP-20260829-quoted-data.md" </dev/null
+cat >> "$p/docs/specs/active/IMP-20260829-quoted-data.md" <<'EOF'
+
+## Summary
+
+The geography example writes `Берестейський проспект`, and the languages fixture
+restores the `Українська` endonym.
+
+```json
+{ "weekdayDescriptions": ["понеділок: 10:00-18:00"] }
+```
+EOF
+run "$p"
+assert_silent "AC-1 domain data in backticks is not a finding" "$out" "english_only"
+expect "AC-1 a spec quoting its own corpus validates cleanly" 0 "$rc"
+
+# AC-2 — glyphs: outside every letter category, so outside the rule.
+p="$(newproj englyphs)"
+mkspec "$p" "IMP-20260829-glyphs.md" </dev/null
+cat >> "$p/docs/specs/active/IMP-20260829-glyphs.md" <<'EOF'
+
+## Summary
+
+The queue renders ⏳ while a job waits, the map pin is 📍, an unchecked box is ⬜,
+the download affordance is ⤓, and the nav still uses emoji (🏳️🔤🏷️📝).
+EOF
+run "$p"
+assert_silent "AC-2 bare glyphs and emoji are not a language" "$out" "english_only"
+expect "AC-2 a spec quoting UI glyphs validates cleanly" 0 "$rc"
+
+# AC-3 — the counter-example. Narrowing the check must not retire it: an
+# unquoted run of non-Latin letters in prose is what the rule was written for.
+p="$(newproj enprose)"
+mkspec "$p" "IMP-20260829-foreign-prose.md" </dev/null
+cat >> "$p/docs/specs/active/IMP-20260829-foreign-prose.md" <<'EOF'
+
+## Summary
+
+Ця специфікація написана українською мовою, а не англійською.
+EOF
+run "$p"
+expect "AC-3 prose in another language exits non-zero" 1 "$rc"
+assert_reports "AC-3 the finding names the file" "$out" "IMP-20260829-foreign-prose.md"
+assert_reports "AC-3 the finding is an english_only one" "$out" "english_only"
+assert_reports "AC-3 the excerpt is carried in the message" "$out" "специфікація"
 
 if [ "$fails" -eq 0 ]; then
   echo "scripts/validate-specs.py self-tests passed ✓"
