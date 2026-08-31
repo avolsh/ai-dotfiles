@@ -8,6 +8,7 @@ Plan stage — decompose approved requirements into vertical-slice tasks. Lifecy
 
 ## Preconditions
 - Spec at `status: specify`, requirements approved by the human, `## Design` populated or `Skipped — <reason>`.
+- `## Current State` re-verified if any spec sharing this spec's `affected-docs:`/`affected-code:` closed after its `date:` — the trigger is in the other spec's front-matter, not this one's, so it is unreachable unless looked for here. See [`spec-lifecycle.md § Rules #10`](../spec-workflows/spec-lifecycle.md#inventory-overlap-restales).
 
 ## Steps
 1. **Load context** — the spec file, [`model-selection/SKILL.md`](../skills/model-selection/SKILL.md), every `SKILL.md` listed in the spec's `skills` field, and project `docs/architecture/module-map.md`.
@@ -17,4 +18,4 @@ Plan stage — decompose approved requirements into vertical-slice tasks. Lifecy
 5. **Gate** — post summary (task count + file count, cross-bounded-context concerns, model tier distribution, execution order). Wait for explicit plan approval; Task 1 begins on approval.
 
 ## Hard rules
-- Never write tasks without approved requirements above them. Never exceed 5 decisions per task row — the cap and the Files column measure different things, per [`authoring-steps.md § C`](../skills/writing-specs/references/authoring-steps.md) step 5 — and never merge unrelated work to hit ≤12 total. Never force-fit a dependency to silence a fired signal; § C step 6 decides between an override and a flip back to `specify`. No advance to `plan` while `depends-on:` siblings are unmet — see [`spec-lifecycle.md § Rules #10`](../spec-workflows/spec-lifecycle.md#depends-on-blocks-plan).
+- Never write tasks without approved requirements above them. Never exceed 5 decisions per task row — the cap and the Files column measure different things, per [`authoring-steps.md § C`](../skills/writing-specs/references/authoring-steps.md) step 5 — and never merge unrelated work to hit ≤12 total. Never force-fit a dependency to silence a fired signal; § C step 6 decides between an override and a flip back to `specify`. No advance to `plan` while `depends-on:` siblings are unmet, and none while an overlapping spec has closed over this one's `## Current State` unread — see [`spec-lifecycle.md § Rules #10`](../spec-workflows/spec-lifecycle.md#depends-on-blocks-plan).

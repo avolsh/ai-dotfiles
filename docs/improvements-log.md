@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-08-30*
+*Last updated: 2026-08-31*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -324,3 +324,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** Filling `owner:` on a new spec meant guessing. The corpus carries three handles for the same human — `avolsh` (25 specs), `alex` (5), `alexvolsh` (2) — and the drift is recent, not historical: the two most recently created specs both say `alexvolsh`, while `OWNERS` names `avolsh` as the sole non-shared approver and reviewer. `validate-specs.py` requires `owner:` to be present and non-empty and never compares it to anything, so all three pass. The field's whole purpose is naming an accountable human, and a `git log --author` or an OWNERS lookup on two of the three handles returns nothing.
 - **What was changed:** none — the new spec uses `avolsh` per `OWNERS`. Logged rather than fixed, since renaming `owner:` across 7 archived specs is a corpus edit and archived specs are immutable post-closure.
 - **Suggested follow-up:** `validate-specs.py` already parses front-matter and the repo root already has `OWNERS`; asserting `owner:` ∈ `OWNERS` is a few lines and turns a decorative field into a real one. Worth pairing with the question of whether archived specs are in scope for it — probably not, which argues for the same `active/`-only scoping `check_inventory_paths` already uses. Note this is the second field in two days found to be unvalidated in a way only a human notices (`affected-docs` overlap being the first), and both were found by writing a spec by hand rather than by any check.
+
+### 2026-08-31 — A new canonical rule sentence is born untracked, and nothing notices
+
+- **Spec / task:** IMP-20260830-active-spec-overlap-detection / T3 (closure)
+- **Category:** `tooling`
+- **What was found:** `lint-rules.py` learns which phrases to guard from the "Verbatim phrases observed" lists in `docs/rule-canonical-map.md`, so a canonical sentence absent from those lists is invisible to it — a later copy-paste of it into a prompt or guide drifts silently, which is the failure the linter exists to catch. This spec added such a sentence (the inventory-overlap re-verification key at `spec-lifecycle.md § Rules #10`) and did not register it, because `## Docs updates required` conditioned the map entry on the sentence appearing in more than one file. That condition reads the map as a record of observed duplicates; the corpus uses it as a tripwire against future ones, and R7 already lists canonical-file-only phrases on that second reading. Two readings of one file, and the narrower one silently disarms the guard for every rule added under it. Distinct from the two 2026-08-27 entries: those are about a *registered* phrase going inert through line-wrapping, this is about a canonical sentence never being registered at all. The presence check both of them recommend would not have caught it — nothing is missing from the map's own point of view.
+- **What was changed:** none — the spec's scope said no entry, and `make lint-rules` is green either way. Recorded rather than widened at closure.
+- **Suggested follow-up:** Register the inventory-key sentence under R7, then invert the default so this cannot recur by omission: have a check report a **bolded MUST sentence in a canonical file that no map entry tracks**, making a rule author opt a sentence *out* of tracking rather than remember to opt it in. Natural companion to the twice-recommended presence check — the two together turn the map from a hand-maintained list into a bidirectional index, and both are small. Third entry in four days where a hand-maintained coverage list passes loudly over what it omits (2026-08-13 `validate-specs.py`, 2026-08-30 `owner:`).

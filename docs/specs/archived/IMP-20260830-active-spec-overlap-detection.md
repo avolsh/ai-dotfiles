@@ -2,7 +2,7 @@
 id: IMP-20260830-active-spec-overlap-detection
 type: IMP
 date: 2026-08-30
-status: specify
+status: done
 owner: avolsh
 risk: low
 affected-repos:
@@ -20,7 +20,7 @@ skills:
 model-suggestion: default
 ---
 # IMP-20260830-active-spec-overlap-detection
-*Last updated: 2026-08-30*
+*Last updated: 2026-08-31*
 
 ## Summary
 - **Goal:** Detect two active specs aimed at the same file before both are written, and re-verify a spec whose ground another spec has already closed over.
@@ -35,7 +35,7 @@ Nothing fired. `validate-specs.py` parses `affected-docs` for every spec (`check
 A gap that produces no signal accumulates no witnesses, so the usual multi-witness bar cannot be reached here by waiting.
 
 ## Proposed Improvement
-Two halves of one guard. Mechanically: a check that reads two active specs sharing an inventory path as a collision unless they declare a relationship. The discriminator is exact — on 2026-08-26 the legitimate pair (`ui-surface-closure-evidence` × `decomposition-and-staleness-procedures`, four shared `affected-docs`) carried both `siblings:` and `depends-on:`; the missed pair carried neither. Procedurally: `§ Rules #10` gains a second key, so a spec is re-verified not only when its `depends-on:` closes but when any spec touching its inventory reaches `done` after its `date:`.
+Two halves of one guard. Mechanically: a check that reads two active specs sharing an inventory path as a collision unless they declare a relationship. The discriminator is exact — on 2026-08-26 the legitimate pair (`ui-surface-closure-evidence` × `decomposition-and-staleness-procedures`, three shared `affected-docs`) carried both `siblings:` and `depends-on:`; the missed pair carried neither. Procedurally: `§ Rules #10` gains a second key, so a spec is re-verified not only when its `depends-on:` closes but when any spec touching its inventory reaches `done` after its `date:`.
 
 The finding is an error, not an advisory: `validate-specs.py` has no warning level, and the remedy is unambiguous — declare the relationship or merge the specs.
 
@@ -55,7 +55,7 @@ When `validate-specs.py` runs
 Then it exits non-zero and the finding names both spec ids and the shared path
 
 ### AC-2: A declared relationship is silent (FR-2)
-Given `IMP-20260826-ui-surface-closure-evidence` and `IMP-20260826-decomposition-and-staleness-procedures` as fixtures at `status: specify`, sharing four `affected-docs` entries and linked by `siblings:` and `depends-on:`
+Given `IMP-20260826-ui-surface-closure-evidence` and `IMP-20260826-decomposition-and-staleness-procedures` as fixtures at `status: specify`, sharing three `affected-docs` entries and linked by `siblings:` and `depends-on:`
 When `validate-specs.py` runs
 Then it reports no overlap finding for that pair
 
@@ -76,8 +76,30 @@ Skipped — one check added to an existing registry and two rule sentences; no s
 ## Split Decision
 **T1 fires and no E1–E5 exception covers it — kept as one by human election at the Specify gate, recorded here as an override.** The FRs form two clusters: C1 (FR-1…FR-3, the check) and C2 (FR-4, FR-5, the rule), and each cluster's ACs verify without the other's FRs implemented, which is the § 1 definition. T2 is `unknown` — ai-dotfiles has no `docs/architecture/module-map.md`. T3–T6 do not fire; the Q2 answer states the clusters must ship together, which is the opposite of T6. E5 is the closest exception and is excluded by its own text, since this spec ships behavioural code. The ground for the election is that the two clusters answer one question — when is a spec stale — and shipping either alone leaves the corpus answering it two ways, with the validator keyed to overlap and the rule keyed to `depends-on:`. Surfaced at the gate for confirmation rather than resolved silently.
 
+**Plan-stage override (P3).** Decomposition produced three tasks in which T2 (`§ Rules #10`) carries zero dependency on T1 (the check) — P3 by the letter of [`splitting-rules.md § 3`](../../../framework/skills/writing-specs/references/splitting-rules.md). It fires on the same C1/C2 boundary the T1 trigger named above and the human elected to keep as one at the Specify gate, so per [`authoring-steps.md § C`](../../../framework/skills/writing-specs/references/authoring-steps.md) step 6 it is recorded here as an override rather than re-run. T3's dependency on T1 is closure verification only — AC-3 runs `make lint-rules` and `make validate-anchors`, and the rollout note requires `make check` green with the new check registered — not a cluster coupling, and it is not offered as an answer to P3. P1 does not fire (3 ≤ 12); P2 stays `unknown` for the same reason as at Specify — ai-dotfiles has no `docs/architecture/module-map.md`.
+
 ## Tasks
-Pending — Plan stage only.
+
+> **Before starting Task T1, set status: in-progress in the front-matter above.**
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| T1 | Add `check_active_spec_overlap` and register it in `CHECK_REGISTRY`: two specs under `docs/specs/active/` naming the same `affected-docs`/`affected-code` path are an error naming the other spec's `id` and every shared path, silent when either names the other in `siblings:` or `depends-on:` in either direction (FR-1, FR-2, FR-3). Tests first — the 2026-08-26 unlinked pair and the linked pair as `mkspec` fixtures, red before the check exists (AC-1, AC-2). | `scripts/validate-specs.py`, `scripts/test/validate-specs.test.sh` | `docs/specs/archived/IMP-20260826-plan-file-count-realism.md`, `docs/specs/archived/IMP-20260826-decomposition-and-staleness-procedures.md`, `docs/specs/archived/IMP-20260826-ui-surface-closure-evidence.md` | — | test-driven-development, writing-specs | default | ☑ done |
+| T2 | State the second re-verification key in `§ Rules #10` beside the `depends-on:` key: when a spec naming any of this spec's `affected-docs`/`affected-code` reaches `done` after this spec's `date:`, `## Current State` MUST be re-verified and superseded FRs tombstoned before advancing to `plan`. Reuse the existing tombstone and read-not-rewrite clauses rather than restating them (FR-4). | `framework/spec-workflows/spec-lifecycle.md` | `docs/rule-canonical-map.md` | — | writing-docs, writing-specs | deep | ☑ done |
+| T3 | Carry FR-4's key into `plan-spec.prompt.md` preconditions as a link to the `depends-on-blocks-plan` anchor, not a second statement of the rule, since the trigger appears nowhere in the spec's own front-matter (FR-5). Record the new canonical sentence under R7 in `docs/rule-canonical-map.md` only if `lint-rules` shows it stated in more than one file. Close on `make lint-rules`, `make validate-anchors` and `make check` green with T1's check registered (AC-3). | `framework/prompts/plan-spec.prompt.md`, `docs/rule-canonical-map.md` | `framework/spec-workflows/spec-lifecycle.md`, `scripts/lint-rules.py`, `scripts/validate-anchors.py` | T1, T2 | writing-docs, writing-specs | default | ☑ done |
+
+## Closure Evidence
+Closed 2026-08-31, review-after per [`spec-lifecycle.md § Review-after closure`](../../../framework/spec-workflows/spec-lifecycle.md#review-after-closure) (`risk: low`). `make check` green: 32 specs, **14** checks registered (was 13), 13 canonical rules / 45 phrases, 77 anchor links, every self-test suite passing.
+
+| AC | Evidence at HEAD |
+|---|---|
+| AC-1 | Met. `check_active_spec_overlap` in `scripts/validate-specs.py`, registered in `CHECK_REGISTRY`. Fixtures reconstructing the 2026-08-26 unlinked pair (`plan-file-count-realism` × `decomposition-and-staleness-procedures`, two shared `affected-docs`) exit non-zero and render `active_spec_overlap:active spec 'IMP-20260826-decomposition-and-staleness-procedures' claims the same paths: docs/authoring-steps.md, docs/writing-specs.md; name one spec in the other's siblings: or depends-on:, or merge them`. The finding names the other spec's `id` and both shared paths, closing FR-3 in the same assertion. Evidence could have failed for the criterion: the five assertions were red against HEAD before the check existed. |
+| AC-2 | Met, and proven load-bearing. The linked pair (`ui-surface-closure-evidence` × `decomposition-and-staleness-procedures`, **three** shared `affected-docs` — the Given said four; corrected on 2026-08-31 against the archived front-matter, since `acceptance-criteria-patterns.md` appears in only one of the two) reports no overlap finding and exits zero. A silence assertion passes trivially against a check that does not exist, so it was mutation-tested: deleting the `siblings:`/`depends-on:` discriminator turns AC-2 and the one-sided FR-2 case red (3 failures), and deleting the `active/` filter turns the OS-4 case red (1 failure). |
+| AC-3 | Met. `spec-lifecycle.md § Rules #10` states the inventory key at anchor `inventory-overlap-restales`, beside the `depends-on:` key and sharing its tombstone and read-not-rewrite clauses rather than restating them. `plan-spec.prompt.md` carries it as a precondition and in its hard rules, both as links to `§ Rules #10` — no second statement of the sentence, which `lint-rules: OK (45 phrases)` confirms. `make lint-rules` and `make validate-anchors` pass, the latter resolving the new anchor among 77 fragment links. |
+
+**FR-2 beyond the AC:** "in either direction" is covered by a fixture where only one spec declares the relationship and the other names nothing; both directions stay silent.
+
+**`docs/rule-canonical-map.md` — no entry added,** per `## Docs updates required`: the condition was FR-4's sentence appearing in more than one file, and `lint-rules` shows one site. Noted as a residual in `docs/improvements-log.md` (2026-08-31), because the map is also what teaches `lint-rules` to catch a *future* copy, and the existing R7 entry already lists canonical-file-only phrases for exactly that reason.
 
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.

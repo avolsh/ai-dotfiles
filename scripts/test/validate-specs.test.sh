@@ -282,6 +282,100 @@ assert_reports "AC-3 the finding names the file" "$out" "IMP-20260829-foreign-pr
 assert_reports "AC-3 the finding is an english_only one" "$out" "english_only"
 assert_reports "AC-3 the excerpt is carried in the message" "$out" "специфікація"
 
+# ---------- FR-1..FR-3: two active specs aimed at the same file ----------
+# The 2026-08-26 batch, reconstructed. `mkspec` already emits `affected-docs: []`;
+# the parser takes the last assignment of a key, so the heredoc below overrides it.
+
+# AC-1 — the pair that was missed: two specs against what the <=5 cap counts,
+# sharing two affected-docs entries, naming neither the other.
+p="$(newproj overlapbare)"
+mkspec "$p" "IMP-20260826-plan-file-count-realism.md" <<'EOF'
+affected-docs:
+  - docs/authoring-steps.md
+  - docs/writing-specs.md
+EOF
+mkspec "$p" "IMP-20260826-decomposition-and-staleness-procedures.md" <<'EOF'
+affected-docs:
+  - docs/authoring-steps.md
+  - docs/writing-specs.md
+  - docs/spec-lifecycle.md
+EOF
+run "$p"
+expect "AC-1 an undeclared collision exits non-zero" 1 "$rc"
+assert_reports "AC-1 the finding is an overlap one" "$out" "active_spec_overlap"
+assert_reports "AC-1 the finding names the other spec id" "$out" "IMP-20260826-decomposition-and-staleness-procedures"
+assert_reports "AC-1 the finding names the first shared path" "$out" "docs/authoring-steps.md"
+# FR-3 — every shared path, not just the first: one finding must carry both.
+assert_reports "FR-3 the finding names every shared path" "$out" "docs/authoring-steps.md, docs/writing-specs.md"
+
+# FR-1 — affected-code is an inventory too, and collides the same way.
+p="$(newproj overlapcode)"
+mkspec "$p" "IMP-20260826-a.md" <<'EOF'
+affected-code:
+  - scripts/validate-specs.py
+EOF
+mkspec "$p" "IMP-20260826-b.md" <<'EOF'
+affected-code:
+  - scripts/validate-specs.py
+EOF
+run "$p"
+assert_reports "FR-1 a shared affected-code path collides too" "$out" "scripts/validate-specs.py"
+
+# AC-2 — the legitimate pair: three shared affected-docs entries, declared by
+# `siblings:` on one and `depends-on:` on the other. A declared relationship is
+# the Split check's own output, so the check must stay silent on it.
+p="$(newproj overlaplinked)"
+mkspec "$p" "IMP-20260826-ui-surface-closure-evidence.md" <<'EOF'
+affected-docs:
+  - docs/spec-lifecycle.md
+  - docs/authoring-steps.md
+  - docs/acceptance-criteria-patterns.md
+  - docs/rule-canonical-map.md
+EOF
+mkspec "$p" "IMP-20260826-decomposition-and-staleness-procedures.md" <<'EOF'
+affected-docs:
+  - docs/authoring-steps.md
+  - docs/spec-lifecycle.md
+  - docs/rule-canonical-map.md
+siblings:
+  - IMP-20260826-ui-surface-closure-evidence
+depends-on:
+  - IMP-20260826-ui-surface-closure-evidence
+EOF
+run "$p"
+assert_silent "AC-2 a declared relationship reports no overlap" "$out" "active_spec_overlap"
+expect "AC-2 the linked pair validates cleanly" 0 "$rc"
+
+# FR-2 — "in either direction": the declaration sits on one spec only, and the
+# other names nothing. Reading the pair from the undeclared side must be silent.
+p="$(newproj overlaponeway)"
+mkspec "$p" "IMP-20260826-declared.md" <<'EOF'
+affected-docs:
+  - docs/writing-specs.md
+siblings:
+  - IMP-20260826-silent
+EOF
+mkspec "$p" "IMP-20260826-silent.md" <<'EOF'
+affected-docs:
+  - docs/writing-specs.md
+EOF
+run "$p"
+assert_silent "FR-2 a one-sided siblings: entry silences both directions" "$out" "active_spec_overlap"
+
+# OS-4 — an archived spec is inert: only docs/specs/active/ holds a lease.
+p="$(newproj overlaparchived)"
+mkspec "$p" "IMP-20260826-live.md" <<'EOF'
+affected-docs:
+  - docs/writing-specs.md
+EOF
+mv "$p/docs/specs/active/IMP-20260826-live.md" "$p/docs/specs/archived/"
+mkspec "$p" "IMP-20260830-alone.md" <<'EOF'
+affected-docs:
+  - docs/writing-specs.md
+EOF
+run "$p"
+assert_silent "OS-4 an active spec does not collide with an archived one" "$out" "active_spec_overlap"
+
 if [ "$fails" -eq 0 ]; then
   echo "scripts/validate-specs.py self-tests passed ✓"
 else

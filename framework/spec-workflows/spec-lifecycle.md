@@ -1,11 +1,11 @@
 # Spec Lifecycle
 
-*Last updated: 2026-08-29*
+*Last updated: 2026-08-31*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
 
-<!-- Anchors in this file (per `docs/rule-canonical-map.md`): R2 `never-tasks-table-at-specify` · R3 `never-flip-without-gate`, `observation-shaped-evidence` · R6 `split-check-mandatory` · R7 `depends-on-blocks-plan` · R8 `visualize-not-a-status` · R10 `visualize-triggers` (anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). -->
+<!-- Anchors in this file (per `docs/rule-canonical-map.md`): R2 `never-tasks-table-at-specify` · R3 `never-flip-without-gate`, `observation-shaped-evidence` · R6 `split-check-mandatory` · R7 `depends-on-blocks-plan`, `inventory-overlap-restales` · R8 `visualize-not-a-status` · R10 `visualize-triggers` (anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). -->
 
 ## Front-matter schema
 
@@ -119,6 +119,19 @@ for the full rule set and Iteration Log mandate.
 
     **When the last spec in `depends-on:` reaches `done`, `## Current State` MUST be re-verified against the code before the spec advances to `plan`.**
     **A finding the closed dependency superseded is tombstoned in place, not left standing** — an FR the closed work already satisfies says so and cites the spec that closed it.
+
+    <a id="inventory-overlap-restales"></a>Staleness has a second key.
+    `depends-on:` is filled by the Split check, so it reaches only specs
+    split from each other, and misses two written independently against
+    one target — which is where `## Current State` rots fastest, because
+    no field links them for a reader to follow:
+
+    **When any spec naming a path in this spec's `affected-docs:` or `affected-code:` reaches `done` after this spec's `date:`, `## Current State` MUST be re-verified before this spec advances to `plan`**, and a finding that spec superseded tombstoned on the same terms as above.
+
+    `validate-specs.py` reports an undeclared overlap while both specs are
+    active; this key carries the obligation past that point, when the other
+    spec has closed and moved to `archived/` where the check no longer
+    looks.
 
     Re-verification is a read, not a rewrite: where the section still
     holds, re-date it and record what was checked, so the next reader can

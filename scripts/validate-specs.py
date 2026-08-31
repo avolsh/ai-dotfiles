@@ -1130,6 +1130,86 @@ def check_inventory_paths(specs: Iterable[Spec]) -> list[Finding]:
     return findings
 
 
+_RELATION_FIELDS = ("siblings", "depends-on")
+
+
+def _spec_id(spec: Spec) -> str:
+    value = spec.front_matter.get("id")
+    return value if isinstance(value, str) else spec.path.stem
+
+
+def _declared_relations(spec: Spec) -> set[str]:
+    """Every spec id this spec names in `siblings:` or `depends-on:`."""
+    named: set[str] = set()
+    for field in _RELATION_FIELDS:
+        value = spec.front_matter.get(field)
+        if isinstance(value, list):
+            named.update(item.strip() for item in value if isinstance(item, str))
+    return named
+
+
+def _inventory(spec: Spec) -> set[str]:
+    """The spec's declared inventory, normalized the way the guard reads it."""
+    paths: set[str] = set()
+    for field in _INVENTORY_FIELDS:
+        value = spec.front_matter.get(field)
+        if not isinstance(value, list):
+            continue
+        for raw in value:
+            if not isinstance(raw, str):
+                continue
+            entry = _guard_normalize(raw.strip())
+            # Unfilled template placeholders name no file, so they collide with
+            # nothing — every spec born from the template carries the same ones.
+            if entry and not entry.startswith("<"):
+                paths.add(entry)
+    return paths
+
+
+def check_active_spec_overlap(specs: Iterable[Spec]) -> list[Finding]:
+    """FR-1..FR-3 — two active specs aimed at the same file, undeclared.
+
+    Two specs written independently against one target is where `## Current
+    State` rots fastest: the wider one closes, and the narrower goes on
+    describing code that no longer exists. The Split check's own output is the
+    discriminator — a pair that declares itself in `siblings:` or `depends-on:`
+    has already been adjudicated, and the staleness rule keyed to `depends-on:`
+    covers it from there.
+    """
+    findings: list[Finding] = []
+    # Only an active spec's inventory is a lease at all (OS-4); an archived
+    # spec's paths are inert, and that case is covered procedurally by the
+    # second re-verification key in spec-lifecycle.md § Rules #10.
+    active = sorted(
+        (s for s in specs if s.path.parent.name == "active"), key=lambda s: s.path
+    )
+    for i, spec in enumerate(active):
+        inventory = _inventory(spec)
+        if not inventory:
+            continue
+        spec_id = _spec_id(spec)
+        related = _declared_relations(spec)
+        for other in active[i + 1 :]:
+            other_id = _spec_id(other)
+            if other_id in related or spec_id in _declared_relations(other):
+                continue
+            shared = sorted(inventory & _inventory(other))
+            if not shared:
+                continue
+            findings.append(
+                Finding(
+                    spec.path,
+                    spec.front_matter_end_line or 1,
+                    "active_spec_overlap",
+                    f"active spec {other_id!r} claims the same "
+                    f"{'path' if len(shared) == 1 else 'paths'}: "
+                    f"{', '.join(shared)}; name one spec in the other's "
+                    f"siblings: or depends-on:, or merge them",
+                )
+            )
+    return findings
+
+
 CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_front_matter_schema,
     check_filename_id_parity,
@@ -1142,6 +1222,7 @@ CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_trivial_lane_eligibility,
     check_res_eligibility,
     check_inventory_paths,
+    check_active_spec_overlap,
 ]
 
 
