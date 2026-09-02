@@ -10,10 +10,14 @@ affected-repos:
 affected-docs:
   - framework/prompts/references/figma-file-organization.md
   - framework/prompts/visualize-spec.prompt.md
-affected-code: []
+  - docs/rule-canonical-map.md
+affected-code:
+  - scripts/validate-specs.py
+  - scripts/test/validate-specs.test.sh
 skills:
   - writing-specs
   - writing-docs
+  - test-driven-development
 model-suggestion: default
 ---
 
@@ -54,6 +58,11 @@ columns (3 140 and 3 160) and rows (159 and 160) — the residue of "next free s
 **Nothing above is a mistake by the agent that made it.** Each frame was placed exactly as the rule
 directs. That is why this is a convention change rather than a review note.
 
+**This doc has an owner spec, and it is closed.**
+`IMP-20260820-figma-screenshot-durability-and-file-versioning` (done, archived) established
+`figma-file-organization.md`, the versioning table and `ADR-0002`. This spec extends that work at
+the same two files rather than opening a rival convention.
+
 **Two rules landed in this same doc earlier today, Direct lane, owner-directed** — "the current file
 carries no divergence" (§ 6) and the page-level section-grid check (§ 5) — both from the same
 Visualize run that surfaced the scatter. This spec builds on that text rather than re-deriving it:
@@ -85,6 +94,11 @@ row bands to one, and a section's fill ratio stops being a function of the order
 - FR-4: A section's layout MUST be derived from the IDs it contains — one row per screen ordered by screen number, that screen's states left to right in state order, packed left from the section origin with one column gutter and one row gutter. Row height is the tallest frame in the row.
 - FR-5: The § 5 clause "never a new row" MUST be superseded, naming what replaces it: a new screen is a new row, a new state is an insertion into its screen's row, and both reflow the section rather than appending to its far edge. The overlap and containment assertions it protects stay unchanged.
 - FR-6: Reflowing a section MUST be described as an ordinary act rather than a migration — any run that adds a frame leaves the whole section conforming, because a layout derived from IDs is regenerated, not repaired.
+- FR-8: The four placement assertions MUST be consolidated into one named routine — ID pattern, exactly one `.01` per screen, a screen's states contiguous and ordered within one row, the section grid, child containment, section overlap — that **throws** on any failure. A throw rolls the whole `use_figma` write back, so this is enforcement rather than advice, and it is what makes FR-4 hold without an agent remembering six separate checks.
+- FR-9: A Visualize run MUST call that routine before handing back, and MUST report its return in the requirements-gate summary. An assertion nobody is required to run is the state this spec exists to leave: the containment check has been in § 5 for weeks while a section sat 874px out of line.
+- FR-10: `scripts/validate-specs.py` MUST gain a check that every Figma frame reference under an active spec's `## Design` carries a two-part ID. Figma is not in the repository and cannot be checked from it; the alt text is, and it is where an old-form ID reaches the corpus.
+- FR-11: The rule sentences this spec adds MUST be registered in `docs/rule-canonical-map.md`, so `lint-rules.py` guards them from the silent-copy drift it exists to catch. The 2026-08-31 log entry records a canonical sentence being born untracked; this spec adds several and must not repeat it.
+- FR-12: The checkable half of "the current file carries no divergence" MUST be stated as a rule: a frame that quotes a dotted configuration path quotes one the project's settings schema declares. The framework states the rule and where a project names its schema source; the check itself is wired per project, because only the project has the schema.
 - FR-7: Archived specs MUST keep the single-part IDs they were written with, and the framework MUST say so explicitly: the mismatch between an archived spec's `[W-59]` and a live `[W-11.03]` is expected, is resolved by the frozen key those specs resolve against, and is never to be "corrected".
 
 ## Acceptance Criteria
@@ -113,6 +127,24 @@ Then the framework states that this is expected and points at the frozen-key mec
 asks for the archived spec to be edited
 Evidence: the rule text; the § 6 versioning subsection it cross-references
 
+### AC-4: The rules are enforced, not merely written (FR-8, FR-9, FR-10, FR-11)
+
+Given a `use_figma` write that adds a frame with a one-part ID, or drops a state into the wrong row,
+or leaves a section out of the grid
+When the mandatory routine runs before hand-back
+Then the write is rejected and the reason names the frame and the assertion; and separately, a spec
+whose `## Design` cites a one-part ID fails `validate-specs`
+Evidence: the routine exercised against three deliberately-bad writes; a `validate-specs` probe
+fixture; `make lint-rules` green with the new sentences registered
+
+### AC-5: A frame cannot quote a configuration key that does not exist (FR-12)
+
+Given a project that names its settings-schema source
+When a frame quotes a dotted path the schema does not declare
+Then the rule states this is a divergence to fix, and names the per-project check as the place it is
+caught
+Evidence: the rule text; the migration spec wires the first instance of it
+
 ## Design
 
 Skipped — a naming and placement convention with no UI surface of its own. The layout it defines is
@@ -121,9 +153,9 @@ shown by the worked example in the reference doc and exercised by the migration 
 ## Out of Scope
 
 - OS-1: Renaming or re-laying-out `tobevisit-content`'s file — `IMP-20260902-frame-id-migration`.
-- OS-2: A mechanical check for either rule. Worth having and recorded in the improvements log; this
-  spec writes the convention the check would enforce, and a check without an agreed convention has
-  nothing to assert.
+- OS-2: Checking a frame against the application's rendered output — pixels, spacing, copy. What
+  FR-8 to FR-12 assert is structure and stated facts; visual fidelity has no mechanical oracle and
+  stays a reviewer's job.
 - OS-3: Three-digit parts. Two digits per half is a ceiling of 99 screens and 99 states each; the
   corpus that prompted this is at 33 and 8.
 - OS-4: Platform prefixes beyond the existing `W-`/`iOS-` scheme.
@@ -158,7 +190,11 @@ Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
   the ID-derived layout and its snippet; § 6 gains the archived-spec sentence; § 7 gains a checklist
   line per FR.
 - `framework/prompts/visualize-spec.prompt.md` — the hard rules name the two-part ID and point at
-  § 4, so an agent mid-run sees it without opening the reference.
+  § 4, and Step 6 gains the mandatory verification call and what it reports.
+- `docs/rule-canonical-map.md` — the new canonical sentences registered under the relevant rule so
+  `lint-rules.py` tracks them.
+- `scripts/validate-specs.py` + `scripts/test/validate-specs.test.sh` — the two-part-ID check on
+  active specs' `## Design`, with a probe fixture.
 
 ## Rollout / migration notes
 
