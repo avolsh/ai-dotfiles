@@ -1210,6 +1210,76 @@ def check_active_spec_overlap(specs: Iterable[Spec]) -> list[Finding]:
     return findings
 
 
+# A markdown image whose alt may itself hold one level of `[...]` — which is
+# exactly the shape of a frame name: `[W-11.03] Entity — View · state`. The
+# closing `)` is deliberately left unconsumed so the wrapping link can be read.
+_IMAGE_RE = re.compile(r"!\[((?:[^\[\]]|\[[^\[\]]*\])*)\]\(([^)\s]*)")
+_ID_TAG_RE = re.compile(r"^\[([A-Za-z]+-[0-9][0-9.]*)\]")
+_TWO_PART_ID_RE = re.compile(r"^\[[A-Z]+-\d{2}\.\d{2}\]")
+
+
+def _design_section(body: str) -> tuple[str, int] | None:
+    """The `## Design` section's text and the 1-indexed body line it starts on."""
+    lines = body.splitlines()
+    start: int | None = None
+    for i, line in enumerate(lines):
+        stripped = line.lstrip()
+        if not stripped.startswith("## "):
+            continue
+        if start is not None:
+            return "\n".join(lines[start:i]), start + 1
+        if stripped[3:].strip().lower() == "design":
+            start = i + 1
+    if start is None:
+        return None
+    return "\n".join(lines[start:]), start + 1
+
+
+def check_figma_frame_id(specs: Iterable[Spec]) -> list[Finding]:
+    """FR-10 — a Figma frame reference under an *active* spec's `## Design`
+    carries a two-part `<platform>-<screen>.<state>` ID.
+
+    Figma is not in the repository and cannot be checked from it; the alt text
+    is, and it is where a superseded one-part ID reaches the corpus. Archived
+    specs are out of scope by construction — they resolve against a frozen file
+    key, where the one-part name is still the frame's real name.
+    """
+    findings: list[Finding] = []
+    for spec in specs:
+        if spec.path.parent.name != "active":
+            continue
+        section = _design_section(spec.body)
+        if section is None:
+            continue
+        text, first_line = section
+        for match in _IMAGE_RE.finditer(text):
+            alt, src = match.group(1), match.group(2)
+            after = text[match.end() :]
+            # Link-wrapped form: `[![alt](src)](href)`.
+            href = after[3:].split(")")[0] if after.startswith(")](") else ""
+            tag = _ID_TAG_RE.match(alt)
+            is_frame = "figma.com" in src or "figma.com" in href or tag is not None
+            if not is_frame or _TWO_PART_ID_RE.match(alt):
+                continue
+            carries = f"ID {tag.group(1)}" if tag else "no ID tag"
+            line = (
+                spec.front_matter_end_line
+                + first_line
+                + text[: match.start()].count("\n")
+            )
+            findings.append(
+                Finding(
+                    spec.path,
+                    line,
+                    "figma_frame_id",
+                    f"Figma frame alt text carries {carries}; a two-part "
+                    f"<platform>-<screen>.<state> ID is required "
+                    f"(e.g. [W-11.03]) — figma-file-organization.md § 4",
+                )
+            )
+    return findings
+
+
 CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_front_matter_schema,
     check_filename_id_parity,
@@ -1223,6 +1293,7 @@ CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_res_eligibility,
     check_inventory_paths,
     check_active_spec_overlap,
+    check_figma_frame_id,
 ]
 
 

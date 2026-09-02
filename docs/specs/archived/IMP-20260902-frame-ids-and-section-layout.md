@@ -2,7 +2,7 @@
 id: IMP-20260902-frame-ids-and-section-layout
 type: IMP
 date: 2026-09-02
-status: specify
+status: done
 owner: avolsh
 risk: medium
 affected-repos:
@@ -173,11 +173,26 @@ unstatable without the scheme that says which those are. **T3 fires** against
 `IMP-20260902-frame-id-migration` in `tobevisit-content` — a different repo — and that split is
 taken: this spec is the convention, that one applies it, and it declares `depends-on` here.
 **E5 (documentation corpus)** covers what remains: both FR clusters ship documentation under one
-reference doc, share one conformance pass, and this spec ships zero behavioural code change.
+reference doc and share one conformance pass. Corrected at closure (2026-09-02): E5's
+zero-behavioural-code-change condition is met only in substance, not literally — FR-10 shipped a
+`validate-specs.py` check and its fixture (+71/+87 lines). The verdict stands on E2 as much as E5:
+FR-10 asserts FR-1's ID pattern and has nothing to check without it, so a split would have been
+cosmetic. Recorded rather than re-adjudicated, per the owner's decision at the Plan gate.
 
 ## Tasks
 
-Pending — Plan stage only.
+> **Before starting Task 1, set status: in-progress in the front-matter above.**
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| 1 | § 4 gains the two-part ID `[<platform>-<screen>.<state>]`, the screen-vs-state boundary rule (same route = same screen; modal/overlay/panel over it = a state; different route = its own screen; routeless surface = what a person navigates to), and the allocation rule (screen number `max(screen)+1` per platform, stable for life, never reused or renumbered; state `max(state)+1` within its own screen); `.NN` mandatory even on a single-state screen. Adds the worked example deriving `[W-11.03]` and the matching § 7 checklist line. FR-1, FR-2, FR-3 → AC-1. | `framework/prompts/references/figma-file-organization.md` | `docs/specs/active/IMP-20260902-frame-ids-and-section-layout.md` | — | writing-docs | deep | ☑ done |
+| 2 | § 5 supersedes the "never from sibling extents, never a new row" clause with the ID-derived layout: one row per screen ordered by screen number, that screen's states left→right in state order, packed left from the section origin with one column gutter and one row gutter, row height = the tallest frame in the row. A new screen is a new row, a new state an insertion into its screen's row, both reflowing the section. Adds the reflow-is-ordinary framing (a section's layout is a pure function of its frame list, so it is regenerated, not repaired) and rewrites § 7's placement line. Overlap and containment assertions stay unchanged. FR-4, FR-5, FR-6 → AC-2. | `framework/prompts/references/figma-file-organization.md` | `docs/specs/active/IMP-20260902-frame-ids-and-section-layout.md` | 1 | writing-docs | deep | ☑ done |
+| 3 | Consolidate the six placement assertions — ID pattern, exactly one `.01` per screen, a screen's states contiguous and ordered within one row, page-level section grid, child containment, section overlap — into one named routine in § 5 that **throws** on any failure, naming the offending frame and the assertion; document that a throw rolls the whole `use_figma` write back. Exercise it against three deliberately-bad writes (one-part ID, state dropped in the wrong row, section off the grid). FR-8 → AC-4 (routine half). | `framework/prompts/references/figma-file-organization.md` | `docs/specs/active/IMP-20260902-frame-ids-and-section-layout.md` | 2 | writing-docs | deep | ☑ done |
+| 4 | `visualize-spec.prompt.md` hard rules name the two-part ID and point at § 4; Step 6 gains the mandatory call to Task 3's routine before hand-back and the requirement that its return appear in the requirements-gate summary. FR-9 → AC-4. | `framework/prompts/visualize-spec.prompt.md` | `framework/prompts/references/figma-file-organization.md` | 3 | writing-docs | default | ☑ done |
+| 5 | § 6 gains the archived-spec sentence: an archived spec's `[W-59]` beside a live `[W-11.03]` is expected, is resolved by the frozen key those specs resolve against, and is never to be "corrected" — cross-referencing the § 6 File-versioning subsection. Adds the matching § 7 checklist line. FR-7 → AC-3. | `framework/prompts/references/figma-file-organization.md` | `docs/specs/active/IMP-20260902-frame-ids-and-section-layout.md` | 1 | writing-docs | default | ☑ done |
+| 6 | § 6's "The current file carries no divergence" subsection gains its checkable half: a frame that quotes a dotted configuration path quotes one the project's settings schema declares; the framework states the rule and where a project names its schema source, and says the check itself is wired per project because only the project has the schema. Adds the matching § 7 checklist line. FR-12 → AC-5. | `framework/prompts/references/figma-file-organization.md` | `docs/specs/active/IMP-20260902-frame-ids-and-section-layout.md` | 1 | writing-docs | default | ☑ done |
+| 7 | `validate-specs.py` gains a check that every Figma frame reference under an **active** spec's `## Design` carries a two-part ID, registered in `CHECK_REGISTRY`; `validate-specs.test.sh` gains a probe fixture asserting a one-part-ID `## Design` is reported and a two-part one is silent. Test written first. FR-10 → AC-4 (validator half). | `scripts/validate-specs.py`, `scripts/test/validate-specs.test.sh` | `framework/prompts/references/figma-file-organization.md`, `docs/specs/active/IMP-20260902-frame-ids-and-section-layout.md` | 1 | test-driven-development | default | ☑ done |
+| 8 | Register every canonical sentence Tasks 1–6 added in `docs/rule-canonical-map.md` — under an existing `### R<N> —` section where one fits, as new sections where none does — with the `**Canonical location**` row and the `*"…"*` phrase entries the parser contract requires; `make lint-rules` green. Runs last: a phrase cannot be registered before it exists. FR-11 → AC-4 (rule-map half). | `docs/rule-canonical-map.md` | `framework/prompts/references/figma-file-organization.md`, `framework/prompts/visualize-spec.prompt.md`, `scripts/lint-rules.py` | 1, 2, 3, 4, 5, 6 | writing-docs | default | ☑ done |
 
 ## Agent instructions
 

@@ -1,6 +1,6 @@
 # Rule Canonical Map
 
-*Last updated: 2026-08-27*
+*Last updated: 2026-09-02*
 
 > **Machine-read by `scripts/lint-rules.py` — not human-maintained prose.**
 > Parser contract: a rule section starts with `### R<N> —`; it must contain a
@@ -162,3 +162,56 @@ Verbatim phrases observed:
 Verbatim phrases observed:
 - authoring-steps § C.6: *"A P-signal whose cluster matches a trigger already adjudicated at the Specify gate is recorded as an override under `## Split Decision`, not re-run."*
 - authoring-steps § C.6 (pre-IMP-20260826 wording — kept tracked to catch reverts): *"If any fires, do NOT write the table — flip `status: plan → specify` and re-run the Split check."*
+
+### R16 — A frame ID names its screen, and its state within that screen
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 4` |
+
+Verbatim phrases observed:
+- figma-file-organization § 4 (stability clause): *"is the screen's handle for life."*
+- figma-file-organization § 4 (allocation clause): *"is allocated inside its own screen"*
+- figma-file-organization § 4 (boundary rule): *"**Screen or state? The route decides.**"*
+
+### R17 — A section's layout is derived from its IDs, and reflow is ordinary
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 5` |
+
+Verbatim phrases observed:
+- figma-file-organization § 5 (derivation clause): *"**A section's layout is a pure function of the frames it holds**"*
+- figma-file-organization § 5 (regeneration clause): *"order the frames were added, so it is never patched: **recompute the whole"*
+- figma-file-organization § 5 (reflow clause): *"That makes reflow an ordinary act, not a migration."*
+
+### R18 — `assertPlacement()` is the single gate before hand-over
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 5` |
+
+Verbatim phrases observed:
+- figma-file-organization § 5 (heading): *"— the single gate before hand-over"*
+- figma-file-organization § 5 (consolidation clause): *"Six assertions used to be six paragraphs"*
+- figma-file-organization § 5 (enforcement clause): *"**throws** on the first failing set, naming the frame and which assertion it"*
+
+### R19 — An archived spec's one-part frame ID is correct, not stale
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 6` |
+
+Verbatim phrases observed:
+- figma-file-organization § 6 (rule statement): *"**An archived spec's one-part frame ID is correct, not stale.**"*
+- figma-file-organization § 6 (no-reconciliation clause): *"asks for a reconciliation, and an archived spec's IDs are never "corrected"."*
+
+### R20 — A dotted configuration path in a frame is one the schema declares
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 6` |
+
+Verbatim phrases observed:
+- figma-file-organization § 6 (rule statement): *"**The checkable half — a dotted configuration path in a frame is one the"*
+- figma-file-organization § 6 (per-project clause): *"project**, because only the project has the schema; the framework states the"*

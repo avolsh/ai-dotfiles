@@ -376,6 +376,93 @@ EOF
 run "$p"
 assert_silent "OS-4 an active spec does not collide with an archived one" "$out" "active_spec_overlap"
 
+# ---------- FR-10: a Figma frame reference under ## Design carries a two-part ID ----------
+# The alt text is the only part of a Figma frame that lives in the repository,
+# so it is where a superseded one-part ID reaches the corpus.
+
+FIGMA_ASSET="https://www.figma.com/api/mcp/asset/1234"
+FIGMA_NODE="https://www.figma.com/design/KEY?node-id=51-2"
+
+# AC-4 — a one-part ID under ## Design is rejected.
+p="$(newproj frameidold)"
+mkspec "$p" "IMP-20260902-old-frame-id.md" </dev/null
+cat >> "$p/docs/specs/active/IMP-20260902-old-frame-id.md" <<EOF
+
+## Design
+
+[![[W-59] Ingestion · Step 1 — Console · month exhausted]($FIGMA_ASSET)]($FIGMA_NODE)
+EOF
+run "$p"
+expect "FR-10 a one-part frame ID exits non-zero" 1 "$rc"
+assert_reports "FR-10 the finding is a frame-id one" "$out" "figma_frame_id"
+assert_reports "FR-10 the finding names the offending ID" "$out" "W-59"
+
+# AC-4 — the two-part form passes.
+p="$(newproj frameidnew)"
+mkspec "$p" "IMP-20260902-new-frame-id.md" </dev/null
+cat >> "$p/docs/specs/active/IMP-20260902-new-frame-id.md" <<EOF
+
+## Design
+
+[![[W-11.03] Ingestion · Step 1 — Console · month exhausted]($FIGMA_ASSET)]($FIGMA_NODE)
+EOF
+run "$p"
+assert_silent "FR-10 a two-part frame ID reports nothing" "$out" "figma_frame_id"
+expect "FR-10 the two-part spec validates cleanly" 0 "$rc"
+
+# FR-10 — a Figma embed whose alt carries no ID tag at all is a frame reference too.
+p="$(newproj frameidnone)"
+mkspec "$p" "IMP-20260902-no-frame-id.md" </dev/null
+cat >> "$p/docs/specs/active/IMP-20260902-no-frame-id.md" <<EOF
+
+## Design
+
+[![Ingestion console]($FIGMA_ASSET)]($FIGMA_NODE)
+EOF
+run "$p"
+assert_reports "FR-10 a Figma embed with no ID tag is reported" "$out" "figma_frame_id"
+
+# FR-10 — a non-Figma image under ## Design is not a frame reference.
+p="$(newproj frameidplain)"
+mkspec "$p" "IMP-20260902-plain-image.md" </dev/null
+cat >> "$p/docs/specs/active/IMP-20260902-plain-image.md" <<'EOF'
+
+## Design
+
+![Pipeline overview](./diagrams/pipeline.svg)
+EOF
+run "$p"
+assert_silent "FR-10 a plain image is left alone" "$out" "figma_frame_id"
+
+# FR-10 — scope is ## Design; prose quoting an old ID elsewhere is untouched.
+p="$(newproj frameidscope)"
+mkspec "$p" "IMP-20260902-out-of-design.md" </dev/null
+cat >> "$p/docs/specs/active/IMP-20260902-out-of-design.md" <<EOF
+
+## Current State
+
+[![[W-59] Ingestion · Step 1 — Console]($FIGMA_ASSET)]($FIGMA_NODE)
+
+## Design
+
+Skipped — no UI surface.
+EOF
+run "$p"
+assert_silent "FR-10 an embed outside ## Design is out of scope" "$out" "figma_frame_id"
+
+# FR-7 — archived specs keep the IDs they were written with.
+p="$(newproj frameidarchived)"
+mkspec "$p" "IMP-20260820-archived-frame-id.md" </dev/null
+cat >> "$p/docs/specs/active/IMP-20260820-archived-frame-id.md" <<EOF
+
+## Design
+
+[![[W-59] Ingestion · Step 1 — Console]($FIGMA_ASSET)]($FIGMA_NODE)
+EOF
+mv "$p/docs/specs/active/IMP-20260820-archived-frame-id.md" "$p/docs/specs/archived/"
+run "$p"
+assert_silent "FR-7 an archived spec's one-part ID is never reported" "$out" "figma_frame_id"
+
 if [ "$fails" -eq 0 ]; then
   echo "scripts/validate-specs.py self-tests passed ✓"
 else
