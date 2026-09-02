@@ -1,6 +1,6 @@
 # Figma file organization — naming & structure conventions
 
-*Last updated: 2026-08-20*
+*Last updated: 2026-09-02*
 
 Reference for the [Visualize sub-step](../visualize-spec.prompt.md). Applies
 whenever a spec's `## Design` links Figma frames, or when creating /
@@ -241,6 +241,38 @@ overflows its bottom edge. Extend the same check to the frame's children —
 every child inside `0,0 → main.width,height`, and each absolutely-positioned
 child against each flow child.
 
+**The section grid is page-level, and it is checked page-level.** Sections on a
+page share **one left edge** and **one gutter**; a section indented or spaced
+unlike its neighbours is a defect whoever produced it, and it is visible only
+when the page is looked at whole. The containment and overlap assertions above
+pass on a page whose sections start at four different `x` values — they compare
+each section with its own children and with its neighbours' boxes, never with a
+grid. So a run that writes to a page verifies the grid too, and **fixes what it
+finds**: aligning sections is a move, children travel with them, and node IDs
+are untouched, so nothing that cites the file breaks.
+
+```js
+// Page-level grid check — run alongside the containment/overlap assertions
+const GUTTER = 300;
+const secs = figma.currentPage.children
+  .filter(c => c.type === "SECTION").sort((a, b) => a.y - b.y);
+const lefts = [...new Set(secs.map(s => Math.round(s.x)))];
+const gaps  = secs.slice(1).map((s, i) =>
+  Math.round(s.y - (secs[i].y + secs[i].height)));
+const grid = {
+  misaligned: lefts.length > 1 ? lefts : null,
+  gutters: gaps.every(g => g === GUTTER) ? null : gaps,
+};
+```
+
+**`x`/`y` are parent-relative, and a full-bleed wrapper changes the parent.**
+A screen frame that holds a sidebar plus a `Main` wrapper has two coordinate
+spaces, and a number read off a frame-relative dump lands offset by the
+wrapper's origin when written to a child of `Main` — the node overflows the
+screen frame by exactly the sidebar's width, which reads as a sizing bug and is
+not one. Convert deliberately, or read the sibling you are aligning to and copy
+**its** `x`.
+
 **Read the parent's `layoutMode` before assigning `x`/`y`.** Appending to an
 auto-layout parent puts the node in the flow and silently ignores your
 coordinates — it lands stacked at the end instead of where you asked. Either
@@ -282,6 +314,30 @@ Every frame in a spec's `## Design` is a **link-wrapped image**:
   whenever a spec with dead images is re-opened, re-run `get_screenshot` for
   every node URL under `## Design` and replace the image URLs in place.
   Freshness is a property of the process, not of the moment a frame was drawn.
+
+### The current file carries no divergence
+
+The current file is the live design, not a gallery of what things used to look
+like. Freezing is what preserves a "before"; a stale frame left in the current
+file preserves nothing and misinforms every reader who opens it.
+
+- **A frame that contradicts today's product is a defect, and fixing it is part
+  of the run that found it.** Not a follow-up, not a note in the spec. This
+  includes a frame naming a configuration key that no longer exists, a unit
+  that was renamed, a field that was removed, or a value the current
+  configuration contradicts.
+- **Correcting the base frame and drawing the proposal are two different acts.**
+  While the spec is unapproved, the base frame gets **today's truth** — what the
+  product does now — and the proposed state goes in its own `· <state>` frames.
+  Never write an unapproved proposal into the base frame.
+- **At closure, the base frame gets what landed.** The state variants stay as
+  variants. A spec that changed a surface and left the base frame showing the
+  pre-change design has not finished its documentation.
+- **"Archived specs link to it" is not a reason to leave it stale.** Archived
+  specs resolve against **frozen** keys, which is the entire point of the
+  rotation scheme below — their links are correct by construction, and nothing
+  about them constrains the current file. An agent that reaches for this
+  argument has mistaken the scheme for its opposite.
 
 ### File versioning — freeze, never rewrite
 
@@ -354,9 +410,15 @@ links truthful again.
       inside its host Section box, no two Section boxes intersecting. Slot taken
       from the section box as a new right-hand column — never from sibling
       extents, never a new row.
+- [ ] Page-level section grid verified whole, not only around the frame touched:
+      one left edge for every section, one gutter between them — and corrected in
+      the same run when it is not.
 - [ ] Every Figma frame in `## Design` is a link-wrapped image whose alt text
       is the frame's `[<ID>] <Entity> — <View> · <state>` name; no screenshot
       file committed to a repository or uploaded to external storage.
+- [ ] No frame in the current file contradicts today's product — a base frame
+      found stale is corrected in the same run, separately from any proposed
+      state drawn beside it.
 - [ ] Screenshots regenerated immediately before the requirements gate.
 - [ ] The file-key question asked before the first Figma read; any new key
       rotated into the version table before any further Figma call.
