@@ -1,6 +1,6 @@
 # Figma file organization — naming & structure conventions
 
-*Last updated: 2026-09-02*
+*Last updated: 2026-09-14*
 
 <!-- Anchors in this file (per `docs/rule-canonical-map.md`): R16 `§ 4` (a frame ID names its screen and its state) · R17 `§ 5` (layout derived from IDs; reflow is ordinary) · R18 `§ 5` (`assertPlacement()` is the single gate) · R19 `§ 6` (an archived one-part ID is correct) · R20 `§ 6` (a quoted config path is one the schema declares). -->
 
@@ -153,6 +153,15 @@ hold no application screens and are organised by § 1 and § 3.
   `max(<screen>) + 1` across that platform, then never reuse a retired number
   and never renumber to close a gap. This is the half a spec cites and a
   reader scans.
+  **One exception, and only at the migration that introduces this convention:**
+  a file converting from per-frame numbering may compact its screen numbers onto
+  `1…N` once, because the gaps it starts with are residue of a scheme that had no
+  screens — not history under this one — and the version cut that freezes the old
+  file has already absorbed the citation break. After that first pass the rule
+  above is absolute. The invariant a compaction produces (`ceiling == screen
+  count`) is **not** one to maintain: holding it past the next retired screen
+  would renumber every screen above the hole, which is the citation breakage this
+  rule exists to prevent. Publish the count where a reader looks for it instead.
 - **`<state>` is allocated inside its own screen** as `max(<state>) + 1` among
   that screen's frames. Two screens allocate independently, so a well-covered
   screen with eight states costs **one** top-level number, not eight.
