@@ -103,7 +103,7 @@ Given each slimmed prompt at HEAD
 When its frontmatter is diffed against the pre-slim version
 Then the `description` field is byte-identical
 
-## Architecture
+## Design
 
 Skipped — convention/refactor at the prompt layer; no bounded-context, schema, or pipeline impact.
 

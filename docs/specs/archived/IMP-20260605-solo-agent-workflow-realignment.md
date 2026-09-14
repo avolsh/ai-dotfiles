@@ -84,7 +84,7 @@ Given `spec-lifecycle.md` and `agents/README.md`, when I read closure-adjacent g
 
 ### AC-7: Base model documented (FR-9)
 Given `docs/ai-agent-framework.md`, when I read it, then the base model is stated: one main agent; artifact-carried context; skills as conditionally-relevant procedures and shared language; subagents on mechanical need only.
-## Architecture
+## Design
 Visualize triggered (risk = medium). Delegation graph reshaped; data flow/schemas unchanged.
 
 ```mermaid

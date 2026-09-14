@@ -104,7 +104,7 @@ Given the slimmed file at HEAD
 When every markdown link inside `framework/boundaries.md` is resolved
 Then every target file exists at HEAD
 
-## Architecture
+## Design
 
 Skipped — prose compression of a single file; no bounded-context, schema, or pipeline impact.
 

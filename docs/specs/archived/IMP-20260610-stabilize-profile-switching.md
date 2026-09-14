@@ -276,7 +276,7 @@ Then every listed function is byte-identical (diff evidence in closure),
 the planted-session and atomic-rename invariants pass in every sequence,
 and the cold reviewer sub-step (mandatory for this spec, medium risk)
 returns PASS on exactly this clause before the closure gate is requested.
-## Architecture
+## Design
 Skipped — convergence refactor of existing scripts onto a shared library;
 no new bounded context, no schema change, model unchanged
 (CLAUDE_CONFIG_DIR → profile dirs, shared-state sync untouched).

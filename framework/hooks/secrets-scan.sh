@@ -12,7 +12,7 @@
 # exit 0 — clean; exit 1 — findings listed on stderr as path[:line]: reason.
 set -euo pipefail
 
-PATTERNS='-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|xox[bpars]-[A-Za-z0-9-]{10,}|sk-[A-Za-z0-9_-]{20,}'
+PATTERNS='-----BEGIN [A-Z ]*PRIVATE KEY-----|AKIA[0-9A-Z]{16}|ghp_[A-Za-z0-9]{36}|xox[bpars]-[A-Za-z0-9-]{10,}|(^|[^[:alnum:]_])sk-[A-Za-z0-9_-]{20,}'
 # Value must not start with `$` — variable references and command
 # substitutions (e.g. token="$(security ...)") are not hardcoded literals.
 ASSIGN_PATTERN='(api[_-]?key|secret|token|password)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"'$][^"'"'"']{7,}'

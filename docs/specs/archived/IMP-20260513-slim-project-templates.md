@@ -131,7 +131,7 @@ Given the new guide at HEAD
 When the file is inspected
 Then it carries `*Last updated: 2026-05-13*`, a one-line purpose statement, and the migrated authoring guidance for project-bootstrap
 
-## Architecture
+## Design
 
 Skipped — refactor of bootstrap templates; no bounded-context, schema, or pipeline impact.
 

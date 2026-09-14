@@ -4,7 +4,6 @@
 
 **Tech Stack:** <language / database / test framework>
 **Codebase Layout:** <top-level dirs>
-**Build and Run:** <build / test commands>
 
 ## Boundaries
 
@@ -21,6 +20,37 @@
 | "visualize", "architecture" | `<system>/prompts/visualize-spec.prompt.md` |
 | "bug", "triage", "investigate issue" | `<system>/prompts/bug-triage.prompt.md` |
 | "plan", "break into tasks" | `<system>/prompts/plan-spec.prompt.md` |
+
+## Verification by Change Type
+
+<!-- Fill the table with this project's own commands. Keep the two rules above it: they hold
+     everywhere, and a project that rewrites them is usually about to narrow one by accident. -->
+
+Run the broadest verification command by default. Narrow it only when you can show the change cannot
+reach the part you are leaving out — "it looks unrelated" is not that showing.
+
+A command's tail is not its result: read the exit status, and check that any summary you quote names
+every part of the run (`<system>/boundaries.md` § Always do #19).
+
+| What changed | Minimum verification |
+|---|---|
+| <exported signature, shared type, or anything another build compiles against> | <command> + <command> |
+| <change confined to one testable unit> | <command> |
+| Docs only | No build required |
+
+## Build and Run
+
+`<verification-sequence command>` runs the steps below in order: single-purpose commands, each with
+its own exit status, the first non-zero one stopping the run. **No step rewrites the source it
+checks** — formatting and code generation get their own developer command and never appear here
+(`<system>/boundaries.md` § Always do #21).
+
+| # | Step | What fails it |
+|---|---|---|
+| 1 | `<step>` | <the one condition that fails it> |
+| 2 | `<step>` | <the one condition that fails it> |
+
+- `<target>` — <what it runs, and when to reach for it instead of the whole sequence>
 
 ## Multi-agent file layout
 

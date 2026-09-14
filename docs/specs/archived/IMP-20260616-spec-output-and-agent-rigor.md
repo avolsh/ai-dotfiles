@@ -104,7 +104,7 @@ Given the slim complete at HEAD
 When `boundaries.md` is read
 Then it states the don't-treat-author-as-always-right rule (surface doubt, verify claims, propose alternatives before complying).
 
-## Architecture
+## Design
 Skipped — convention/guidance change at the spec-authoring and agent-behaviour layer; no bounded context, schema, or UI surface, and `risk: low` fires no Visualize trigger. (FR-6 governs Figma usage in *other* specs, not this one.)
 
 ## Out of Scope

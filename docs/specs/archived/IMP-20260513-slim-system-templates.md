@@ -123,7 +123,7 @@ Then the file is ≤25 lines
 And the body contains exactly three header sections (frontmatter + `## When to use` + `## References`)
 And every removed section's content appears in `docs/writing-skills.md`
 
-## Architecture
+## Design
 
 Skipped — convention/refactor at the system-prompt layer; no bounded-context, schema, or pipeline impact.
 

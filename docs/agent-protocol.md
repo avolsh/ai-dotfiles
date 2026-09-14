@@ -1,6 +1,6 @@
 # Agent Protocol
 
-*Last updated: 2026-06-11*
+*Last updated: 2026-08-30*
 
 Operating procedures for AI agents working in any project that participates in the AI Agent Framework: path prefixes, two-scope model, context loading order, checklists, output conventions, and the on-demand reference material (determinism, schema sync, doc freshness, skills audit).
 
@@ -215,6 +215,10 @@ a spec. Each task must independently pass all checks before proceeding.
 - [ ] **Process improvements logged** -- if you noticed a protocol gap,
       anti-pattern, or better approach, append an entry to the project's
       improvements log immediately (do not defer).
+- [ ] **No process left running** — at spec closure, stop every dev/preview server, database
+      container, watcher and background build the work started, confirm the ports are free, and say
+      what was stopped. A process the human started is theirs: ask, never kill it. See
+      [`spec-lifecycle.md § Rules #14`](../framework/spec-workflows/spec-lifecycle.md#stop-processes-at-closure).
 - [ ] Post **"The Bottom Line"** using the canonical format below and
       wait for explicit human approval before starting the next task.
 
@@ -287,6 +291,20 @@ The invariant was verified to hold for the full rule corpus on 2026-06-10
 | Commit messages | `[agent] <type>: <description>` |
 | Branch naming | `agent/<spec-id>-<short-description>` |
 | PR description | Must reference the spec id and list all affected files |
+
+### What "file output is English" covers
+
+[`boundaries.md` #8](../framework/boundaries.md) governs **prose**, not every
+character in a file. `validate-specs`' `english_only` check reads it that way
+(IMP-20260829): a run inside inline code, inside a fenced block, or in
+front-matter is data the document is reporting, and a character in no letter
+category — a glyph, an emoji, a superscript digit — is not language at all.
+Neither is reported.
+
+So a document may quote its subject: `Берестейський` in backticks, a fixture
+in a fenced block, a UI's ⏳ and 📍 in a sentence. What the rule still forbids,
+and what the check still fails on, is a sentence written in another script —
+write the prose in English and put the foreign string in backticks.
 
 ## Controlled refactoring
 

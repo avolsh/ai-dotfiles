@@ -1,6 +1,8 @@
 # Authoring Steps — inline procedures
 
-*Last updated: 2026-06-16*
+*Last updated: 2026-08-27*
+
+<!-- Anchors in this file (per `docs/rule-canonical-map.md`): R14 `§ C step 5` (the cap counts decisions) · R15 `§ C step 6` (adjudicated cluster is an override, not a re-run). -->
 
 The main agent runs these procedures **inline, in the same context** —
 spec authoring, the Split check, and task decomposition are not delegated
@@ -27,13 +29,13 @@ the spec body through `## Out of Scope`; leaves `## Split Decision` for
 1. **Validate inputs.** `spec_type ∈ {CR, IMP}`; `title` matches `[a-z0-9-]+`; `date` is `YYYY-MM-DD`; mandatory Q1+Q2 answers non-empty. If two answers imply different scopes, STOP and surface the contradiction — do not draft. (RES → § D.)
 2. **Locate template.** `<system>/spec-workflows/templates/<TYPE>-TEMPLATE.md`.
 3. **Compose filename + path.** `<TYPE>-<YYYYMMDD>-<title>.md` under `<project_root>/docs/specs/active/`.
-4. **Build front-matter** per [`spec-lifecycle.md § Front-matter schema`](../../../spec-workflows/spec-lifecycle.md). `status: specify`; `risk` default `low`, escalate to `medium` if scope crosses bounded contexts or schemas, `high` if it adds a bounded context; set `domain-refs:` from any baselines; leave `siblings:`/`depends-on:` to § B.
+4. **Build front-matter** per [`spec-lifecycle.md § Front-matter schema`](../../../spec-workflows/spec-lifecycle.md). `status: specify`; `risk` default `low`, escalate to `medium` if scope crosses bounded contexts or schemas, `high` if it adds a bounded context; set `domain-refs:` from any baselines; leave `siblings:`/`depends-on:` to § B. Select `skills:` by walking **both scopes' catalogs** — the project's skills catalog first, then [`framework/skills/README.md`](../../README.md) — against what the change actually touches, rather than carrying over the previous spec's list out of habit. `skills:` is the only mechanism that loads a skill at every stage and task, and a task row's `Skills` column can only ever be a *subset* of it, so a skill missing here is unreachable everywhere downstream.
 5. **Fill `## Summary`** — Goal (one sentence), Scope (one short paragraph), Out of scope (one sentence), from Q1.
 6. **Fill the problem section** — Current State + Proposed Improvement (IMP) or Problem Statement (CR): what exists, why it needs change, concrete evidence. Keep prose tight; the FR/AC contract carries the weight.
 7. **Fill `## Requirements`** — one FR per discrete capability, one physical line each, MUST per RFC 2119, numbered FR-1, FR-2, …
-8. **Fill `## Acceptance Criteria`** — Given/When/Then, one block per FR / Fix-Criteria cluster (not per FR), numbered AC-1, …
+8. **Fill `## Acceptance Criteria`** — Given/When/Then, one block per FR / Fix-Criteria cluster (not per FR), numbered AC-1, … Then mark every **observation-shaped** criterion — one whose `When` has a person operating a user-facing surface — with the evidence kind it will close under, as a trailing `Evidence: rendering test` or `Evidence: manual (observation, surface, observer, date)` line inside the block. A criterion carrying no such mark is asserting that a suite can reach it; if it cannot, the mark is what surfaces that now rather than at closure ([`spec-lifecycle.md § Rules #5`](../../../spec-workflows/spec-lifecycle.md#observation-shaped-evidence)). The requirements gate is not requested while any such criterion is unmarked.
 9. **Fill `## Out of Scope`** — explicit OS-1, OS-2, … from Q1's out-of-scope answer.
-10. **Fill `## Architecture`** — `Skipped — <reason>`, or `Pending — Visualize sub-step` when a [Visualize trigger](../../../spec-workflows/spec-lifecycle.md#visualize-triggers) fires.
+10. **Fill `## Design`** — `Skipped — <reason>`, or `Pending — Visualize sub-step` when a [Visualize trigger](../../../spec-workflows/spec-lifecycle.md#visualize-triggers) fires.
 11. **Leave `## Split Decision`** as `Pending` until § B runs; **leave `## Tasks`** as `Pending — Plan stage only.` — never write rows here ([Rule #2](../../../spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify)).
 12. **Compression pass** — apply [`writing-specs.md § Compression pass`](../../../../docs/writing-specs.md); verify the body meets the § Length budget (≤120 physical lines, or a one-line justification); record the body line count before and after.
 13. **Write the file** atomically; set `*Last updated: <date>*` under the H1.
@@ -56,16 +58,25 @@ the human decides at the gate.
 
 ## C. Task decomposition (Plan)
 
-Run at `status: plan` (requirements + ACs approved, Architecture filled,
+Run at `status: plan` (requirements + ACs approved, Design filled,
 Split Decision filled). Produces the `## Tasks` block. Apply the
 Plan-stage safety net ([`splitting-rules.md § 3`](splitting-rules.md)).
 
-1. **Verify prerequisites** — Requirements, Acceptance Criteria, Split Decision, Architecture all populated.
+1. **Verify prerequisites** — Requirements, Acceptance Criteria, Split Decision, Design all populated.
 2. **Build the FR→AC map.**
-3. **Cluster into vertical slices** — each owns ≥1 FR and ends at a verifiable AC/green build moment. A slice spanning >5 files is over-bundled — split it.
+3. **Cluster into vertical slices** — each owns ≥1 FR and ends at a verifiable AC/green build moment. A slice is over-bundled when it exceeds the ≤5 cap of step 5 — which counts decisions, not written files — and is split on that count, never on the length of its Files column.
 4. **Order by dependency** — earlier tasks produce what later tasks consume; scaffolding first, verification/closure last; aim for a near-linear chain.
-5. **Per task, build the row** — Description (what/why + FR/AC numbers); Files (exact paths, ≤5, mark `*(new)*`); Source files (read-only, optional, uncapped); Depends on (earlier task IDs or `—`); Skills (subset of spec `skills:`); Model (`fast`/`default`/`deep` per [`docs/model-selection.md`](../../../../docs/model-selection.md), default `default`); Status `☐ pending`.
-6. **Apply the safety net** — P1 (>12 tasks), P2 (>2 bounded contexts span the table with no shared AC; needs module map, else `unknown`), P3 (a task group with zero dependencies on others). If any fires, do NOT write the table — flip `status: plan → specify` and re-run the Split check.
+5. **Per task, build the row** — Description (what/why + FR/AC numbers); Files (every file the task writes, exact paths, mark `*(new)*`); Source files (read-only, optional, uncapped); Depends on (earlier task IDs or `—`); Skills (subset of spec `skills:`); Model (`fast`/`default`/`deep` per [`docs/model-selection.md`](../../../../docs/model-selection.md), default `default`); Status `☐ pending`.
+
+   **The ≤5 cap counts files the task decides about; the Files column lists every file the task writes.**
+   The cap excludes spillover a project convention adds mechanically from a decision already in the row — a barrel re-export beside a new exported type, a one-exported-type-per-file split of a type the task owns, a registry entry for a resource the task registers, and the test file of a file already listed.
+   The cap and the column measure different things, so a row listing more than 5 files is not by itself a split signal.
+   A claim a contract test must execute cannot stay inside a private function, so "add a predicate to an existing private builder" is priced as extracting a module — a decision, and therefore counted.
+6. **Apply the safety net** — P1 (>12 tasks), P2 (>2 bounded contexts span the table with no shared AC; needs module map, else `unknown`), P3 (a task group with zero dependencies on others). A fired signal is read against `## Split Decision` before it is acted on, since the same cluster may already have been ruled on.
+
+   **A P-signal whose cluster matches a trigger already adjudicated at the Specify gate is recorded as an override under `## Split Decision`, not re-run.**
+   Write the table, keep `status: plan`, and have the override cite the P-signal, the Specify trigger it repeats, and the exception the human elected; surface it at the Plan gate so the human can still reject it.
+   The flip back to `specify` is for clusters the Split check never named — there, do NOT write the table: flip `status: plan → specify` and re-run the Split check.
 7. **Format `## Tasks`** — first the line `> **Before starting Task <T1>, set status: in-progress in the front-matter above.**`, then the 8-column table: `| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |`.
 
 ## D. Research authoring (RES)
@@ -78,7 +89,7 @@ answers ([`questions/res-questions.md`](../../../spec-workflows/questions/res-qu
 2. **Template + path** — `RES-TEMPLATE.md`; `RES-<YYYYMMDD>-<title>.md` under `docs/specs/active/`.
 3. **Front-matter (RES schema)** — standard fields + `status: specify`, `model-suggestion: deep`, and RES-only `hypothesis:` (Q1), `kill-criteria:` (Q3), `code-location:` (Q4), `outcome:` (blank). Do **not** set `risk:`/`severity:`.
 4. **Fill** `## Summary`, `## Hypothesis` (Q1, falsifiable), `## Kill Criteria` (Q3, explicit shape). Leave `## Iteration Log` empty (header rows only), `## Decision` and `## Outcome` as placeholders.
-5. **`## Architecture`** — `Skipped — exploratory …` (or `Pending — Visualize sub-step` only if the spike tests an architecture proposal).
+5. **`## Design`** — `Skipped — exploratory …` (or `Pending — Visualize sub-step` only if the spike tests an architecture proposal).
 6. **`## Split Decision`** — auto-fill `Kept as one — RES iterative loop (per spec-lifecycle.md § RES exception)`; RES does not run § B.
 7. **Leave `## Tasks`** as `Pending — Plan stage only.`; write the file atomically with the `*Last updated:*` stamp.
 

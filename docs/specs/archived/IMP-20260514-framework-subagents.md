@@ -132,7 +132,7 @@ Given a deliberately-introduced inline agent-contract restatement in a prompt
 When `make lint-rules` runs
 Then exit code is non-zero
 
-## Architecture
+## Design
 
 ```mermaid
 flowchart LR

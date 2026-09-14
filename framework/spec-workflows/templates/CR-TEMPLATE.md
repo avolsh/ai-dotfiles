@@ -44,8 +44,8 @@ If unsure — don't elect. Standard track is the safe default.
 Given <precondition>
 When <action>
 Then <outcome>
-## Architecture
-<Fill during Visualize when triggered, else `Skipped — <reason>`. See docs/spec-templates-guide.md § Architecture.>
+## Design
+<Fill during Visualize when triggered, else `Skipped — <reason>`. See docs/spec-templates-guide.md § Design.>
 ## Out of Scope
 <!-- One line per item. -->
 - OS-1: <item> — <reason>

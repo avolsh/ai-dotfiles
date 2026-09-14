@@ -111,7 +111,7 @@ Then every target defined in the Makefile appears in the output with a descripti
 When `make install`, `make profile-init PROFILE=personal`, or `make reset` is run
 Then behavior is identical to the current Makefile.
 
-## Architecture
+## Design
 
 Skipped — single-file change, low risk, no bounded-context crossing.
 

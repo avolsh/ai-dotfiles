@@ -1,6 +1,6 @@
 # framework/skills/ — skill catalog
 
-*Last updated: 2026-06-14*
+*Last updated: 2026-08-13*
 
 On-demand knowledge modules the AI loads when relevant (progressive
 disclosure via each skill's `SKILL.md`). Two kinds live here:
@@ -19,6 +19,10 @@ disclosure via each skill's `SKILL.md`). Two kinds live here:
 | `model-selection` | Which model tier (fast/default/deep) to use per task |
 | `bootstrapping-project` | Setting up a new project with the framework |
 | `writing-docs` | Doc conventions, glossary format, freshness rules |
+| `configuring-applications` | Config layering (defaults → env → store), bootstrap vs operational, one validated accessor, dead keys, secrets never reaching a log |
+| `avoiding-duplication` | Axis-of-variation test, single-sourced vocabularies, mapper round-trips, when a copy is accepted |
+| `handling-external-failures` | Retryable vs permanent vs valid-empty, checkpoint only after a validated success, one meaning per sentinel, bounded external calls |
+| `designing-durable-state` | Store-enforced uniqueness, atomic claim before acting on shared work, reading a write's outcome, immutable run snapshots |
 
 ## Tech-stack skills (vendored)
 

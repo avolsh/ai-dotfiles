@@ -54,7 +54,7 @@ After 2 backflips with progressively stricter mechanical application of the 7 tr
 
 confirmed
 
-## Architecture
+## Design
 
 Skipped — exploratory; architecture decisions deferred to promoted CR/IMP if applicable.
 

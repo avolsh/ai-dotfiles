@@ -34,6 +34,7 @@ from __future__ import annotations
 import datetime as _dt
 import re
 import sys
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable
@@ -237,7 +238,7 @@ _LIST_FIELDS = (
     "skills",
     "siblings",
     "depends-on",
-    "cites-reqs",
+    "domain-refs",
 )
 
 # FR-1 check #3 — naming pattern (production-ready in F1).
@@ -679,56 +680,98 @@ def check_link_integrity(specs: Iterable[Spec]) -> list[Finding]:
     return findings
 
 
-# Characters outside this set are flagged. The set covers:
-#   * ASCII (0x00-0x7F)
-#   * Latin-1 Supplement (0xA0-0xFF) — é, ñ, à, …
-#   * Latin Extended-A (0x100-0x17F)
-#   * Latin Extended-B (0x180-0x24F)
-#   * Greek + Coptic (0x370-0x3FF) — math/science symbols: Δ π μ ε σ Ω …
-#     Greek letters are universal in English math/engineering notation;
-#     flagging them produces false positives with no real signal.
-#   * General Punctuation (0x2000-0x206F) — em-dash, curly quotes, …
-#   * Currency Symbols (0x20A0-0x20CF)
-#   * Letterlike Symbols (0x2100-0x214F)
-#   * Arrows (0x2190-0x21FF)
-#   * Mathematical Operators (0x2200-0x22FF)
-#   * Box drawing (0x2500-0x257F) — for ASCII-art diagrams
-#   * Geometric Shapes (0x25A0-0x25FF) — checkboxes ☑ ☐
-#   * Misc Symbols (0x2600-0x26FF) — ✅ ❌
-#   * Dingbats (0x2700-0x27BF) — ✓ ✗
-_NON_ENGLISH_RE = re.compile(
-    r"[^\x00-\x7F"
-    r" -ɏ"
-    r"Ͱ-Ͽ"
-    r" -⁯"
-    r"₠-⃏"
-    r"℀-⅏"
-    r"←-⇿"
-    r"∀-⋿"
-    r"─-╿"
-    r"■-◿"
-    r"☀-⛿"
-    r"✀-➿"
-    r"]+"
+# IMP-20260829 — the rule is about *prose*, so the check has to know what a run
+# of characters is before it judges it. Three things it is not:
+#
+#   * Quoted data. A spec describing a Ukrainian corpus must be able to write
+#     `Берестейський` in backticks or drop a fixture into a fenced block; the
+#     word is the subject, not a lapse. Front-matter values need no handling
+#     here — `Spec.body` already excludes them.
+#   * A glyph. ⏳ 📍 ⬜ ⤓ and emoji belong to no letter category. A symbol is
+#     not a language, and neither is a superscript digit or a variation
+#     selector.
+#   * A letter this project writes English in. ASCII and the Latin supplements
+#     obviously; Greek too, because Δ π μ σ Ω are universal in English
+#     engineering notation; and the spacing modifiers, which carry
+#     transliteration (Indoneziysʹkyy) rather than a second script.
+#
+# What is left — an unquoted run of letters from another script, in a sentence —
+# is what the rule was written for, and is what AC-3 pins by counter-example.
+
+_ALLOWED_LETTER_RANGES = (
+    (0x0041, 0x005A),  # A-Z
+    (0x0061, 0x007A),  # a-z
+    (0x00C0, 0x024F),  # Latin-1 Supplement, Latin Extended-A and -B
+    (0x02B0, 0x02FF),  # Spacing Modifier Letters — ʹ in transliteration
+    (0x0370, 0x03FF),  # Greek and Coptic — math/science notation
+    (0x1E00, 0x1EFF),  # Latin Extended Additional
 )
+
+# Characters that may sit inside one foreign-language excerpt without ending it,
+# so the message quotes the phrase a reader can act on rather than its first
+# word. A Latin letter is not among them: it closes the run, which is what keeps
+# an English sentence from being reported as one long finding.
+_RUN_JOINERS = " \t\u00a0-\u2010\u2011\u2013\u2014'\u2019\u02bc"
+
+_INLINE_CODE_RE = re.compile(r"(`+)[^`]*?\1")
+_FENCE_RE = re.compile(r"^\s{0,3}(?:`{3,}|~{3,})")
+
+
+def _is_foreign_letter(ch: str) -> bool:
+    """True for a letter from a script this project does not write English in."""
+    if not unicodedata.category(ch).startswith("L"):
+        return False
+    cp = ord(ch)
+    return not any(lo <= cp <= hi for lo, hi in _ALLOWED_LETTER_RANGES)
+
+
+def _mask_inline_code(line: str) -> str:
+    """Blank out inline-code spans, preserving length so columns stay true."""
+    return _INLINE_CODE_RE.sub(lambda m: " " * len(m.group(0)), line)
+
+
+def _first_foreign_run(line: str) -> tuple[int, str] | None:
+    """First (column, excerpt) of foreign-script letters, or None.
+
+    A run survives the joiners above, so a whole clause is quoted back; any
+    other character — a Latin letter included — closes it.
+    """
+    start: int | None = None
+    stop = 0
+    for i, ch in enumerate(line):
+        if _is_foreign_letter(ch):
+            if start is None:
+                start = i
+            stop = i + 1
+        elif start is not None and ch not in _RUN_JOINERS:
+            return start, line[start:stop]
+    if start is not None:
+        return start, line[start:stop]
+    return None
 
 
 def check_english_only(specs: Iterable[Spec]) -> list[Finding]:
     """FR-1 #7 — boundaries.md § Always do #8: file output is English.
 
-    Flags any run of characters outside the allowed Unicode ranges
-    (ASCII, Latin supplements, common punctuation, math, arrows, box
-    drawing, dingbats — see _NON_ENGLISH_RE). One finding per offending
-    line, with the offending excerpt included for context.
+    Flags an unquoted run of letters from another script in a spec's prose.
+    Inline code, fenced blocks and front-matter values are data the spec is
+    reporting, and characters outside every letter category are not language;
+    neither is reported. One finding per offending line, with the excerpt.
     """
     findings: list[Finding] = []
     for spec in specs:
         body_start = spec.front_matter_end_line or 0
+        in_fence = False
         for i, line in enumerate(spec.body.splitlines(), start=1):
-            m = _NON_ENGLISH_RE.search(line)
-            if not m:
+            if _FENCE_RE.match(line):
+                in_fence = not in_fence
                 continue
-            excerpt = m.group(0)
+            if in_fence:
+                continue
+            hit = _first_foreign_run(_mask_inline_code(line))
+            if hit is None:
+                continue
+            col, excerpt = hit
             if len(excerpt) > 40:
                 excerpt = excerpt[:37] + "..."
             findings.append(
@@ -736,7 +779,7 @@ def check_english_only(specs: Iterable[Spec]) -> list[Finding]:
                     spec.path,
                     body_start + i,
                     "english_only",
-                    f"non-English run at col {m.start() + 1}: {excerpt!r}",
+                    f"non-English run at col {col + 1}: {excerpt!r}",
                 )
             )
     return findings
@@ -1022,6 +1065,221 @@ def check_res_eligibility(specs: Iterable[Spec]) -> list[Finding]:
     return findings
 
 
+# FR-9 — inventory paths must be readable by spec-status-guard.sh, which
+# resolves affected-code / affected-docs from the project root that owns
+# docs/specs/active. A path written any other way (workspace-relative, say)
+# matches nothing there, so it is a lease the guard cannot see.
+_INVENTORY_FIELDS = ("affected-code", "affected-docs")
+
+
+def _guard_normalize(entry: str) -> str:
+    """Apply spec-status-guard.sh's own normalization to an inventory entry."""
+    entry = entry.split(" (")[0]  # strip annotations: "src/foo (new)"
+    if entry.endswith("/..."):  # strip ellipsis: "src/..."
+        entry = entry[: -len("/...")]
+    return entry.rstrip("/")
+
+
+def _project_root(spec_path: Path) -> Path | None:
+    for candidate in spec_path.parents:
+        if (candidate / "docs" / "specs").is_dir():
+            return candidate
+    return None
+
+
+def check_inventory_paths(specs: Iterable[Spec]) -> list[Finding]:
+    """FR-9 — an inventory path that does not resolve from the project root."""
+    findings: list[Finding] = []
+    for spec in specs:
+        # spec-status-guard.sh iterates docs/specs/active/*.md and nothing else,
+        # so only an active spec's inventory is a lease at all. An archived
+        # spec's paths are inert, and judging them would flag cross-repo entries
+        # that have no project-root-relative form (see FR-9 in this spec).
+        if spec.path.parent.name != "active":
+            continue
+        root = _project_root(spec.path)
+        if root is None:
+            continue
+        line = spec.front_matter_end_line or 1
+        for field in _INVENTORY_FIELDS:
+            value = spec.front_matter.get(field)
+            if not isinstance(value, list):
+                continue
+            for raw in value:
+                if not isinstance(raw, str):
+                    continue
+                entry = _guard_normalize(raw.strip())
+                # Unfilled template placeholders are a schema concern, not this one.
+                if not entry or entry.startswith("<"):
+                    continue
+                # Judge the form, not the freshness: an archived spec may name a
+                # file since deleted, but its first segment still has to be one
+                # the guard would descend into from the project root.
+                if (root / entry.split("/")[0]).exists():
+                    continue
+                findings.append(
+                    Finding(
+                        spec.path,
+                        line,
+                        "inventory_path_unresolvable",
+                        f"{field} entry {raw!r} does not resolve from the project "
+                        f"root {root.name!r}; spec-status-guard.sh matches paths "
+                        f"in that form, so this leases nothing",
+                    )
+                )
+    return findings
+
+
+_RELATION_FIELDS = ("siblings", "depends-on")
+
+
+def _spec_id(spec: Spec) -> str:
+    value = spec.front_matter.get("id")
+    return value if isinstance(value, str) else spec.path.stem
+
+
+def _declared_relations(spec: Spec) -> set[str]:
+    """Every spec id this spec names in `siblings:` or `depends-on:`."""
+    named: set[str] = set()
+    for field in _RELATION_FIELDS:
+        value = spec.front_matter.get(field)
+        if isinstance(value, list):
+            named.update(item.strip() for item in value if isinstance(item, str))
+    return named
+
+
+def _inventory(spec: Spec) -> set[str]:
+    """The spec's declared inventory, normalized the way the guard reads it."""
+    paths: set[str] = set()
+    for field in _INVENTORY_FIELDS:
+        value = spec.front_matter.get(field)
+        if not isinstance(value, list):
+            continue
+        for raw in value:
+            if not isinstance(raw, str):
+                continue
+            entry = _guard_normalize(raw.strip())
+            # Unfilled template placeholders name no file, so they collide with
+            # nothing — every spec born from the template carries the same ones.
+            if entry and not entry.startswith("<"):
+                paths.add(entry)
+    return paths
+
+
+def check_active_spec_overlap(specs: Iterable[Spec]) -> list[Finding]:
+    """FR-1..FR-3 — two active specs aimed at the same file, undeclared.
+
+    Two specs written independently against one target is where `## Current
+    State` rots fastest: the wider one closes, and the narrower goes on
+    describing code that no longer exists. The Split check's own output is the
+    discriminator — a pair that declares itself in `siblings:` or `depends-on:`
+    has already been adjudicated, and the staleness rule keyed to `depends-on:`
+    covers it from there.
+    """
+    findings: list[Finding] = []
+    # Only an active spec's inventory is a lease at all (OS-4); an archived
+    # spec's paths are inert, and that case is covered procedurally by the
+    # second re-verification key in spec-lifecycle.md § Rules #10.
+    active = sorted(
+        (s for s in specs if s.path.parent.name == "active"), key=lambda s: s.path
+    )
+    for i, spec in enumerate(active):
+        inventory = _inventory(spec)
+        if not inventory:
+            continue
+        spec_id = _spec_id(spec)
+        related = _declared_relations(spec)
+        for other in active[i + 1 :]:
+            other_id = _spec_id(other)
+            if other_id in related or spec_id in _declared_relations(other):
+                continue
+            shared = sorted(inventory & _inventory(other))
+            if not shared:
+                continue
+            findings.append(
+                Finding(
+                    spec.path,
+                    spec.front_matter_end_line or 1,
+                    "active_spec_overlap",
+                    f"active spec {other_id!r} claims the same "
+                    f"{'path' if len(shared) == 1 else 'paths'}: "
+                    f"{', '.join(shared)}; name one spec in the other's "
+                    f"siblings: or depends-on:, or merge them",
+                )
+            )
+    return findings
+
+
+# A markdown image whose alt may itself hold one level of `[...]` — which is
+# exactly the shape of a frame name: `[W-11.03] Entity — View · state`. The
+# closing `)` is deliberately left unconsumed so the wrapping link can be read.
+_IMAGE_RE = re.compile(r"!\[((?:[^\[\]]|\[[^\[\]]*\])*)\]\(([^)\s]*)")
+_ID_TAG_RE = re.compile(r"^\[([A-Za-z]+-[0-9][0-9.]*)\]")
+_TWO_PART_ID_RE = re.compile(r"^\[[A-Z]+-\d{2}\.\d{2}\]")
+
+
+def _design_section(body: str) -> tuple[str, int] | None:
+    """The `## Design` section's text and the 1-indexed body line it starts on."""
+    lines = body.splitlines()
+    start: int | None = None
+    for i, line in enumerate(lines):
+        stripped = line.lstrip()
+        if not stripped.startswith("## "):
+            continue
+        if start is not None:
+            return "\n".join(lines[start:i]), start + 1
+        if stripped[3:].strip().lower() == "design":
+            start = i + 1
+    if start is None:
+        return None
+    return "\n".join(lines[start:]), start + 1
+
+
+def check_figma_frame_id(specs: Iterable[Spec]) -> list[Finding]:
+    """FR-10 — a Figma frame reference under an *active* spec's `## Design`
+    carries a two-part `<platform>-<screen>.<state>` ID.
+
+    Figma is not in the repository and cannot be checked from it; the alt text
+    is, and it is where a superseded one-part ID reaches the corpus. Archived
+    specs are out of scope by construction — they resolve against a frozen file
+    key, where the one-part name is still the frame's real name.
+    """
+    findings: list[Finding] = []
+    for spec in specs:
+        if spec.path.parent.name != "active":
+            continue
+        section = _design_section(spec.body)
+        if section is None:
+            continue
+        text, first_line = section
+        for match in _IMAGE_RE.finditer(text):
+            alt, src = match.group(1), match.group(2)
+            after = text[match.end() :]
+            # Link-wrapped form: `[![alt](src)](href)`.
+            href = after[3:].split(")")[0] if after.startswith(")](") else ""
+            tag = _ID_TAG_RE.match(alt)
+            is_frame = "figma.com" in src or "figma.com" in href or tag is not None
+            if not is_frame or _TWO_PART_ID_RE.match(alt):
+                continue
+            carries = f"ID {tag.group(1)}" if tag else "no ID tag"
+            line = (
+                spec.front_matter_end_line
+                + first_line
+                + text[: match.start()].count("\n")
+            )
+            findings.append(
+                Finding(
+                    spec.path,
+                    line,
+                    "figma_frame_id",
+                    f"Figma frame alt text carries {carries}; a two-part "
+                    f"<platform>-<screen>.<state> ID is required "
+                    f"(e.g. [W-11.03]) — figma-file-organization.md § 4",
+                )
+            )
+    return findings
+
+
 CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_front_matter_schema,
     check_filename_id_parity,
@@ -1033,6 +1291,9 @@ CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_status_invariants,
     check_trivial_lane_eligibility,
     check_res_eligibility,
+    check_inventory_paths,
+    check_active_spec_overlap,
+    check_figma_frame_id,
 ]
 
 
@@ -1155,13 +1416,66 @@ def check_agent_front_matter(agents: Iterable[Agent]) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
+# Domain baselines (docs/domain/*.md) — REQ-ID uniqueness
+# Added by IMP-20260826-spec-guard-and-validator-gaps (FR-8).
+# ---------------------------------------------------------------------------
+
+# A REQ-ID is *defined* by the trailing annotation on its requirement bullet —
+# `*(REQ-PCE-001)*` or `*(REQ-PCE-001; amended by ...)*`. The same ID named
+# anywhere else on the line is a citation, and an annotation that retires or
+# supersedes the ID is history the lifecycle requires to stay in the file
+# (docs/req-id-lifecycle.md § Deletion, § Supersession) — neither is a second
+# claim on the number.
+_REQ_DEF_RE = re.compile(r"\*\((REQ-[A-Z0-9]+(?:-[A-Z]+)*-\d+)([^)]*)\)")
+_REQ_HISTORY_RE = re.compile(
+    r"\b(retired|superseded|supersedes|deleted|tombstone)\b", re.IGNORECASE
+)
+
+
+def check_domain_req_ids(root: Path) -> list[Finding]:
+    """FR-8 — one REQ-ID defined more than once inside a single baseline file."""
+    findings: list[Finding] = []
+    domain = root / "docs" / "domain"
+    if not domain.is_dir():
+        return findings
+    for path in sorted(domain.glob("*.md")):
+        if path.name == "README.md":
+            continue
+        seen: dict[str, int] = {}
+        text = path.read_text(encoding="utf-8")
+        for lineno, line in enumerate(text.splitlines(), 1):
+            for m in _REQ_DEF_RE.finditer(line):
+                req_id, annotation = m.group(1), m.group(2)
+                if _REQ_HISTORY_RE.search(annotation) or _REQ_HISTORY_RE.search(
+                    line[: m.start()]
+                ):
+                    continue
+                if req_id in seen:
+                    findings.append(
+                        Finding(
+                            path,
+                            lineno,
+                            "domain_req_id_duplicate",
+                            f"REQ-ID {req_id} is defined again here; "
+                            f"first definition at line {seen[req_id]}",
+                        )
+                    )
+                else:
+                    seen[req_id] = lineno
+    return findings
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
 
 def main(argv: list[str]) -> int:
-    here = Path(__file__).resolve().parent
-    root = find_repo_root(here)
+    # An optional path argument lets a consuming project validate its own specs:
+    # the walk-up starts there instead of at this file, which otherwise always
+    # resolves to ai-dotfiles and silently reports on the wrong corpus.
+    start = Path(argv[1]).resolve() if len(argv) > 1 else Path(__file__).resolve().parent
+    root = find_repo_root(start)
     specs, discovery_findings = discover_specs(root)
     agents, agent_discovery_findings = discover_agents(root)
 
@@ -1170,11 +1484,12 @@ def main(argv: list[str]) -> int:
     for check in CHECK_REGISTRY:
         findings.extend(check(specs))
     findings.extend(check_agent_front_matter(agents))
+    findings.extend(check_domain_req_ids(root))
 
     for f in findings:
         print(f.render(root))
 
-    total_checks = len(CHECK_REGISTRY) + 1  # +1 for check_agent_front_matter
+    total_checks = len(CHECK_REGISTRY) + 2  # + agent front-matter, + domain REQ-IDs
     if findings:
         print(
             f"\nvalidate-specs: {len(findings)} finding(s) across "

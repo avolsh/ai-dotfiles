@@ -1,6 +1,6 @@
 # Rule Canonical Map
 
-*Last updated: 2026-06-10*
+*Last updated: 2026-09-02*
 
 > **Machine-read by `scripts/lint-rules.py` — not human-maintained prose.**
 > Parser contract: a rule section starts with `### R<N> —`; it must contain a
@@ -48,7 +48,8 @@ Verbatim phrases observed:
 - boundaries: *"Never flip a spec's status without the preceding human gate."*
 - spec-lifecycle #3: *"Never flip to `plan` without explicit human approval of requirements."*
 - spec-lifecycle #4: *"Never flip to `in-progress` without explicit human approval of the plan."*
-- spec-lifecycle #5: *"Never flip to `done` while any acceptance criterion lacks documented evidence."*
+- spec-lifecycle #5 (pre-IMP-20260826-ui-surface-closure-evidence — kept tracked to catch reverts): *"Never flip to `done` while any acceptance criterion lacks documented evidence."*
+- spec-lifecycle #5 (evidence-kind clause): *"and never offer evidence that could not have failed for the"*
 
 ### R4 — Always update `*Last updated: YYYY-MM-DD*` stamp
 
@@ -92,6 +93,8 @@ Verbatim phrases observed:
 Verbatim phrases observed:
 - spec-lifecycle: *"A spec with unmet `depends-on:` MUST stay at `specify` (never flip to `plan`) until all listed siblings reach `done`."*
 - plan-spec.prompt: *"Never advance to `plan` while `depends-on:` siblings are unmet."*
+- spec-lifecycle #10 (staleness half, added by IMP-20260826-decomposition-and-staleness-procedures): *"When the last spec in `depends-on:` reaches `done`, `## Current State` MUST be re-verified against the code before the spec advances to `plan`."*
+- spec-lifecycle #10 (tombstone clause): *"A finding the closed dependency superseded is tombstoned in place, not left standing"*
 
 ### R8 — Visualize stays at `status: specify`
 
@@ -102,3 +105,113 @@ Verbatim phrases observed:
 Verbatim phrases observed:
 - spec-lifecycle #8: *"Visualize is a sub-step of Specify (not a status). When triggered, complete it before asking for the requirements gate."*
 - visualize-spec.prompt: *"Status stays at `specify` — Visualize is not a separate status."*
+
+### R11 — Name the shared cause before the third copy
+
+| | |
+|---|---|
+| **Canonical location** | `framework/boundaries.md § Always do #16` |
+
+Verbatim phrases observed:
+- boundaries #16 (heading clause): *"Name the shared cause before the third copy."*
+- boundaries #16 (rule statement): *"in more than two places, stop and name the shared cause before applying it"*
+- boundaries #16 (outcome clause): *"The outcome may be a shared fix or an accepted duplication"*
+
+### R12 — Classify a caught failure, never settle it
+
+| | |
+|---|---|
+| **Canonical location** | `framework/boundaries.md § Always do #17` |
+
+Verbatim phrases observed:
+- boundaries #17 (heading clause): *"Classify a caught failure — never settle it."*
+- boundaries #17 (rule statement): *"is recorded as retryable, permanent, or valid-empty, or it propagates"*
+- boundaries #17 (outcome clause): *"completed state, a checkpoint, or an empty result, each of which removes the record"*
+
+### R13 — Evidence must be able to fail for the criterion it closes
+
+| | |
+|---|---|
+| **Canonical location** | `framework/spec-workflows/spec-lifecycle.md § Rules #5` |
+
+Verbatim phrases observed:
+- spec-lifecycle #5 (closure clause): *"**An observation-shaped criterion is closed only by a test that renders its surface, or by recorded manual evidence.**"*
+- spec-lifecycle #5 (exclusion clause): *"**A suite that cannot reach the surface is not evidence for it.**"*
+- spec-lifecycle #5 (manual-evidence clause): *"**Manual evidence MUST record the observation, the surface, the observer and the date.**"*
+
+### R14 — The task cap counts decisions, not written files
+
+| | |
+|---|---|
+| **Canonical location** | `framework/skills/writing-specs/references/authoring-steps.md § C step 5` |
+
+Verbatim phrases observed:
+- authoring-steps § C.5: *"The ≤5 cap counts files the task decides about; the Files column lists every file the task writes."*
+- authoring-steps § C.5: *"The cap and the column measure different things, so a row listing more than 5 files is not by itself a split signal."*
+- authoring-steps § C.5: *"A claim a contract test must execute cannot stay inside a private function"*
+- authoring-steps § C.3 (pre-IMP-20260826 wording — kept tracked to catch reverts): *"A slice spanning >5 files is over-bundled — split it."*
+- plan-spec.prompt (pre-IMP-20260826 wording — kept tracked to catch reverts): *"Never exceed 5 files per task row"*
+- writing-specs.md (pre-IMP-20260826 wording — kept tracked to catch reverts): *"Each task: description, max 5 files, dependencies, model suggestion,"*
+
+### R15 — An adjudicated cluster is overridden at Plan, not re-run
+
+| | |
+|---|---|
+| **Canonical location** | `framework/skills/writing-specs/references/authoring-steps.md § C step 6` |
+
+Verbatim phrases observed:
+- authoring-steps § C.6: *"A P-signal whose cluster matches a trigger already adjudicated at the Specify gate is recorded as an override under `## Split Decision`, not re-run."*
+- authoring-steps § C.6 (pre-IMP-20260826 wording — kept tracked to catch reverts): *"If any fires, do NOT write the table — flip `status: plan → specify` and re-run the Split check."*
+
+### R16 — A frame ID names its screen, and its state within that screen
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 4` |
+
+Verbatim phrases observed:
+- figma-file-organization § 4 (stability clause): *"is the screen's handle for life."*
+- figma-file-organization § 4 (allocation clause): *"is allocated inside its own screen"*
+- figma-file-organization § 4 (boundary rule): *"**Screen or state? The route decides.**"*
+
+### R17 — A section's layout is derived from its IDs, and reflow is ordinary
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 5` |
+
+Verbatim phrases observed:
+- figma-file-organization § 5 (derivation clause): *"**A section's layout is a pure function of the frames it holds**"*
+- figma-file-organization § 5 (regeneration clause): *"order the frames were added, so it is never patched: **recompute the whole"*
+- figma-file-organization § 5 (reflow clause): *"That makes reflow an ordinary act, not a migration."*
+
+### R18 — `assertPlacement()` is the single gate before hand-over
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 5` |
+
+Verbatim phrases observed:
+- figma-file-organization § 5 (heading): *"— the single gate before hand-over"*
+- figma-file-organization § 5 (consolidation clause): *"Six assertions used to be six paragraphs"*
+- figma-file-organization § 5 (enforcement clause): *"**throws** on the first failing set, naming the frame and which assertion it"*
+
+### R19 — An archived spec's one-part frame ID is correct, not stale
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 6` |
+
+Verbatim phrases observed:
+- figma-file-organization § 6 (rule statement): *"**An archived spec's one-part frame ID is correct, not stale.**"*
+- figma-file-organization § 6 (no-reconciliation clause): *"asks for a reconciliation, and an archived spec's IDs are never "corrected"."*
+
+### R20 — A dotted configuration path in a frame is one the schema declares
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 6` |
+
+Verbatim phrases observed:
+- figma-file-organization § 6 (rule statement): *"**The checkable half — a dotted configuration path in a frame is one the"*
+- figma-file-organization § 6 (per-project clause): *"project**, because only the project has the schema; the framework states the"*

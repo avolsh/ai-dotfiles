@@ -190,7 +190,7 @@ Given HEAD after the RES lane lands
 When `make validate-specs` and `make lint-rules` both run
 Then both exit code zero
 
-## Architecture
+## Design
 
 ```mermaid
 stateDiagram-v2

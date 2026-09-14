@@ -144,7 +144,7 @@ Then every pair has exactly one content owner (doc = content, skill =
 pointer) and duplicated-paragraph count is 0
 And the measurable benefit is verified: satisfied by the T1 baseline
 (0 duplicates, consistent ownership) — no further change required.
-## Architecture
+## Design
 Skipped — meta-documentation and validation scripts only; no bounded context,
 data flow, schema, pipeline, or UI change.
 ## Out of Scope

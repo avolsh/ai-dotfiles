@@ -6,8 +6,8 @@
 # directory, preserving the relative directory structure. Existing files
 # are skipped (never overwritten).
 #
-# Does NOT run `make sync-agents` — fill in placeholders in
-# .github/copilot-instructions.md first, then run it manually.
+# Does NOT run `make sync-agents` — fill in placeholders in _canonical.md
+# first, then run it manually. The three agent files are its renders.
 #
 # Usage (from the target project root):
 #   ai-project
@@ -62,5 +62,5 @@ fi
 printf '✓ project scaffolded at %s (copied=%d, skipped=%d)\n' \
   "$target_root" "$copied" "$skipped"
 printf '\nNext steps:\n'
-printf '  1. Fill in <placeholder> markers in .github/copilot-instructions.md\n'
+printf '  1. Fill in <placeholder> markers in _canonical.md (the other three are rendered from it)\n'
 printf '  2. Run: make sync-agents\n'

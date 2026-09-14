@@ -133,7 +133,7 @@ Given HEAD after the dedup pass
 When `make validate-specs` (from sibling IMP-20260514-spec-validator) runs
 Then exit code is zero
 
-## Architecture
+## Design
 
 Skipped — prose dedup and a template-generation script. No bounded-context change; the canonical-template generator is a leaf-level shell script, not a new framework subsystem.
 

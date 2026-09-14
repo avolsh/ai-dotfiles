@@ -1,11 +1,11 @@
 # Spec Lifecycle
 
-*Last updated: 2026-06-16*
+*Last updated: 2026-08-31*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
 
-<!-- Anchors in this file (per `docs/rule-canonical-map.md`): R2 `never-tasks-table-at-specify` · R3 `never-flip-without-gate` · R6 `split-check-mandatory` · R7 `depends-on-blocks-plan` · R8 `visualize-not-a-status` · R10 `visualize-triggers` (anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). -->
+<!-- Anchors in this file (per `docs/rule-canonical-map.md`): R2 `never-tasks-table-at-specify` · R3 `never-flip-without-gate`, `observation-shaped-evidence` · R6 `split-check-mandatory` · R7 `depends-on-blocks-plan`, `inventory-overlap-restales` · R8 `visualize-not-a-status` · R10 `visualize-triggers` (anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). -->
 
 ## Front-matter schema
 
@@ -48,7 +48,7 @@ Omit the fields when the spec is autonomous.
 ```mermaid
 stateDiagram-v2
     [*] --> specify: spec file created
-    specify --> plan: requirements approved\n(+ architecture if triggered)
+    specify --> plan: requirements approved\n(+ design if triggered)
     plan --> in_progress: plan approved,\nTask 1 starts
     in_progress --> done: all tasks pass,\nclosure approved
     done --> [*]: file moved to archived/
@@ -57,10 +57,10 @@ stateDiagram-v2
 | Transition             | Precondition                                                                                                     | Agent action                                                                |
 |------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
 | `[start]` → `specify`  | Human asked for a new spec                                                                                       | Copy template, fill front-matter, write title — status `specify` from birth |
-| `specify` → `plan`     | Human approved requirements (and architecture if Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                         |
+| `specify` → `plan`     | Human approved requirements (and design if Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                               |
 | `plan` → `in-progress` | Human approved the plan, first task begins                                                                       | Flip status **before** the first file edit of Task 1                        |
-| `in-progress` → `done` | Every AC has evidence, tests pass, docs updated. Closure approval is synchronous for `medium`/`high` risk; `low`/`trivial` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
-| `done` → `archived/`   | Immediately after closure                                                                                        | Move file from `docs/specs/active/` to `docs/specs/archived/`               |
+| `in-progress` → `done` | Every AC has evidence that could have failed for it — an observation-shaped criterion needs evidence reaching its surface (see [§ Rules #5](#observation-shaped-evidence)); tests pass, docs updated. Closure approval is synchronous for `medium`/`high` risk; `low`/`trivial` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
+| `done` → `archived/`   | Immediately after closure; every process the work started is already stopped ([§ Rules #14](#stop-processes-at-closure))                                                                                        | Move file from `docs/specs/active/` to `docs/specs/archived/`               |
 
 **No status is skipped. No status is revisited in place** — if the plan
 must change after `in-progress` begins, stop, flip status back to `plan`,
@@ -77,8 +77,30 @@ for the full rule set and Iteration Log mandate.
 3. <a id="never-flip-without-gate"></a>**Never** flip to `plan` without explicit human approval of requirements.
 4. **Never** flip to `in-progress` without explicit human approval of the
    plan.
-5. **Never** flip to `done` while any acceptance criterion lacks documented
-   evidence.
+5. <a id="observation-shaped-evidence"></a>**Never** flip to `done` while any acceptance criterion lacks documented
+   evidence, and never offer evidence that could not have failed for the
+   criterion it closes.
+
+   A criterion is **observation-shaped** when its `When` describes a person
+   operating a user-facing surface — an operator opening a tab, a visitor
+   submitting a form. Its claim is about what appears on screen, so:
+
+   **An observation-shaped criterion is closed only by a test that renders its surface, or by recorded manual evidence.**
+   **A suite that cannot reach the surface is not evidence for it.**
+
+   However large or green, such a suite asserts on the layers underneath the
+   claim. Criteria whose `When` names a system action — a pipeline step, an
+   import, a request — are unaffected and close on the suite as before.
+
+   **Manual evidence MUST record the observation, the surface, the observer and the date.**
+
+   A reader who was not present can then weigh it instead of taking it on
+   trust. Undated evidence, or evidence with no named observer, does not
+   satisfy this rule.
+
+   The evidence kind is declared when the criterion is written, not
+   discovered here — see [`authoring-steps.md § A`](../skills/writing-specs/references/authoring-steps.md).
+
 6. Stamp-bump rule lives at [`boundaries.md § Always do #10`](../boundaries.md#last-updated-stamp); applies to every
    change of this lifecycle file too.
 7. Task-row-update rule lives at [`boundaries.md § Always do #11`](../boundaries.md#task-row-status-in-place); applies
@@ -89,8 +111,31 @@ for the full rule set and Iteration Log mandate.
    [`splitting-rules.md § 2`](../skills/writing-specs/references/splitting-rules.md))
    is a mandatory sub-step of Specify — complete it before Visualize and
    record the outcome under `## Split Decision` in every affected spec.
-10. <a id="depends-on-blocks-plan"></a>A spec with unmet `depends-on:` MUST stay at `specify` (never flip to
-    `plan`) until all listed siblings reach `done`.
+10. <a id="depends-on-blocks-plan"></a>A spec with unmet `depends-on:` MUST stay at `specify` (never flip to `plan`) until all listed siblings reach `done`.
+
+    Waiting is not the only obligation the field carries. A spec written
+    against a dependency goes stale the moment that dependency closes —
+    the code it described is no longer the code that exists — so:
+
+    **When the last spec in `depends-on:` reaches `done`, `## Current State` MUST be re-verified against the code before the spec advances to `plan`.**
+    **A finding the closed dependency superseded is tombstoned in place, not left standing** — an FR the closed work already satisfies says so and cites the spec that closed it.
+
+    <a id="inventory-overlap-restales"></a>Staleness has a second key.
+    `depends-on:` is filled by the Split check, so it reaches only specs
+    split from each other, and misses two written independently against
+    one target — which is where `## Current State` rots fastest, because
+    no field links them for a reader to follow:
+
+    **When any spec naming a path in this spec's `affected-docs:` or `affected-code:` reaches `done` after this spec's `date:`, `## Current State` MUST be re-verified before this spec advances to `plan`**, and a finding that spec superseded tombstoned on the same terms as above.
+
+    `validate-specs.py` reports an undeclared overlap while both specs are
+    active; this key carries the obligation past that point, when the other
+    spec has closed and moved to `archived/` where the check no longer
+    looks.
+
+    Re-verification is a read, not a rewrite: where the section still
+    holds, re-date it and record what was checked, so the next reader can
+    tell a verified section from an unexamined one.
 11. **Never** request the requirements gate without completing the Split check; record the outcome under
     `## Split Decision` first.
 12. **Never** bundle independently-testable features into one spec — split per [
@@ -122,6 +167,24 @@ for the full rule set and Iteration Log mandate.
     in future specs; (c) the feature crosses bounded contexts. Otherwise
     seeding is OPTIONAL. The schema for the new file lives at
     [`docs/baseline-citations.md`](../../docs/baseline-citations.md).
+
+14. **Leave no process running.** <a id="stop-processes-at-closure"></a>
+    Before flipping a spec to `done`, **every process the work started MUST
+    be stopped** — dev and preview servers, databases and their containers,
+    watchers, tunnels, background builds, and any site or emulator brought up
+    to verify a surface. Stop them, then confirm the ports are free and the
+    containers are down; report what was stopped in the closure summary.
+
+    A process that outlives its spec is invisible: it holds a port the next
+    session needs, it pins a database the next spec expects to seed, and its
+    cost accrues to nobody's task. Diagnosis is worse than the waste — a
+    stale server serving an old bundle looks exactly like a code defect, and
+    a second server refused a port looks exactly like a broken config.
+
+    Two exceptions, both explicit: a process the human started themselves is
+    theirs to stop — ask, never kill it — and a process the spec's own
+    deliverable is meant to leave running is named in the closure summary as
+    such, with the reason.
 
 ## RES exception <a id="res-exception"></a>
 
@@ -224,7 +287,7 @@ A trivial spec body has the same H2 sections as a standard spec but with reduced
 | `## Requirements`        | ≤3 FRs (typically 1).                                                  |
 | `## Acceptance Criteria` | Exactly 1 AC.                                                          |
 | `## Out of Scope`        | One line, OR `—` if Goal is self-bounding.                             |
-| `## Architecture`        | Always `Skipped — trivial lane`.                                       |
+| `## Design`              | Always `Skipped — trivial lane`.                                       |
 | `## Split Decision`      | Always `Kept as one — trivial lane (E4 by elective)`.                  |
 | `## Tasks`               | Exactly one row at the combined gate.                                  |
 
@@ -301,7 +364,7 @@ Run inside Specify before the requirements gate when **any** apply:
 - Adds or reorders a pipeline step.
 - Adds or changes a user-facing UI surface (screen, view, component).
 
-Skip only when all are false. Record in `## Architecture` as a single line: `Skipped — <reason>`.
+Skip only when all are false. Record in `## Design` as a single line: `Skipped — <reason>`.
 
 **Output format.** Use **Mermaid** for structure, data flow, schema, and step ordering. For UI surfaces use **Figma** — design-system-first rules (discover → reuse → build library when missing) and caption format: [`visualize-spec.prompt.md § Hard rules`](../prompts/visualize-spec.prompt.md).
 
