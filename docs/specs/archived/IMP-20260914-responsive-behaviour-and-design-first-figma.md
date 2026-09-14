@@ -2,7 +2,7 @@
 id: IMP-20260914-responsive-behaviour-and-design-first-figma
 type: IMP
 date: 2026-09-14
-status: specify
+status: done
 owner: avolsh
 risk: medium
 affected-repos:
@@ -98,6 +98,7 @@ Given `Places — List` drawn at base, md and lg, with a map-view state only at 
 When an agent names and places those five frames from the doc alone
 Then it produces `[W-03.01]`×3 and `[W-03.02]`×2 in one row, and `assertPlacement()` passes
 Evidence: worked example in `figma-file-organization.md`; routine exercised in the web sibling
+Result (2026-09-14): worked example in § 4; the § 5 layout + `assertPlacement()` blocks, run in a node harness on those five frames, return `assertPlacement OK — 1 section(s), 5 frame(s)`; the same harness rejects `· 1024`, a duplicate `.01` at `base` and a breakpoint with no `.01`. A single-breakpoint `[W-11.xx]` section still passes.
 
 ### AC-2: Every drawing has exactly one home (FR-3, FR-4, FR-7)
 
@@ -106,6 +107,7 @@ When the two-question rule is applied
 Then the filter lands as variants + `[B-01.xx]` flow, the gallery as `[W-04.02]`, the logos as
 `Brand` component sets — each with no second legal placement
 Evidence: rule text with these three worked examples
+Result (2026-09-14): § 4 *Where a drawing goes* carries all three worked examples (§ 3 `Brand` holds the logos); the harness passes a two-flow `80 Behaviour` page at `base` + `lg` and rejects a `[W-…]` frame placed there.
 
 ### AC-3: Implementation status is visible and maintained (FR-8, FR-9)
 
@@ -114,6 +116,7 @@ When it reaches closure
 Then the lifecycle rule requires the badge to read `Implemented` with the spec ID, and the Cover
 summary counts it
 Evidence: closure rule text; badge applied in the web sibling
+Result (2026-09-14): § 6 *Source of truth* defines the badge and Cover summary; `spec-lifecycle.md` Rules #15 requires the flip at closure. Application to a real frame is the web sibling's.
 
 ### AC-4: Conventions are enforceable (FR-6, FR-10, FR-11, FR-12, FR-13, FR-14)
 
@@ -121,6 +124,7 @@ Given the updated template and doc
 When `make lint-rules` and the `validate-specs` test suite run
 Then both pass with the new sentences registered and the breakpoint/behaviour ID fixtures green
 Evidence: command output
+Result (2026-09-14): `make check` exit 0 — `lint-rules: OK (26 canonical rule(s) … 75 phrase(s) tracked)`, `validate-specs: OK`, `validate-anchors: OK`, `validate-specs.py self-tests passed ✓`. The FR-14 fixture fails when `[B-01.03]` is mutated to `[B-01]`, so it can fail; `validate-specs.py` needed no change.
 
 ## Design
 
@@ -142,7 +146,16 @@ dependency; both web siblings `depends-on` it.
 
 ## Tasks
 
-Pending — Plan stage only.
+> **Before starting Task T1, set status: in-progress in the front-matter above.**
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| T1 | Breakpoints as a shared-ID suffix `· <bp>` (declared order), left-to-right placement inside the state's column group, `Landing` view; `assertPlacement()` checks "one `.01` per screen per breakpoint" and breakpoint order; worked `Places — List` example (FR-1, FR-2, FR-5; AC-1) | `framework/prompts/references/figma-file-organization.md` | `docs/specs/archived/IMP-20260902-frame-ids-and-section-layout.md` | — | writing-docs | default | ☑ done |
+| T2 | Two-question placement rule (component variant / screen state / + Behaviour sequence); `80 Behaviour` frame grammar `[B-<flow>.<step>] … · <bp>`, region-only instances, per-breakpoint step numbering, `→ W-xx.yy` citation, one row = one flow at one breakpoint, added to `assertPlacement()`; worked examples: header filter, gallery overlay (FR-3, FR-4; AC-2) | `framework/prompts/references/figma-file-organization.md` | — | T1 | writing-docs | default | ☑ done |
+| T3 | Design-system amendments: declared variant-axis vocabulary with breakpoint axes reusing frame breakpoint names; `Brand` section of logo component sets + aspect-ratio tokens (logo worked example completes AC-2); fonts loadable via `listAvailableFontsAsync` or named as blocker; longest-locale text verification (FR-6, FR-7, FR-11, FR-12) | `framework/prompts/references/figma-file-organization.md` | — | T1 | writing-docs | default | ☑ done |
+| T4 | Design-first mode: `status/implementation` badge (`Implemented` / `Designed` / `Changed` + spec ID) on platform and behaviour root frames, `00 Cover` summary, scope "current file carries no divergence" to code-first; rebuild-beside migration (`[OLD]`, before/after in `## Design`, human-confirmed deletion, frozen key); closure rule to flip badges (FR-8, FR-9, FR-10; AC-3) | `framework/prompts/references/figma-file-organization.md`, `framework/spec-workflows/spec-lifecycle.md` | `docs/specs/archived/IMP-20260820-figma-screenshot-durability-and-file-versioning.md` | T2 | writing-docs, writing-specs | default | ☑ done |
+| T5 | `design-system.md` template gains source-of-truth mode, breakpoint table, variant-axis vocabulary, status legend; § 7 quick checklist and `visualize-spec.prompt.md` hard rules reference breakpoints, Behaviour, status (FR-13) | `framework/templates/project/docs/architecture/design-system.md`, `framework/prompts/visualize-spec.prompt.md`, `framework/prompts/references/figma-file-organization.md` | — | T3, T4 | writing-docs | fast | ☑ done |
+| T6 | Register new rule sentences in the rule map; test-first probe fixtures for `[W-03.02] … · lg` and `[B-01.03] … · base` alt text (change `validate-specs.py` only if a fixture is red); improvements-log entry; `make lint-rules`, `make validate-specs` and the self-test suite green (FR-14; AC-4) | `docs/rule-canonical-map.md`, `scripts/test/validate-specs.test.sh`, `scripts/validate-specs.py`, `docs/improvements-log.md` | `scripts/lint-rules.py` | T5 | test-driven-development, writing-docs | fast | ☑ done |
 
 ## Agent instructions
 

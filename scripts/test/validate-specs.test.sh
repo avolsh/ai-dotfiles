@@ -463,6 +463,22 @@ mv "$p/docs/specs/active/IMP-20260820-archived-frame-id.md" "$p/docs/specs/archi
 run "$p"
 assert_silent "FR-7 an archived spec's one-part ID is never reported" "$out" "figma_frame_id"
 
+# IMP-20260914 FR-14 — a breakpoint suffix and a behaviour ID are both two-part
+# frame references; neither is mistaken for a superseded one-part ID.
+p="$(newproj frameidresponsive)"
+mkspec "$p" "IMP-20260914-responsive-frame-id.md" </dev/null
+cat >> "$p/docs/specs/active/IMP-20260914-responsive-frame-id.md" <<EOF
+
+## Design
+
+[![[W-03.02] Places — List · Map view · lg]($FIGMA_ASSET)]($FIGMA_NODE)
+
+[![[B-01.03] Header search · Step 3 — Filter open · base]($FIGMA_ASSET)]($FIGMA_NODE)
+EOF
+run "$p"
+assert_silent "FR-14 a breakpoint-suffixed and a behaviour frame ID report nothing" "$out" "figma_frame_id"
+expect "FR-14 the responsive spec validates cleanly" 0 "$rc"
+
 if [ "$fails" -eq 0 ]; then
   echo "scripts/validate-specs.py self-tests passed ✓"
 else

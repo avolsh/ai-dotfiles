@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-08-31*
+*Last updated: 2026-09-14*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -185,6 +185,15 @@ for the full rule set and Iteration Log mandate.
     theirs to stop — ask, never kill it — and a process the spec's own
     deliverable is meant to leave running is named in the closure summary as
     such, with the reason.
+
+15. **Flip the implementation badges.** <a id="flip-implementation-badges"></a>
+    Before flipping a design-first spec to `done`, **every Figma frame the spec
+    implemented or changed MUST have its `status/implementation` badge flipped**
+    — to `Implemented` with this spec's ID for what shipped, and `00 Cover`'s
+    per-screen summary regenerated. A frame drawn but not built stays
+    `Designed`. Code-first projects carry no badges and skip this rule; the
+    mode and the badge semantics are defined in
+    [`figma-file-organization.md § 6`](../prompts/references/figma-file-organization.md#source-of-truth--code-first-or-design-first).
 
 ## RES exception <a id="res-exception"></a>
 

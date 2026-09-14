@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-09-02*
+*Last updated: 2026-09-14*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -349,3 +349,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was changed:** `framework/prompts/references/figma-file-organization.md` § 5 — "The section grid is page-level, and it is checked page-level" with a runnable grid check beside the existing containment/overlap snippet, plus the parent-relative coordinate trap; § 7 gains a checklist line requiring the grid be verified whole and corrected in the same run. The file itself was fixed: seven sections aligned to `x = 0` on a uniform 300px gutter, children travelling with them, node IDs untouched.
 - **Suggested follow-up:** The grid check is written as a snippet an agent is asked to remember to run, which is the same shape as the assertion it sits beside — and that one has been in place for weeks while a section sat 874px out. Worth folding both into a single "verify page" helper that a Visualize run calls once at the end, so the question becomes "did you run it" rather than "did you remember all four assertions". `GUTTER` should come from the project rather than the constant hardcoded here.
 
+
+### 2026-09-14 — Figma convention assumed one desktop, code-first project
+
+- **Spec / task:** IMP-20260914-responsive-behaviour-and-design-first-figma / T1–T6
+- **Category:** pattern
+- **What was found:** Applying `figma-file-organization.md` to `tobevisit-web` (responsive, design-first) left breakpoint frames failing `assertPlacement()` B/C, `80 Behaviour` and `[B-…]` undefined, variant axes drifting into four names for two concepts, logos with no home, no signal of which frames are built, no rebuild procedure, local fonts silently unwritable by `use_figma`, and no longest-locale check.
+- **What was changed:** Breakpoint suffix sharing an ID (layout + `assertPlacement()` keyed by state then breakpoint, `[OLD]` exempt); two-question placement rule and `[B-<flow>.<step>]` grammar with a flow-per-breakpoint row; declared variant axes, `Brand` section, font and locale rules; code-first / design-first mode with a `status/implementation` badge flipped at closure (`spec-lifecycle.md` Rules #15); rebuild-beside migration; `design-system.md` template sections; rules R21–R28; validator fixtures for `· lg` and `[B-01.03]` alt text (validator already accepted them — no code change).
+- **Suggested follow-up:** The `assertPlacement()` code blocks are only exercised by an ad-hoc node harness during this spec; a committed harness under `scripts/test/` would catch regressions when the routine is next edited.
