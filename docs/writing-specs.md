@@ -1,6 +1,6 @@
 # Writing Specs
 
-*Last updated: 2026-08-27*
+*Last updated: 2026-09-15*
 
 Consolidated guidance for spec-driven work: lifecycle pointer, stage walk-throughs (Specify, Plan), writing-style rules, RFC 2119 keywords, the self-review additions, template usage, and anti-patterns. Topic-specific deep dives live in the linked docs.
 
@@ -162,6 +162,14 @@ Additional spec-specific checks:
 - [ ] API contracts match implementation (field names, types, status codes).
 - [ ] Non-functional requirements verified with evidence.
 - [ ] Out-of-scope items not built.
+- [ ] Traceability holds — `make validate-specs` reports no `traceability_*` finding. RES specs, and specs dated before `_TRACEABILITY_CUTOFF` in `scripts/validate-specs.py`, are not judged.
+
+  | Status | Check | Requires |
+  |---|---|---|
+  | any | `traceability_fr_uncited` | every FR cited by an acceptance block (BUG: Fix Criteria) |
+  | any | `traceability_fr_dangling` | every FR an acceptance block cites is defined |
+  | `plan` on | `traceability_fr_no_task` | every FR cited directly (`FR-n`) by a `## Tasks` row — citing only its AC does not count |
+  | `done` | `traceability_ac_no_evidence` | every AC has a `## Closure Evidence` table row whose first cell is its ID |
 
 ---
 

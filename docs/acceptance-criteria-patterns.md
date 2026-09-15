@@ -1,6 +1,6 @@
 # Acceptance Criteria Patterns
 
-*Last updated: 2026-08-27*
+*Last updated: 2026-09-15*
 
 Patterns for writing Given/When/Then acceptance criteria — structure, core patterns, common mistakes, and a coverage checklist. Adapt to your domain; these are starting points, not prescriptions.
 
@@ -19,7 +19,7 @@ And   [additional outcome]
 **Rules:**
 
 1. One scenario per AC. Multiple Given/When/Then blocks = split into multiple ACs.
-2. Every AC references at least one FR or NFR.
+2. Every AC references at least one FR or NFR. Cite one as `FR-2` and a contiguous run as the range `FR-1 – FR-3` (en dash; a hyphen also reads); the validator expands the range. Other shorthands (`FR-1..3`, `FR-1/2`) cite only their first ID.
 3. Outcomes must be observable and testable — no subjective language.
 4. Preconditions must be achievable in a test setup.
 

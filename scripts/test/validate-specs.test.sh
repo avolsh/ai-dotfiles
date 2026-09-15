@@ -479,6 +479,160 @@ run "$p"
 assert_silent "FR-14 a breakpoint-suffixed and a behaviour frame ID report nothing" "$out" "figma_frame_id"
 expect "FR-14 the responsive spec validates cleanly" 0 "$rc"
 
+# ---------- IMP-20260914-spec-traceability-checks ----------
+# Dated after the cut-off so the checks judge it; the body comes from stdin.
+mktrace() { # $1 root, $2 filename, $3 type, $4 status, [$5 date]
+  local f="$1/docs/specs/active/$2"
+  {
+    echo "---"
+    echo "id: ${2%.md}"
+    echo "type: $3"
+    echo "date: ${5:-2027-01-01}"
+    echo "status: $4"
+    echo "owner: alex"
+    echo "risk: low"
+    echo "affected-repos:"
+    echo "  - demo"
+    echo "affected-docs: []"
+    echo "affected-code: []"
+    echo "skills:"
+    echo "  - writing-specs"
+    echo "model-suggestion: default"
+    echo "---"
+    echo "# ${2%.md}"
+    echo "*Last updated: 2026-09-15*"
+    cat
+  } > "$f"
+}
+requirements_1_3() {
+  cat <<'EOF'
+
+## Requirements
+
+- FR-1: The system MUST do one.
+- FR-2: The system MUST do two.
+- FR-3: The system MUST do three.
+
+## Acceptance Criteria
+EOF
+}
+
+# FR-1 / AC-1 — an FR no AC cites is named at the line it is defined on.
+p="$(newproj traceuncited)"
+{ requirements_1_3; cat <<'EOF'
+
+### AC-1: One (FR-1)
+
+Evidence: test
+
+### AC-2: Two (`FR-2`)
+
+Evidence: test
+EOF
+} | mktrace "$p" "CR-20270101-uncited.md" CR specify
+run "$p"
+fr3_line="$(grep -n '^- FR-3:' "$p/docs/specs/active/CR-20270101-uncited.md" | cut -d: -f1)"
+assert_reports "AC-1 an FR no AC cites is named at its line" "$out" "CR-20270101-uncited.md:$fr3_line:traceability_fr_uncited:.*FR-3"
+[ "$(printf '%s\n' "$out" | grep -c traceability_)" -eq 1 ] || {
+  echo "FAIL: AC-1 exactly one traceability finding (got: $out)" >&2; fails=$((fails + 1)); }
+
+p="$(newproj tracerange)"
+{ requirements_1_3; printf '\n### AC-1: All (FR-1 – FR-3)\n\nEvidence: test\n'; } \
+  | mktrace "$p" "CR-20270101-range.md" CR specify
+run "$p"
+assert_silent "AC-1 a range citation covers every FR in it" "$out" "traceability_"
+
+p="$(newproj traceres)"
+{ requirements_1_3; printf '\n### AC-1: One (FR-1)\n'; } \
+  | mktrace "$p" "RES-20270101-exempt.md" RES specify
+run "$p"
+assert_silent "AC-1 a RES spec is exempt" "$out" "traceability_"
+
+# FR-2 / AC-2 — a citation of an undefined FR is named at the AC's line.
+p="$(newproj tracedangling)"
+{ requirements_1_3; printf '\n### AC-1: All (FR-1 – FR-3)\n\n### AC-2: Ghost (FR-9)\n\nEvidence: test\n'; } \
+  | mktrace "$p" "CR-20270101-dangling.md" CR specify
+run "$p"
+ac2_line="$(grep -n '^### AC-2' "$p/docs/specs/active/CR-20270101-dangling.md" | cut -d: -f1)"
+assert_reports "AC-2 a dangling FR citation is named at the AC's line" "$out" "CR-20270101-dangling.md:$ac2_line:traceability_fr_dangling:.*FR-9"
+
+# FR-5 — a spec dated before the cut-off is not judged.
+p="$(newproj tracehistory)"
+{ requirements_1_3; printf '\n### AC-1: One (FR-1)\n\n### AC-2: Ghost (FR-9)\n'; } \
+  | mktrace "$p" "CR-20260801-history.md" CR specify 2026-08-01
+run "$p"
+assert_silent "FR-5 a spec dated before the cut-off is not judged" "$out" "traceability_"
+
+# FR-3 / AC-3 — from `plan` on, every FR is cited by a task row directly; a
+# row citing only AC-2 (which cites FR-2) does not cover FR-2.
+tasks_omit_fr2() {
+  requirements_1_3
+  cat <<'EOF'
+
+### AC-1: One and three (FR-1, FR-3)
+
+### AC-2: Two (FR-2)
+
+## Tasks
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| T1 | Build one and three (FR-1, FR-3; AC-1) | `a.py` | — | — | tdd | fast | ☐ pending |
+| T2 | Build two (AC-2) | `b.py` | — | T1 | tdd | fast | ☐ pending |
+EOF
+}
+p="$(newproj tracetasks)"
+tasks_omit_fr2 | mktrace "$p" "CR-20270101-tasks.md" CR plan
+run "$p"
+fr2_line="$(grep -n '^- FR-2:' "$p/docs/specs/active/CR-20270101-tasks.md" | cut -d: -f1)"
+assert_reports "AC-3 at plan, an FR no task cites directly is named" "$out" "CR-20270101-tasks.md:$fr2_line:traceability_fr_no_task:.*FR-2"
+[ "$(printf '%s\n' "$out" | grep -c traceability_)" -eq 1 ] || {
+  echo "FAIL: AC-3 exactly one traceability finding at plan (got: $out)" >&2; fails=$((fails + 1)); }
+
+p="$(newproj tracetasksspecify)"
+tasks_omit_fr2 | mktrace "$p" "CR-20270101-tasks.md" CR specify
+run "$p"
+assert_silent "AC-3 the same body at specify reports no task coverage" "$out" "traceability_"
+
+# FR-4 / AC-3 — at `done`, every AC has a Closure Evidence row.
+closure_omits_ac2() {
+  requirements_1_3
+  cat <<'EOF'
+
+### AC-1: One and three (FR-1, FR-3)
+
+### AC-2: Two (FR-2)
+
+## Tasks
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| T1 | Build everything (FR-1 – FR-3; AC-1, AC-2) | `a.py` | — | — | tdd | fast | ☑ done |
+
+## Closure Evidence
+
+| AC | Evidence |
+|---|---|
+| AC-1 | `a.test.py` green. |
+| Review | Not required — risk low. |
+EOF
+}
+p="$(newproj traceclosure)"
+closure_omits_ac2 | mktrace "$p" "CR-20270101-closure.md" CR done
+mv "$p/docs/specs/active/CR-20270101-closure.md" "$p/docs/specs/archived/"
+run "$p"
+ac2_def_line="$(grep -n '^### AC-2' "$p/docs/specs/archived/CR-20270101-closure.md" | cut -d: -f1)"
+assert_reports "AC-3 at done, an AC with no Closure Evidence row is named" "$out" "CR-20270101-closure.md:$ac2_def_line:traceability_ac_no_evidence:.*AC-2"
+[ "$(printf '%s\n' "$out" | grep -c traceability_)" -eq 1 ] || {
+  echo "FAIL: AC-3 exactly one traceability finding at done (got: $out)" >&2; fails=$((fails + 1)); }
+
+for st in specify in-progress; do
+  p="$(newproj "traceclosure$st")"
+  closure_omits_ac2 | mktrace "$p" "CR-20270101-closure.md" CR "$st"
+  run "$p"
+  assert_silent "AC-3 the same body at $st reports no closure coverage" "$out" "traceability_ac_no_evidence"
+done
+
 if [ "$fails" -eq 0 ]; then
   echo "scripts/validate-specs.py self-tests passed ✓"
 else

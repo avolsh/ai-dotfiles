@@ -1280,6 +1280,192 @@ def check_figma_frame_id(specs: Iterable[Spec]) -> list[Finding]:
     return findings
 
 
+# ---------------------------------------------------------------------------
+# Traceability — FR → AC → Task (IMP-20260914-spec-traceability-checks)
+# ---------------------------------------------------------------------------
+
+# Specs dated before this are history and not judged (FR-5): the IMP's closure date.
+_TRACEABILITY_CUTOFF = _dt.date(2026, 9, 15)
+_TRACEABILITY_TYPES = {"CR", "IMP", "BUG"}  # RES has no FR/AC contract (FR-6)
+# `FR-2`, or a range `FR-1 – FR-3` (en dash, em dash or hyphen).
+_FR_CITATION_RE = re.compile(r"\bFR-(\d+)(?:\s*[–—-]\s*FR-(\d+))?\b")
+# An FR is defined by a list item, heading or table cell that opens with its ID.
+_FR_DEFINITION_RE = re.compile(r"^\s*(?:[-*]\s+|#{3,6}\s+|\|\s*)\**FR-(\d+)\b")
+
+
+def _traceability_judged(spec: Spec) -> bool:
+    if spec.front_matter.get("type") not in _TRACEABILITY_TYPES:
+        return False
+    try:
+        dated = _dt.date.fromisoformat(str(spec.front_matter.get("date")))
+    except ValueError:
+        return False  # the schema check reports a malformed date
+    return dated >= _TRACEABILITY_CUTOFF
+
+
+def _h2_section_lines(spec: Spec, titles: set[str]) -> list[tuple[int, str]]:
+    """Lines of the first `## <title>` section matching `titles`, paired with
+    their 1-indexed line number in the file."""
+    lines: list[tuple[int, str]] = []
+    inside = False
+    for i, line in enumerate(spec.body.splitlines()):
+        stripped = line.lstrip()
+        if stripped.startswith("## "):
+            if inside:
+                break
+            inside = stripped[3:].strip().lower() in titles
+            continue
+        if inside:
+            lines.append((spec.front_matter_end_line + i + 1, line))
+    return lines
+
+
+def _citations(pattern: re.Pattern[str], text: str) -> set[int]:
+    """ID numbers `pattern` cites in `text`, a range expanded to its members."""
+    cited: set[int] = set()
+    for match in pattern.finditer(text):
+        first = int(match.group(1))
+        last = int(match.group(2)) if match.group(2) else first
+        cited.update(range(first, last + 1) if last >= first else (first, last))
+    return cited
+
+
+def _fr_definitions(spec: Spec) -> dict[int, int]:
+    """FR number → line it is defined on, from `## Requirements`."""
+    defined: dict[int, int] = {}
+    for line_no, text in _h2_section_lines(spec, {"requirements"}):
+        match = _FR_DEFINITION_RE.match(text)
+        if match:
+            defined.setdefault(int(match.group(1)), line_no)
+    return defined
+
+
+def check_fr_ac_coverage(specs: Iterable[Spec]) -> list[Finding]:
+    """FR-1 / FR-2 — every defined FR is cited under `## Acceptance Criteria`
+    (BUG: `## Fix Criteria`), and every FR cited there is defined."""
+    findings: list[Finding] = []
+    for spec in specs:
+        if not _traceability_judged(spec):
+            continue
+        defined = _fr_definitions(spec)
+        if not defined:
+            continue
+        cited: set[int] = set()
+        for line_no, text in _h2_section_lines(
+            spec, {"acceptance criteria", "fix criteria"}
+        ):
+            on_line = _citations(_FR_CITATION_RE, text)
+            cited |= on_line
+            for fr in sorted(on_line - defined.keys()):
+                findings.append(
+                    Finding(
+                        spec.path,
+                        line_no,
+                        "traceability_fr_dangling",
+                        f"cites FR-{fr}, which `## Requirements` does not define",
+                    )
+                )
+        for fr, line_no in sorted(defined.items()):
+            if fr not in cited:
+                findings.append(
+                    Finding(
+                        spec.path,
+                        line_no,
+                        "traceability_fr_uncited",
+                        f"FR-{fr} is cited by no acceptance block "
+                        "(`FR-n` or a `FR-a – FR-b` range)",
+                    )
+                )
+    return findings
+
+
+_TASKS_REQUIRED_STATUSES = {"plan", "in-progress", "done"}
+
+
+def check_fr_task_coverage(specs: Iterable[Spec]) -> list[Finding]:
+    """FR-3 — from `plan` on, every defined FR is cited directly by a
+    `## Tasks` table row; a row citing only an AC that cites the FR does not
+    count."""
+    findings: list[Finding] = []
+    for spec in specs:
+        if spec.front_matter.get("status") not in _TASKS_REQUIRED_STATUSES:
+            continue
+        if not _traceability_judged(spec):
+            continue
+        defined = _fr_definitions(spec)
+        cited: set[int] = set()
+        for _, text in _h2_section_lines(spec, {"tasks"}):
+            if text.lstrip().startswith("|") and not _TABLE_SEP_RE.match(text):
+                cited |= _citations(_FR_CITATION_RE, text)
+        for fr, line_no in sorted(defined.items()):
+            if fr not in cited:
+                findings.append(
+                    Finding(
+                        spec.path,
+                        line_no,
+                        "traceability_fr_no_task",
+                        f"FR-{fr} is cited by no `## Tasks` row "
+                        "(a direct `FR-n` citation is required)",
+                    )
+                )
+    return findings
+
+
+_AC_CITATION_RE = re.compile(r"\bAC-(\d+)(?:\s*[–—-]\s*AC-(\d+))?\b")
+_AC_DEFINITION_RE = re.compile(r"^\s*#{3,6}\s+\**AC-(\d+)\b")
+
+
+def _closure_evidence_rows(spec: Spec) -> list[tuple[int, str, str]]:
+    """Table rows under `## Closure Evidence` as (line, first cell, whole row),
+    header and separator rows excluded. A row's first cell is its label — an
+    AC ID for acceptance evidence, or a named row such as `Review`."""
+    rows: list[tuple[int, str, str]] = []
+    in_body = False  # past a separator row, so rows are data, not a header
+    for line_no, text in _h2_section_lines(spec, {"closure evidence"}):
+        stripped = text.strip()
+        if not stripped or stripped.startswith("#"):
+            in_body = False  # a table ends at a blank line or heading
+        elif _TABLE_SEP_RE.match(text):
+            in_body = True
+        elif stripped.startswith("|") and in_body:
+            label = stripped.strip("|").split("|", 1)[0].strip()
+            rows.append((line_no, label, stripped))
+        # any other line continues a wrapped row
+    return rows
+
+
+def check_ac_closure_coverage(specs: Iterable[Spec]) -> list[Finding]:
+    """FR-4 — at `done`, every AC defined under `## Acceptance Criteria`
+    (BUG: `## Fix Criteria`) has a row in the Closure Evidence table."""
+    findings: list[Finding] = []
+    for spec in specs:
+        if spec.front_matter.get("status") != "done":
+            continue
+        if not _traceability_judged(spec):
+            continue
+        defined: dict[int, int] = {}
+        for line_no, text in _h2_section_lines(
+            spec, {"acceptance criteria", "fix criteria"}
+        ):
+            match = _AC_DEFINITION_RE.match(text)
+            if match:
+                defined.setdefault(int(match.group(1)), line_no)
+        evidenced: set[int] = set()
+        for _, label, _ in _closure_evidence_rows(spec):
+            evidenced |= _citations(_AC_CITATION_RE, label)
+        for ac, line_no in sorted(defined.items()):
+            if ac not in evidenced:
+                findings.append(
+                    Finding(
+                        spec.path,
+                        line_no,
+                        "traceability_ac_no_evidence",
+                        f"AC-{ac} has no row in the `## Closure Evidence` table",
+                    )
+                )
+    return findings
+
+
 CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_front_matter_schema,
     check_filename_id_parity,
@@ -1294,6 +1480,9 @@ CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_inventory_paths,
     check_active_spec_overlap,
     check_figma_frame_id,
+    check_fr_ac_coverage,
+    check_fr_task_coverage,
+    check_ac_closure_coverage,
 ]
 
 

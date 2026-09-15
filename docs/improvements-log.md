@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-09-14*
+*Last updated: 2026-09-15*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -357,3 +357,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** Applying `figma-file-organization.md` to `tobevisit-web` (responsive, design-first) left breakpoint frames failing `assertPlacement()` B/C, `80 Behaviour` and `[B-…]` undefined, variant axes drifting into four names for two concepts, logos with no home, no signal of which frames are built, no rebuild procedure, local fonts silently unwritable by `use_figma`, and no longest-locale check.
 - **What was changed:** Breakpoint suffix sharing an ID (layout + `assertPlacement()` keyed by state then breakpoint, `[OLD]` exempt); two-question placement rule and `[B-<flow>.<step>]` grammar with a flow-per-breakpoint row; declared variant axes, `Brand` section, font and locale rules; code-first / design-first mode with a `status/implementation` badge flipped at closure (`spec-lifecycle.md` Rules #15); rebuild-beside migration; `design-system.md` template sections; rules R21–R28; validator fixtures for `· lg` and `[B-01.03]` alt text (validator already accepted them — no code change).
 - **Suggested follow-up:** The `assertPlacement()` code blocks are only exercised by an ad-hoc node harness during this spec; a committed harness under `scripts/test/` would catch regressions when the routine is next edited.
+
+### 2026-09-15 — FR → AC → Task → Closure Evidence was a convention nothing checked
+
+- **Spec / task:** IMP-20260914-spec-traceability-checks / T1–T5 (review-after closure)
+- **Category:** tooling
+- **What was found:** 13 archived `tobevisit-content` specs define an FR no AC cites and 2 cite an FR they never define; closure tables read complete regardless. Run against history, the stricter checks also show that 20 of its specs cite FRs in Tasks only through ACs, and most closed specs record evidence as prose or bullets rather than a table.
+- **What was changed:** `validate-specs.py` gains `check_fr_ac_coverage`, `check_fr_task_coverage` (direct `FR-n` citation from `plan` on) and `check_ac_closure_coverage` (a `## Closure Evidence` table row per AC at `done`), with a reusable `_closure_evidence_rows` parser; RES and specs dated before `_TRACEABILITY_CUTOFF` (2026-09-15) are not judged. `writing-specs.md` self-review and `acceptance-criteria-patterns.md` range form updated.
+- **Suggested follow-up:** Templates still show no `## Closure Evidence` table, while the new check requires one at `done` — add the `| AC | Evidence |` skeleton to the CR / IMP / BUG templates before the first post-cut-off spec closes.
