@@ -2,7 +2,8 @@
 id: IMP-20260916-quality-gates-check
 type: IMP
 date: 2026-09-16
-status: plan
+status: done
+closed: 2026-09-16
 owner: alexvolsh
 risk: medium
 affected-repos:
@@ -133,10 +134,10 @@ the T3 cluster already adjudicated above as E4; P3 no (T2–T4 each depend on T1
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
-| T1 | Validator, test-first: fixtures for every AC-1 shape and a test script asserting exit code plus one `path:line:check:message` finding each, then the stdlib parser that makes it pass; hooked into `make tests` (FR-1 – FR-5; AC-1) | `scripts/validate-quality-gates.py` *(new)*, `scripts/test/validate-quality-gates.test.sh` *(new)*, `scripts/test/fixtures/quality-gates/*.md` *(new)*, `Makefile` | `scripts/validate-specs.py`, `scripts/test/validate-specs.test.sh`, `framework/templates/project/_canonical.md` | — | test-driven-development | default | ☐ pending |
-| T2 | Bootstrap docs name the check: step 4 says `validate-quality-gates` fails the build while a seed reads `n/a — to be decided`; the scaffold manifest lists it among the scaffold's checks (FR-7; AC-3) | `docs/bootstrapping-project.md`, `framework/skills/bootstrapping-project/references/scaffold-manifest.md` | `scripts/validate-quality-gates.py` | T1 | bootstrapping-project, writing-specs | fast | ☐ pending |
-| T3 | Wire `tobevisit-content`: a `quality-gates-check` target resolving `$(AI_DOTFILES)` like `validate-specs`, added as a `docs-check` prerequisite; the `docs-check` bullet lists it; `make sync-agents`; record AC-2 red/green runs (FR-6; AC-2) | `tobevisit-content/Makefile`, `tobevisit-content/_canonical.md`, `tobevisit-content/CLAUDE.md`, `tobevisit-content/AGENTS.md`, `tobevisit-content/.github/copilot-instructions.md` | `scripts/validate-quality-gates.py` | T1 | bootstrapping-project | fast | ☐ pending |
-| T4 | Wire `tobevisit-web` **after `tobevisit-web` `IMP-20260916-quality-gates-adoption` is `done`**: `AI_DOTFILES ?=` default plus a `quality-gates-check` target run first in `build`; record AC-2 red/green runs (FR-6; AC-2) | `tobevisit-web/Makefile` | `tobevisit-content/Makefile`, `tobevisit-web/_canonical.md` | T1 | bootstrapping-project | fast | ☐ pending |
+| T1 | Validator, test-first: fixtures for every AC-1 shape (built inline in the test, as `validate-specs.test.sh` does) and a test script asserting exit code plus one `path:line:check:message` finding each, then the stdlib parser that makes it pass; hooked into `make tests` (FR-1 – FR-5; AC-1) | `scripts/validate-quality-gates.py` *(new)*, `scripts/test/validate-quality-gates.test.sh` *(new)*, `Makefile` | `scripts/validate-specs.py`, `scripts/test/validate-specs.test.sh`, `framework/templates/project/_canonical.md` | — | test-driven-development | default | ☑ done |
+| T2 | Bootstrap docs name the check: step 4 says `validate-quality-gates` fails the build while a seed reads `n/a — to be decided`; the scaffold manifest lists it among the scaffold's checks (FR-7; AC-3) | `docs/bootstrapping-project.md`, `framework/skills/bootstrapping-project/references/scaffold-manifest.md` | `scripts/validate-quality-gates.py` | T1 | bootstrapping-project, writing-specs | fast | ☑ done |
+| T3 | Wire `tobevisit-content`: a `quality-gates-check` target resolving `$(AI_DOTFILES)` like `validate-specs`, added as the first `docs-check` prerequisite (ahead of `sync-agents-check`, which would otherwise report the same edit as drift); the `docs-check` bullet lists it; `make sync-agents`; record AC-2 red/green runs (FR-6; AC-2) | `tobevisit-content/Makefile`, `tobevisit-content/_canonical.md`, `tobevisit-content/CLAUDE.md`, `tobevisit-content/AGENTS.md`, `tobevisit-content/.github/copilot-instructions.md` | `scripts/validate-quality-gates.py` | T1 | bootstrapping-project | fast | ☑ done |
+| T4 | Wire `tobevisit-web` **after `tobevisit-web` `IMP-20260916-quality-gates-adoption` is `done`**: a `quality-gates-check` target (the `AI_DOTFILES ?=` default already landed with the adoption) run as step 1 of `build`, declared as row 1 of the Build and Run table with the gates renumbered; `make sync-agents`; record AC-2 red/green runs (FR-6; AC-2) | `tobevisit-web/Makefile`, `tobevisit-web/_canonical.md`, `tobevisit-web/CLAUDE.md`, `tobevisit-web/AGENTS.md`, `tobevisit-web/.github/copilot-instructions.md` | `tobevisit-content/Makefile`, `tobevisit-web/_canonical.md` | T1 | bootstrapping-project | fast | ☑ done |
 
 ## Agent instructions
 
@@ -147,6 +148,7 @@ Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 - `docs/bootstrapping-project.md` — step 4 names the validator.
 - `framework/skills/bootstrapping-project/references/scaffold-manifest.md` — the validator in the scaffold's checks.
 - `tobevisit-content/_canonical.md` — the `docs-check` bullet lists the new check.
+- `tobevisit-web/_canonical.md` — step 1 of the Build and Run table is the new check.
 
 ## Rollout / migration notes
 
@@ -158,3 +160,15 @@ Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
   `tobevisit-content/_canonical.md`, `tobevisit-web/Makefile`.
 - `siblings:` other than `consolidation-checkpoint` share `Makefile` or `scaffold-manifest.md` only; no shared
   acceptance surface.
+
+## Closure Evidence
+
+| AC | Evidence |
+|---|---|
+| AC-1 | `scripts/test/validate-quality-gates.test.sh` (new, in `make tests`): red before the script existed — 11 failures; green after — `scripts/validate-quality-gates.py self-tests passed ✓` (complete table incl. an `n/a — <reason>` row, 3 × FR-1, 2 × FR-2, 4 × FR-3, 1 × FR-4). `make check` exits 0 |
+| AC-2 | `tobevisit-content` (branch `TBV-101-ai-refactoring`): `security` row deleted → `make build` exit 2 at step 1, `_canonical.md:105:kind_missing:required Kind 'security' has no row …`, `make[1]: *** [quality-gates-check] Error 1`; restored → `make build` exit 0 (`docs-check: all 11 checks passed`, through `next build`). `tobevisit-web` (same branch, after `IMP-20260916-quality-gates-adoption` closed): same deletion → exit 2 at step 1, `_canonical.md:104:kind_missing:…`; restored → exit 0 through `next build` (12/12 static pages) with the local CMS up via `docker compose … -p tobevisit-web-local up -d`, stopped afterwards. A first attempt without the CMS failed at `next build` on `ECONNREFUSED 0.0.0.0:8055` after steps 1–4 passed |
+| AC-3 | `docs/bootstrapping-project.md` § Workflow step 4 — `validate-quality-gates` fails the build while a seed row reads `n/a — to be decided`; § Verification step lists the validator; `scaffold-manifest.md` row 1 names the check |
+
+### Review
+
+Not run — `risk: medium` is below the high tier that requires one; closure approved by the owner in chat on 2026-09-16.

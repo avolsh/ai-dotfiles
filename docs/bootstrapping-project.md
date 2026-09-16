@@ -48,7 +48,11 @@ A workspace root does **not** create:
    about each one**: the command, its `Kind` and `Mode` (`gate` or `report`),
    and for `duplication` where its report is written — or the reason the
    project has none, written as `n/a — <reason>`. Never leave a seed row as
-   it came, and never drop one silently.
+   it came, and never drop one silently. The build enforces this:
+   `validate-quality-gates` (`$AI_DOTFILES/scripts/validate-quality-gates.py
+   <project-root>`, wired into the project's verification sequence) fails the
+   build while a seed row reads `n/a — to be decided`, and on a missing required
+   kind, an unknown `Kind` or `Mode`, or a `duplication` step with no report path.
 5. **Render** the three agent files mechanically — run `make sync-agents`
    (which invokes `.github/scripts/sync-agents.sh`), writing `CLAUDE.md`,
    `AGENTS.md` and `.github/copilot-instructions.md` as byte-identical copies
@@ -76,6 +80,8 @@ confirm:
 - `grep -E '^@' AGENTS.md` returns no matches (AGENTS.md is fully
   self-contained for Codex).
 - `make sync-agents-check` exits 0.
+- `python3 "$AI_DOTFILES/scripts/validate-quality-gates.py" .` exits 0 — no
+  seed row left as `n/a — to be decided`.
 
 ## Pre-flight for any bootstrapping session
 
