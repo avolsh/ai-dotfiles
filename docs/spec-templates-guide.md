@@ -116,10 +116,65 @@ Row format:
 
 The validator reports backflips without a corresponding row as drift (best-effort static check; see `scripts/validate-specs.py` for the current heuristic).
 
-## `## Design` — Visualize trigger rules
+## `## Design` — Design Decisions and Visualize
 
-The `## Design` section is filled during the Visualize sub-step
-of Specify. Fill it when **any** of these apply:
+`## Design` is filled by two Specify sub-steps, in order: **Design
+Decisions** (the approach, with rejected alternatives) and **Visualize**
+(the picture of it). When both are skipped the whole section body is one
+`Skipped — <reason>` line.
+
+### Design Decisions — sub-sections
+
+Triggers and rules:
+[`spec-lifecycle.md § Design Decisions sub-step`](../framework/spec-workflows/spec-lifecycle.md#design-decisions-triggers).
+Questions: [`design-questions.md § Spec`](../framework/spec-workflows/questions/design-questions.md).
+
+- `### Decisions` — `D<n>: <chosen> — rejected: <alternative> (<why>)`.
+  A departure from `docs/architecture/profile.md` links a proposed ADR
+  ([`adr-conventions.md`](adr-conventions.md#when-a-spec-must-write-one)).
+  No trigger → one line: `Skipped — <reason>`.
+- `### Risks / Trade-offs` — `<risk> → <mitigation>`.
+- `### Open Questions` — only what can be answered later without changing
+  a requirement, the approach or the task breakdown; `None.` when empty.
+
+**Worked example 1 — trigger fires (new bounded context).** A CR adds a
+`reviews` context to a project whose profile row *Integration style* reads
+"sync API calls — ADR-0003". The agent reads the profile and asks three
+questions — boundary placement, data-flow direction, persistence shape —
+and not "DDD or monolith?", which *Domain modelling* settles. The answers
+put rating aggregation on an event, departing from ADR-0003:
+
+```markdown
+### Decisions
+
+- D1: `reviews` owns ratings; `places` reads a projection — rejected: ratings as a `places` field (couples two
+  write paths).
+- D2: Rating changes publish a `RatingChanged` event — rejected: sync call from `places` (profile row *Integration
+  style*, ADR-0003) — p95 page load doubles under fan-out. Departs from the profile → proposed
+  [ADR-0015-events-for-cross-context-aggregates](../../decisions/ADR-0015-events-for-cross-context-aggregates.md).
+
+### Risks / Trade-offs
+
+- Projection lags the source → page shows "updated a few seconds ago"; reconcile job nightly.
+
+### Open Questions
+
+- Event retention period — tunable config, changes no FR.
+```
+
+**Worked example 2 — no trigger (label change).** A CR renames the
+"Save" button label to "Save place". No context, flow, pattern, schema or
+profile row moves, and risk is `low`; Visualize does not fire either:
+
+```markdown
+## Design
+
+Skipped — copy change on one label; no Design Decisions or Visualize trigger.
+```
+
+### Visualize — trigger rules
+
+Fill the diagrams when **any** of these apply:
 
 - Risk is `medium` or `high` (CR / IMP only).
 - The spec adds, removes, or reshapes a bounded context.

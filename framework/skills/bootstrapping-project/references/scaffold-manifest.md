@@ -12,7 +12,7 @@ Templates root: `<system>/templates/`.
 
 ---
 
-## Required project artifacts (11)
+## Required project artifacts (12)
 
 All scaffolded by `ai-project`, which copies templates from `<system>/templates/project/` preserving directory structure. Bootstrap fails without these.
 
@@ -29,6 +29,7 @@ All scaffolded by `ai-project`, which copies templates from `<system>/templates/
 | 9 | `docs/specs/archived/README.md` | `docs/specs/archived/README.md` | Index for `done` specs. |
 | 10 | `docs/architecture/module-map.md` | `docs/architecture/module-map.md` | **Required day one.** Tables: Bounded Contexts, Cross-Cutting Files, Workflow → Context Mapping. Start minimal — one-line placeholder if no contexts exist yet. |
 | 11 | `docs/improvements-log.md` | `docs/improvements-log.md` | Append-only log. Format: date, spec/task, category, what was found, what was changed, suggested follow-up. |
+| 12 | `docs/architecture/profile.md` | `docs/architecture/profile.md` | **Required day one.** How the project is built — architectural style, domain modelling, code organisation, programming style (paradigm, error model, immutability, concurrency), integration style. Each row cites an ADR, conventions section or enforcing check, or stays `unrecorded` with its open question; plus `Last src verified` and `## Contradictions`. Filled at bootstrap from [`design-questions.md § Project`](../../../spec-workflows/questions/design-questions.md); read by the spec Design Decisions sub-step. |
 
 **Sync-script debt:** when the upstream canonical script changes, every already-bootstrapped project carries the older copy. Manual re-sync per project until a future spec automates it.
 

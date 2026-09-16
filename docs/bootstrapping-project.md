@@ -53,18 +53,26 @@ A workspace root does **not** create:
    <project-root>`, wired into the project's verification sequence) fails the
    build while a seed row reads `n/a — to be decided`, and on a missing required
    kind, an unknown `Kind` or `Mode`, or a `duplication` step with no report path.
-5. **Render** the three agent files mechanically — run `make sync-agents`
+5. **Fill `docs/architecture/profile.md`** by asking the human every question
+   in [`design-questions.md § Project`](../framework/spec-workflows/questions/design-questions.md)
+   — one per profile row. Read existing ADRs, `docs/architecture/*` and
+   enforcing checks first and offer what they say, with the source. A row the
+   human cannot source stays `unrecorded` with its open question; that is a
+   valid answer, not a gap to fill by inference. Sources that disagree go
+   under `## Contradictions`. Spec Design Decisions rounds read this page and
+   never re-ask what it settles.
+6. **Render** the three agent files mechanically — run `make sync-agents`
    (which invokes `.github/scripts/sync-agents.sh`), writing `CLAUDE.md`,
    `AGENTS.md` and `.github/copilot-instructions.md` as byte-identical copies
    of `_canonical.md`. The bootstrap is not complete until this step succeeds
    and `make sync-agents-check` exits 0.
-6. **Validate** — every link resolves, every referenced skill exists, and
+7. **Validate** — every link resolves, every referenced skill exists, and
    `grep -E '^@' AGENTS.md` returns no matches (Codex compatibility).
-7. **Register** in the workspace root `CLAUDE.md`, `AGENTS.md`, and
+8. **Register** in the workspace root `CLAUDE.md`, `AGENTS.md`, and
    `.github/copilot-instructions.md` with path, purpose, build commands.
    **Conditional** — skip this step if the host has no `<workspace>`
    configured (single-project hosts).
-8. **Present** the diff to the human for review. Commit only after approval.
+9. **Present** the diff to the human for review. Commit only after approval.
 
 Each step is gated. This is not an autonomous scaffold — every artifact is
 shown to the human before it's written.
@@ -100,6 +108,8 @@ confirm:
   `Cargo.toml`, or equivalent.
 - Never skip `docs/architecture/module-map.md` — the agent-protocol
   post-task checklist requires it, so it must exist on day one.
+- Never fill an architecture-profile row from inference over the code alone —
+  cite a source or leave it `unrecorded`.
 - If the project's primary language or stack is unclear, stop and ask.
 
 ## Excluded (never committed)
@@ -134,6 +144,7 @@ No underscores. No spaces. Lowercase only (except `ADR-`/`CR-`/`BUG-`/`IMP-` pre
 | Deep procedural knowledge | `.github/copilot/skills/` |
 | Workflow templates | `.github/copilot/prompts/` |
 | Sync script | `.github/scripts/sync-agents.sh` |
+| How the project is built — architectural and programming style, each with its source | `docs/architecture/profile.md` |
 | Everything else (architecture, schemas, runbooks, specs) | `docs/` |
 
 ---

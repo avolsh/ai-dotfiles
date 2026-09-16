@@ -3,7 +3,7 @@
 *Last updated: 2026-09-16*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
-Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
+Design Decisions / Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
 
 <!-- Anchors in this file (per `docs/rule-canonical-map.md`): R2 `never-tasks-table-at-specify` · R3 `never-flip-without-gate`, `observation-shaped-evidence` · R6 `split-check-mandatory` · R7 `depends-on-blocks-plan`, `inventory-overlap-restales` · R8 `visualize-not-a-status` · R10 `visualize-triggers` (anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). -->
 
@@ -59,7 +59,7 @@ stateDiagram-v2
 | Transition             | Precondition                                                                                                     | Agent action                                                                |
 |------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
 | `[start]` → `specify`  | Human asked for a new spec                                                                                       | Copy template, fill front-matter, write title — status `specify` from birth |
-| `specify` → `plan`     | Human approved requirements (and design if Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                               |
+| `specify` → `plan`     | Human approved requirements (and design if Design Decisions or Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                               |
 | `plan` → `in-progress` | Human approved the plan, first task begins                                                                       | Flip status **before** the first file edit of Task 1                        |
 | `in-progress` → `done` | Every AC has evidence that could have failed for it — an observation-shaped criterion needs evidence reaching its surface (see [§ Rules #5](#observation-shaped-evidence)); tests pass, docs updated. **High tier** (`risk: high`, or `severity: high \| critical`) also needs a recorded `### Review` — a run or a waiver (see [§ Reviewer sub-step](#reviewer-substep)). Closure approval is synchronous for `medium`/`high` risk; `low`/`trivial` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
 | `done` → `archived/`   | Immediately after closure; every process the work started is already stopped ([§ Rules #14](#stop-processes-at-closure))                                                                                        | Move file from `docs/specs/active/` to `docs/specs/archived/`               |
@@ -111,8 +111,10 @@ for the full rule set and Iteration Log mandate.
    complete it before asking for the requirements gate.
 9. <a id="split-check-mandatory"></a>The **Split check** (see
    [`splitting-rules.md § 2`](../skills/writing-specs/references/splitting-rules.md))
-   is a mandatory sub-step of Specify — complete it before Visualize and
-   record the outcome under `## Split Decision` in every affected spec.
+   is a mandatory sub-step of Specify — complete it before Design Decisions
+   and Visualize, and record the outcome under `## Split Decision` in every
+   affected spec. Order: Split → [Design Decisions](#design-decisions-triggers)
+   → Visualize → requirements gate.
 10. <a id="depends-on-blocks-plan"></a>A spec with unmet `depends-on:` MUST stay at `specify` (never flip to `plan`) until all listed siblings reach `done`.
 
     Waiting is not the only obligation the field carries. A spec written
@@ -419,6 +421,37 @@ closure gate only.
    `declined — <reason>`. Either resets that context's counter; the accepted IMP's own closure never counts.
 5. **An accepted IMP is refactor-only** (`Never do #5`): no behaviour change, and its `## Current State` cites the
    recommendation's inputs by source path. It then runs the normal lifecycle from Specify.
+
+## Design Decisions sub-step (Specify) <a id="design-decisions-triggers"></a>
+
+Run inside Specify after the Split check and before Visualize when **any** apply (CR / IMP):
+
+- Adds or reshapes a bounded context.
+- Changes data flow between contexts or services.
+- Introduces a new architectural pattern or external dependency.
+- Changes a persistence or schema model.
+- Departs from `docs/architecture/profile.md` or an accepted ADR.
+- Risk is `high`.
+
+Skip only when all are false: `### Decisions` under `## Design` reads `Skipped — <reason>` on one line.
+
+**Questions.** Read the project's `docs/architecture/profile.md` and ADRs first, then ask **at most 5** from
+[`design-questions.md § Spec`](questions/design-questions.md). Never ask what a profile row or an accepted ADR
+already settles.
+
+**Record** under `## Design`, before any diagram:
+
+- `### Decisions` — each decision with the alternatives considered and why each was rejected.
+- `### Risks / Trade-offs` — one line per risk: `<risk> → <mitigation>`.
+- `### Open Questions` — only questions answerable later without changing a requirement, the approach or the task
+  breakdown; anything else is asked now. `None.` when empty.
+
+**Departures.** <a id="design-departure-adr"></a>A decision that departs from a profile row or sets a new project-wide
+convention links a `proposed` ADR ([`docs/adr-conventions.md`](../../docs/adr-conventions.md)) before the
+requirements gate is requested.
+
+The trigger list overlaps Visualize's on purpose: Design Decisions weighs the approach, Visualize draws the one
+chosen. `risk: medium` alone triggers Visualize, not Design Decisions.
 
 ## Visualize sub-step (Specify) <a id="visualize-triggers"></a>
 

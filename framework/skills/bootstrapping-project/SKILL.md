@@ -9,7 +9,7 @@ description: >
 
 # Bootstrapping a Project
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-09-16*
 
 ## When to use
 
@@ -21,5 +21,5 @@ description: >
 ## References
 
 - [`docs/bootstrapping-project.md`](../../../docs/bootstrapping-project.md) — operating modes, workflow, verification, hard rules, file naming, content boundary, update walkthrough, anti-patterns.
-- [`references/scaffold-manifest.md`](references/scaffold-manifest.md) — manifest data: required project artifacts (10), workspace root artifacts (6), recommended artifacts.
+- [`references/scaffold-manifest.md`](references/scaffold-manifest.md) — manifest data: required project artifacts (12), workspace root artifacts (7), recommended artifacts.
 - [`framework/boundaries.md`](../../boundaries.md) — system-scope hard rules.

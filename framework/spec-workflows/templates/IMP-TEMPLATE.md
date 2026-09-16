@@ -48,7 +48,16 @@ Given <precondition>
 When <action>
 Then <outcome>
 ## Design
-<Fill during Visualize when triggered, else `Skipped — <reason>`. See docs/spec-templates-guide.md § Design.>
+<!-- Design Decisions sub-step first (spec-lifecycle.md § Design Decisions sub-step), then Visualize.
+Both skipped? Replace this whole section body with one line: `Skipped — <reason>`. -->
+### Decisions
+<`Skipped — <reason>` when no Design Decisions trigger fires. Else one bullet per decision:
+D1: <chosen approach> — rejected: <alternative> (<why>); <alternative> (<why>). Departure from the profile → link the proposed ADR.>
+### Risks / Trade-offs
+- <risk> → <mitigation>
+### Open Questions
+<Only questions answerable later without changing requirements, approach or tasks. `None.` when empty.>
+<Visualize: Mermaid / Figma when triggered. See docs/spec-templates-guide.md § Design.>
 ## Baseline Deltas
 <!-- How this spec changes `docs/domain/*.md`; `baseline-merge --apply` merges it at the closure gate.
 No baseline changes? Delete this section and set `baseline-impact: none — <reason>` in front-matter.

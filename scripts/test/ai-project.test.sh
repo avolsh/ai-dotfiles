@@ -32,6 +32,22 @@ for kind in format lint duplication security; do
     || fail "no seeded n/a row for required kind: $kind"
 done
 
+# Architecture profile (CR-20260914-design-decisions-and-architecture-profile
+# FR-1 / AC-1): every profile item is seeded `unrecorded`.
+PROFILE="$TMP/docs/architecture/profile.md"
+if [ -f "$PROFILE" ]; then
+  for item in "Architectural style" "Domain modelling" "Code organisation" \
+              "Programming paradigm" "Error model" "Immutability" "Concurrency" \
+              "Integration style"; do
+    grep -qE "^\| $item \| .* \| unrecorded \| .* \|$" "$PROFILE" \
+      || fail "profile item not seeded unrecorded: $item"
+  done
+  grep -qE '^\| Last src verified \|' "$PROFILE" || fail "profile lacks Last src verified row"
+  grep -qE '^## Contradictions$' "$PROFILE" || fail "profile lacks ## Contradictions"
+else
+  fail "docs/architecture/profile.md not scaffolded"
+fi
+
 # Scaffolding twice never overwrites (existing contract of ai-project).
 echo "sentinel" > "$CANON"
 (cd "$TMP" && AI_DOTFILES="$ROOT" "$ROOT/scripts/ai-project.sh") >/dev/null 2>&1 \

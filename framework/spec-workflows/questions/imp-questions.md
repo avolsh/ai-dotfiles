@@ -1,6 +1,6 @@
 # IMP Standard Questions
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-09-16*
 
 During the Specify stage, the agent asks up to **10 questions** from this
 list plus any improvement-specific ones. The human answers before
@@ -56,6 +56,13 @@ requirements are written.
 10. **Reversion threshold:** At what cost, complexity, or risk threshold
     should the agent stop and re-Specify instead of continuing?
     Example: "Re-Specify if the plan grows past 8 tasks or adds code."
+
+## Design approach
+
+When the improvement fires a Design Decisions trigger
+([`spec-lifecycle.md § Design Decisions sub-step`](../spec-lifecycle.md#design-decisions-triggers)),
+its architecture questions come from [`design-questions.md § Spec`](design-questions.md)
+in that sub-step — ≤5, never re-asking the project's architecture profile.
 
 ## Anti-patterns
 
