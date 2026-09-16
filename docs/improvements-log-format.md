@@ -1,6 +1,6 @@
 # Improvements Log — Format
 
-*Last updated: 2026-05-13*
+*Last updated: 2026-09-16*
 
 Authoring format and timing rule shared by `docs/improvements-log.md`
 files at both project and workspace scopes. Each scope's log file is a
@@ -24,12 +24,18 @@ tests, or after review.
 ```markdown
 ### YYYY-MM-DD — <short title>
 
-- **Spec / task:** CR/BUG/IMP id + task number, or "ad-hoc"
+- **Spec / task:** CR/BUG/IMP id + task number, "Direct lane (…)", or "ad-hoc"
+- **Closed:** YYYY-MM-DD
 - **Category:** `protocol` | `skill` | `pattern` | `anti-pattern` | `tooling`
 - **What was found:** one paragraph describing the problem or friction
 - **What was changed:** file(s) updated and summary of the change, or "none — logged for review"
 - **Suggested follow-up:** optional next action or owner
 ```
+
+**`Closed`** is the date the change landed. It is required on a
+Direct-lane entry — one whose `Spec / task` line says `Direct lane` —
+dated on or after 2026-09-16; `make validate-specs` reports
+`log_closed_missing` otherwise. On any other entry it is optional. Past entries are not back-filled.
 
 ## Which log to write to
 

@@ -213,6 +213,10 @@ _RISK_ENUM = {"low", "medium", "high", "trivial"}
 _SEVERITY_ENUM = {"low", "medium", "high", "critical", "trivial"}
 _MODEL_ENUM = {"fast", "default", "deep"}
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# `closed:` is required at `done`, and a Direct-lane log entry needs its
+# `Closed` line, from this date on (IMP-20260914-baseline-verification-freshness
+# FR-1, FR-8). Pinned to that IMP's closure date; earlier records are history.
+_CLOSURE_CUTOFF = _dt.date(2026, 9, 16)
 
 # Unconditional required front-matter fields. `risk` / `severity` are
 # type-conditional and handled separately.
@@ -331,6 +335,36 @@ def check_front_matter_schema(specs: Iterable[Spec]) -> list[Finding]:
                         f"date={d!r} does not match YYYY-MM-DD",
                     )
                 )
+
+        # `closed:` — well-formed wherever present; required at done from the cut-off.
+        if "closed" in fm:
+            c = fm["closed"]
+            if not isinstance(c, str) or not _DATE_RE.match(c):
+                findings.append(
+                    Finding(
+                        spec.path,
+                        line,
+                        "schema_date_format",
+                        f"closed={c!r} does not match YYYY-MM-DD",
+                    )
+                )
+        elif fm.get("status") == "done":
+            dated = fm.get("date")
+            if isinstance(dated, str) and _DATE_RE.match(dated):
+                try:
+                    judged = _dt.date.fromisoformat(dated) >= _CLOSURE_CUTOFF
+                except ValueError:
+                    judged = False  # an impossible calendar date; format passed
+                if judged:
+                    findings.append(
+                        Finding(
+                            spec.path,
+                            line,
+                            "schema_closed_missing",
+                            f"status=done requires 'closed: YYYY-MM-DD' for specs "
+                            f"dated on or after {_CLOSURE_CUTOFF.isoformat()}",
+                        )
+                    )
 
         # Type-conditional requiredness (independent of value-validation)
         spec_type = fm.get("type")
@@ -1882,6 +1916,158 @@ def check_domain_req_ids(root: Path) -> list[Finding]:
 
 
 # ---------------------------------------------------------------------------
+# Domain baselines — `Last src verified` freshness
+# Added by IMP-20260914-baseline-verification-freshness (FR-2 – FR-6).
+# ---------------------------------------------------------------------------
+
+_CLOSED_LINE_RE = re.compile(r"^[*_]Closed\s+(\d{4}-\d{2}-\d{2})\b", re.MULTILINE)
+# Both italic forms: the corpus writes `*Last updated: …*` and `_Last updated: …_`.
+_LAST_UPDATED_ANY_RE = re.compile(r"[*_]Last updated:\s*(\d{4}-\d{2}-\d{2})[*_]")
+# Only the row's leading date is data; the parenthetical after it is prose.
+_VERIFIED_ROW_RE = re.compile(
+    r"^\|\s*Last src verified\s*\|\s*(\d{4}-\d{2}-\d{2})?", re.MULTILINE
+)
+
+
+def _iso_date(raw: object) -> _dt.date | None:
+    try:
+        return _dt.date.fromisoformat(str(raw))
+    except ValueError:
+        return None
+
+
+def _closure_date(spec: Spec) -> tuple[_dt.date, str] | None:
+    """FR-3 — the date a spec closed and where it was read, in declared order."""
+    closed = _iso_date(spec.front_matter.get("closed"))
+    if closed:
+        return closed, "closed:"
+    for pattern, source in (
+        (_CLOSED_LINE_RE, "Closed line"),
+        (_LAST_UPDATED_ANY_RE, "Last updated stamp"),
+    ):
+        m = pattern.search(spec.body)
+        if m and _iso_date(m.group(1)):
+            return _dt.date.fromisoformat(m.group(1)), source
+    dated = _iso_date(spec.front_matter.get("date"))
+    return (dated, "date:") if dated else None
+
+
+def check_baseline_freshness(root: Path, specs: Iterable[Spec]) -> list[Finding]:
+    """FR-2 / FR-5 — a baseline verified before the newest archived spec that
+    changed it closed, or carrying no `Last src verified` row at all."""
+    findings: list[Finding] = []
+    domain = root / "docs" / "domain"
+    if not domain.is_dir():
+        return findings
+
+    newest: dict[str, tuple[_dt.date, str, str]] = {}
+    for spec in specs:
+        if spec.path.parent.name != "archived":
+            continue
+        docs = spec.front_matter.get("affected-docs")
+        if not isinstance(docs, list):
+            continue
+        closure = _closure_date(spec)
+        if closure is None:
+            continue
+        for doc in docs:
+            if not isinstance(doc, str) or not doc.startswith("docs/domain/"):
+                continue
+            candidate = (closure[0], _spec_id(spec), closure[1])
+            if doc not in newest or candidate[0] > newest[doc][0]:
+                newest[doc] = candidate
+
+    for path in sorted(domain.glob("*.md")):
+        if path.name == "README.md":
+            continue
+        text = path.read_text(encoding="utf-8")
+        rel = f"docs/domain/{path.name}"
+        m = _VERIFIED_ROW_RE.search(text)
+        row_date = _iso_date(m.group(1)) if m and m.group(1) else None
+        if row_date is None:
+            findings.append(
+                Finding(
+                    path,
+                    1,
+                    "baseline_verified_missing",
+                    f"{rel} has no `Last src verified` row with a leading YYYY-MM-DD "
+                    f"(Rule 13)",
+                )
+            )
+            continue
+        closing = newest.get(rel)
+        if closing and row_date < closing[0]:
+            closed_on, spec_id, source = closing
+            findings.append(
+                Finding(
+                    path,
+                    text.count("\n", 0, m.start()) + 1,
+                    "baseline_stale",
+                    f"{rel} Last src verified {row_date.isoformat()} is older than "
+                    f"{spec_id} closed {closed_on.isoformat()} (source: {source}); "
+                    f"bump the row to the closure date (Rule 13)",
+                )
+            )
+    return findings
+
+
+# ---------------------------------------------------------------------------
+# Improvements log — Direct-lane entries carry `Closed`
+# Added by IMP-20260914-baseline-verification-freshness (FR-8, FR-9).
+# ---------------------------------------------------------------------------
+
+_LOG_ENTRY_RE = re.compile(r"^###\s+(\d{4}-\d{2}-\d{2})\b")
+_LOG_SPEC_TASK_RE = re.compile(r"^\s*-\s*\*\*Spec / task:\*\*")
+_LOG_CLOSED_RE = re.compile(r"^\s*-\s*\*\*Closed:\*\*\s*\d{4}-\d{2}-\d{2}\b")
+
+
+def check_log_closed(root: Path) -> list[Finding]:
+    """FR-9 — a Direct-lane entry dated on or after the cut-off with no
+    `- **Closed:** YYYY-MM-DD` line."""
+    path = root / "docs" / "improvements-log.md"
+    if not path.is_file():
+        return []
+
+    # (heading line number, heading text, entry date, is Direct lane, has Closed)
+    entries: list[list] = []
+    fence: str | None = None
+    for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        stripped = line.lstrip()
+        if fence is not None:
+            if stripped.startswith(fence):
+                fence = None
+            continue
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            fence = stripped[:3]
+            continue
+        if line.startswith("#"):
+            m = _LOG_ENTRY_RE.match(line)
+            if m:
+                entries.append([lineno, line[4:].strip(), _iso_date(m.group(1)), False, False])
+            elif line.startswith("## ") or line.startswith("# "):
+                entries.append([lineno, "", None, False, False])  # closes the entry
+            continue
+        if not entries:
+            continue
+        if _LOG_SPEC_TASK_RE.match(line) and "Direct lane" in line:
+            entries[-1][3] = True
+        elif _LOG_CLOSED_RE.match(line):
+            entries[-1][4] = True
+
+    return [
+        Finding(
+            path,
+            lineno,
+            "log_closed_missing",
+            f"Direct-lane entry '{heading}' needs a `- **Closed:** YYYY-MM-DD` line "
+            f"(required from {_CLOSURE_CUTOFF.isoformat()}; improvements-log-format.md)",
+        )
+        for lineno, heading, dated, direct, closed in entries
+        if dated and dated >= _CLOSURE_CUTOFF and direct and not closed
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
@@ -1901,11 +2087,14 @@ def main(argv: list[str]) -> int:
         findings.extend(check(specs))
     findings.extend(check_agent_front_matter(agents))
     findings.extend(check_domain_req_ids(root))
+    findings.extend(check_baseline_freshness(root, specs))
+    findings.extend(check_log_closed(root))
 
     for f in findings:
         print(f.render(root))
 
-    total_checks = len(CHECK_REGISTRY) + 2  # + agent front-matter, + domain REQ-IDs
+    # + agent front-matter, + domain REQ-IDs, + baseline freshness, + log Closed
+    total_checks = len(CHECK_REGISTRY) + 4
     if findings:
         print(
             f"\nvalidate-specs: {len(findings)} finding(s) across "

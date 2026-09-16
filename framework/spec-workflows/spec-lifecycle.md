@@ -18,6 +18,7 @@ id: CR-YYYYMMDD-<kebab-case-title>     # file basename without .md
 type: CR                                # CR | BUG | IMP | RES
 date: YYYY-MM-DD                        # creation date
 status: specify                         # specify | plan | in-progress | done
+closed: YYYY-MM-DD                      # set when status flips to done; required for specs dated on or after 2026-09-16
 owner: <github-handle>                  # accountable human
 risk: low | medium | high | trivial      # CR / IMP only; BUG uses severity. `trivial` opts into the short-circuited Trivial lane (see § Trivial lane).
 severity: low | medium | high | critical | trivial  # BUG only; `trivial` opts into the Trivial lane.
@@ -145,13 +146,20 @@ for the full rule set and Iteration Log mandate.
     `<project>/docs/domain/<feature>.md` file MUST update that
     file in the same change before flipping to `done`. Baselines updated
     under this rule MUST describe the system after the spec's changes
-    are applied -- not desired future behaviour -- and MUST bump the
-    `Last src verified` row in the baseline's header info to the
-    closure date, even when the baseline body is unchanged. The Closure
+    are applied -- not desired future behaviour. The Closure
     Evidence row for the affected AC MUST cite the diff (path +
     summary). If the spec's scope changed between Plan and closure,
     refresh `## Summary` before flipping to `done` so Goal, Scope, and
     Out of scope reflect post-closure state.
+
+    **Enforcement — `Last src verified`.** `make validate-specs` reports
+    `baseline_stale` when a baseline's `Last src verified` date is older
+    than the closure date of the newest archived spec naming it in
+    `affected-docs` — read from `closed:`, else a `Closed YYYY-MM-DD` line,
+    else the `Last updated:` stamp, else `date:` — and
+    `baseline_verified_missing` when the row or its leading date is absent.
+    At closure, set `closed:` and the row to the same date, even when the
+    baseline body is unchanged after re-checking `src`.
 
     **Baseline discovery (Plan stage).** Before flipping to `plan`, scan
     `<project>/docs/domain/` for files whose feature name matches the
@@ -323,7 +331,9 @@ now with a canonical home (IMP-20260610-mechanize-framework-guardrails FR-4).
 **Eligibility — all MUST hold:**
 
 - ≤ 2 files and ≤ 30 changed lines in total.
-- No schema change (front-matter, baseline, type system, API contract).
+- No schema change (front-matter, baseline, type system, API contract),
+  and no edit to a baseline body under `docs/domain/` — a baseline change
+  always runs through a spec, whose closure Rule 13 checks.
 - No change to AI prompts (`framework/prompts/`, project prompt catalogs).
 - No change to `framework/boundaries.md`, this file, or any project
   `_canonical.md` § Boundaries (including rendered agent files).
@@ -335,7 +345,10 @@ now with a canonical home (IMP-20260610-mechanize-framework-guardrails FR-4).
 1. Post **The Bottom Line** for the change
    ([`agent-protocol.md § Bottom Line`](../../docs/agent-protocol.md#the-bottom-line--canonical-format)).
 2. Land an entry in the project's `docs/improvements-log.md` in the same
-   session (what changed, why, owner approval noted).
+   session (what changed, why, owner approval noted), with a
+   `- **Closed:** YYYY-MM-DD` line — `make validate-specs` reports
+   `log_closed_missing` on Direct-lane entries dated on or after 2026-09-16
+   without one ([`improvements-log-format.md`](../../docs/improvements-log-format.md)).
 
 Anything beyond the threshold falls back to the Trivial lane (if eligible)
 or the standard track. The Direct lane is **not** a skip of judgment — it is

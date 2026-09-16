@@ -1,6 +1,6 @@
 # Baseline Citations
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-09-16*
 
 How to read, write, and cite **per-feature domain baselines** under `<project>/docs/domain/`: file structure, ID convention, verification pointers, citation format, current-state authority, ownership, and anti-patterns.
 
@@ -116,9 +116,11 @@ CR/IMP/BUG Specify stages treat cited baselines as the starting point
 for new requirements unless the agent finds a concrete drift between
 baseline text and `src`.
 
-When a closing spec updates a baseline, it MUST also bump the
-`Last src verified` row in the header info table to the closure date,
-even when the baseline body is unchanged after re-checking `src`.
+The `Last src verified` row is checked, not trusted: `make validate-specs`
+compares its leading date with the closure date of the newest archived
+spec naming the baseline in `affected-docs`, and reports a row that is
+older or absent. The obligation and the order the closure date is read in
+live in [`spec-lifecycle.md` Rule 13](../framework/spec-workflows/spec-lifecycle.md).
 
 ---
 
@@ -130,8 +132,8 @@ even when the baseline body is unchanged after re-checking `src`.
 | Closure | Spec author | If the spec changed baseline behavior, update the touched `docs/domain/<feature>.md` in the same change; cite the diff in `## Closure Evidence`. May seed a brand-new baseline file when introducing a feature that will likely be touched again. |
 
 The closure rule is enforced by:
-[`spec-lifecycle.md` Rule 11](../framework/spec-workflows/spec-lifecycle.md)
-(workspace) and each project's `.github/copilot/instructions/general.md`
+[`spec-lifecycle.md` Rule 13](../framework/spec-workflows/spec-lifecycle.md)
+(workspace; mechanically, `baseline_stale` in `make validate-specs`) and each project's `.github/copilot/instructions/general.md`
 (project boundary).
 
 ---

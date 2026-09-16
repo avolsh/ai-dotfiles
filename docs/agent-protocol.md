@@ -203,7 +203,9 @@ a spec. Each task must independently pass all checks before proceeding.
 - [ ] No scope creep -- nothing built outside spec.
 - [ ] Build and test pass per project's `AGENTS.md` § Build and Run.
 - [ ] Affected docs updated (reference, how-to, glossary).
-- [ ] Touched baselines updated to reflect post-closure actual state -- see
+- [ ] Touched baselines updated to reflect post-closure actual state, with the
+      `Last src verified` row bumped to the closure date and the spec's
+      `closed:` set to that same date -- see
       [`baseline-citations.md`](baseline-citations.md).
 - [ ] `*Last updated: YYYY-MM-DD*` date set on every modified doc.
 - [ ] No broken links or missing references in affected docs.

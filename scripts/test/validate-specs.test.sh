@@ -110,9 +110,15 @@ assert_silent "AC-4 a filled BUG template reports no missing affected-docs" "$ou
 assert_silent "AC-5 a filled BUG template is missing no required field" "$out" "schema_missing_field"
 
 # ---------- FR-8: REQ-ID collisions inside one domain baseline ----------
-mkbaseline() { # $1 root, $2 filename, [body on stdin]
+mkbaseline() { # $1 root, $2 filename, [$3 Last src verified date, or "none"], [body on stdin]
   mkdir -p "$1/docs/domain"
-  { echo "# ${2%.md}"; echo "*Last updated: 2026-08-26*"; echo; cat; } > "$1/docs/domain/$2"
+  {
+    echo "# ${2%.md}"
+    echo "*Last updated: 2026-08-26*"
+    echo
+    [ "${3:-2026-08-26}" = none ] || echo "| Last src verified | ${3:-2026-08-26} (demo re-read) |"
+    cat
+  } > "$1/docs/domain/$2"
 }
 
 p="$(newproj reqids)"
@@ -910,6 +916,183 @@ f.write_text(s.replace("\n## Closure Evidence", example + "\n## Closure Evidence
 PY
 run "$p"
 assert_reports "F5 a fenced Closure Evidence example is not read as the section" "$out" "CR-20270101-fenced.md:.*:review_missing:"
+
+# ---------- IMP-20260914-baseline-verification-freshness ----------
+# An archived `done` spec naming baselines. Closure evidence (front-matter
+# `closed:`, a `Closed` line, a `Last updated:` stamp) is supplied by the
+# caller, so each fallback in the resolution order can be planted alone.
+mkarchived() { # $1 root, $2 filename, $3 date, $4 space-separated baselines, [extra front-matter], [body on stdin]
+  local f="$1/docs/specs/archived/$2" b
+  {
+    echo "---"
+    echo "id: ${2%.md}"
+    echo "type: IMP"
+    echo "date: $3"
+    echo "status: done"
+    echo "owner: alex"
+    echo "risk: low"
+    echo "affected-repos:"
+    echo "  - demo"
+    echo "affected-docs:"
+    for b in $4; do echo "  - docs/domain/$b"; done
+    echo "affected-code: []"
+    echo "skills:"
+    echo "  - writing-specs"
+    echo "model-suggestion: default"
+    [ -n "${5:-}" ] && printf '%s\n' "$5"
+    echo "---"
+    echo "# ${2%.md}"
+    cat
+  } > "$f"
+}
+mkverified() { # $1 root, $2 baseline filename, $3 Last src verified date
+  mkbaseline "$1" "$2" "$3" </dev/null
+}
+
+# AC-1 — a stale baseline is reported with its cause; bumping the row clears it.
+p="$(newproj freshstale)"
+mkverified "$p" "demo.md" "2026-08-01"
+mkarchived "$p" "IMP-20260805-demo.md" "2026-08-05" "demo.md" "closed: 2026-08-10" <<'EOF'
+*Last updated: 2026-08-10*
+EOF
+run "$p"
+expect "AC-1 a stale baseline exits non-zero" 1 "$rc"
+assert_reports "AC-1 the finding names baseline, row date, spec and closure date" "$out" \
+  "docs/domain/demo.md:4:baseline_stale:.*2026-08-01.*IMP-20260805-demo.*2026-08-10"
+[ "$(printf '%s\n' "$out" | grep -c baseline_stale)" -eq 1 ] \
+  || { echo "FAIL: AC-1 exactly one baseline_stale finding" >&2; fails=$((fails + 1)); }
+mkverified "$p" "demo.md" "2026-08-10"
+run "$p"
+assert_silent "AC-1 a row dated on the closure date is not stale" "$out" "baseline_stale"
+
+# The newest closing spec wins; an older one alone would pass.
+p="$(newproj freshnewest)"
+mkverified "$p" "demo.md" "2026-08-05"
+mkarchived "$p" "IMP-20260801-old.md" "2026-08-01" "demo.md" "closed: 2026-08-02" </dev/null
+mkarchived "$p" "IMP-20260803-new.md" "2026-08-03" "demo.md" "closed: 2026-08-09" </dev/null
+run "$p"
+assert_reports "AC-1 the newest closure is the one compared" "$out" "baseline_stale:.*IMP-20260803-new.*2026-08-09"
+assert_silent "AC-1 an older closure is not reported" "$out" "IMP-20260801-old"
+
+# Active specs are not closures, whatever they name.
+p="$(newproj freshactive)"
+mkverified "$p" "demo.md" "2026-08-01"
+mkspec "$p" "IMP-20260826-open.md" </dev/null
+perl -0pi -e 's|^affected-docs: \[\]|affected-docs:\n  - docs/domain/demo.md|m' "$p/docs/specs/active/IMP-20260826-open.md"
+run "$p"
+assert_silent "AC-1 an active spec naming a baseline is not a closure" "$out" "baseline_stale"
+
+# AC-2 — closure date is read in declared order, and the source is named.
+p="$(newproj freshorder)"
+for b in b1 b2 b3 b4; do mkverified "$p" "$b.md" "2026-01-01"; done
+mkarchived "$p" "IMP-20260801-field.md" "2026-08-01" "b1.md" "closed: 2026-08-10" <<'EOF'
+*Closed 2026-08-20.*
+*Last updated: 2026-08-30*
+EOF
+mkarchived "$p" "IMP-20260801-line.md" "2026-08-01" "b2.md" <<'EOF'
+*Closed 2026-08-11 · all tasks done.*
+*Last updated: 2026-08-30*
+EOF
+mkverified "$p" "b5.md" "2026-01-01"
+mkarchived "$p" "IMP-20260801-underline.md" "2026-08-01" "b5.md" <<'EOF'
+_Closed 2026-08-13._
+_Last updated: 2026-08-30_
+EOF
+mkarchived "$p" "IMP-20260801-stamp.md" "2026-08-01" "b3.md" <<'EOF'
+_Last updated: 2026-08-12_
+EOF
+mkarchived "$p" "IMP-20260801-dated.md" "2026-08-01" "b4.md" </dev/null
+run "$p"
+assert_reports "AC-2 closed: wins over a Closed line and a stamp" "$out" "b1.md:.*baseline_stale:.*2026-08-10.*closed:"
+assert_reports "AC-2 a Closed line wins over a stamp" "$out" "b2.md:.*baseline_stale:.*2026-08-11.*Closed line"
+assert_reports "AC-2 an underscore-italic Last updated stamp is read" "$out" "b3.md:.*baseline_stale:.*2026-08-12.*Last updated"
+assert_reports "AC-2 front-matter date: is the last fallback" "$out" "b4.md:.*baseline_stale:.*2026-08-01.*date:"
+assert_reports "AC-2 an underscore-italic Closed line is read" "$out" "b5.md:.*baseline_stale:.*2026-08-13.*Closed line"
+
+# AC-3 — a baseline with no row is reported; README is not a baseline.
+p="$(newproj freshmissing)"
+mkspec "$p" "IMP-20260826-anchor.md" </dev/null
+mkbaseline "$p" "norow.md" none <<'EOF'
+| Field | Value |
+| ----- | ----- |
+| Owns  | demo  |
+EOF
+mkbaseline "$p" "README.md" </dev/null
+run "$p"
+assert_reports "AC-3 a baseline with no Last src verified row is reported" "$out" "docs/domain/norow.md:1:baseline_verified_missing:"
+[ "$(printf '%s\n' "$out" | grep -c baseline_verified_missing)" -eq 1 ] \
+  || { echo "FAIL: AC-3 exactly one baseline_verified_missing finding" >&2; fails=$((fails + 1)); }
+assert_silent "AC-3 README.md is not a baseline" "$out" "README.md:.*baseline_"
+
+# AC-3 — no docs/domain/, no findings.
+p="$(newproj freshnodomain)"
+mkarchived "$p" "IMP-20260801-nodomain.md" "2026-08-01" "demo.md" "closed: 2026-08-10" </dev/null
+run "$p"
+assert_silent "AC-3 a corpus without docs/domain is a no-op" "$out" "baseline_"
+
+# AC-2 (FR-1) — `closed:` is required at done from the cut-off on, and
+# well-formed wherever it appears.
+p="$(newproj closedfield)"
+mkarchived "$p" "IMP-20270101-noclosed.md" "2027-01-01" "" </dev/null
+mkarchived "$p" "IMP-20270101-withclosed.md" "2027-01-01" "" "closed: 2027-01-05" </dev/null
+mkarchived "$p" "IMP-20260801-history.md" "2026-08-01" "" </dev/null
+mkarchived "$p" "IMP-20260801-badclosed.md" "2026-08-01" "" "closed: soon" </dev/null
+mkspec "$p" "IMP-20270101-open.md" </dev/null
+sed -i.bak 's/^date: 2026-08-26/date: 2027-01-01/' "$p/docs/specs/active/IMP-20270101-open.md"
+rm -f "$p/docs/specs/active/IMP-20270101-open.md.bak"
+run "$p"
+assert_reports "AC-2 a post-cut-off done spec without closed: is reported" "$out" "IMP-20270101-noclosed.md:.*:schema_closed_missing:"
+assert_silent "AC-2 a post-cut-off done spec with closed: is silent" "$out" "IMP-20270101-withclosed.md:.*:schema_closed"
+assert_silent "AC-2 a pre-cut-off done spec without closed: is history" "$out" "IMP-20260801-history.md:.*:schema_closed"
+assert_silent "AC-2 a spec not yet done needs no closed:" "$out" "IMP-20270101-open.md:.*:schema_closed"
+assert_reports "AC-2 a malformed closed: is reported whatever the date" "$out" "IMP-20260801-badclosed.md:.*:schema_date_format:closed="
+
+# AC-5 (FR-8, FR-9) — Direct-lane log entries carry a closure date.
+p="$(newproj logclosed)"
+mkspec "$p" "IMP-20260826-anchor.md" </dev/null
+cat > "$p/docs/improvements-log.md" <<'EOF'
+# Improvements Log — demo
+
+### 2027-01-02 — direct change without Closed
+
+- **Spec / task:** Direct lane (owner-approved in chat)
+- **Category:** tooling
+- **What was changed:** a thing
+
+### 2027-01-03 — direct change with Closed
+
+- **Spec / task:** ad-hoc (Direct lane), follow-up to the entry above
+- **Closed:** 2027-01-03
+- **What was changed:** a thing
+
+### 2026-08-01 — direct change before the cut-off
+
+- **Spec / task:** Direct lane (owner-approved)
+- **What was changed:** a thing
+
+### 2027-01-04 — a finding, not a change
+
+- **Spec / task:** ad-hoc
+- **What was found:** a thing
+
+```markdown
+### 2027-01-05 — a fenced example is not an entry
+- **Spec / task:** Direct lane
+```
+EOF
+run "$p"
+assert_reports "AC-5 a post-cut-off Direct-lane entry without Closed is reported by heading" "$out" \
+  "docs/improvements-log.md:3:log_closed_missing:.*2027-01-02 — direct change without Closed"
+[ "$(printf '%s\n' "$out" | grep -c log_closed_missing)" -eq 1 ] \
+  || { echo "FAIL: AC-5 exactly one log_closed_missing finding" >&2; fails=$((fails + 1)); }
+perl -0pi -e 's/(- \*\*Spec \/ task:\*\* Direct lane \(owner-approved in chat\)\n)/$1- **Closed:** 2027-01-02\n/' "$p/docs/improvements-log.md"
+run "$p"
+assert_silent "AC-5 adding the Closed line clears the finding" "$out" "log_closed_missing"
+
+p="$(newproj lognofile)"
+mkspec "$p" "IMP-20260826-anchor.md" </dev/null
+run "$p"
+assert_silent "AC-5 a project without an improvements log is a no-op" "$out" "log_closed_missing"
 
 if [ "$fails" -eq 0 ]; then
   echo "scripts/validate-specs.py self-tests passed ✓"
