@@ -1,6 +1,6 @@
 # Authoring Steps — inline procedures
 
-*Last updated: 2026-08-27*
+*Last updated: 2026-09-16*
 
 <!-- Anchors in this file (per `docs/rule-canonical-map.md`): R14 `§ C step 5` (the cap counts decisions) · R15 `§ C step 6` (adjudicated cluster is an override, not a re-run). -->
 
@@ -35,10 +35,11 @@ the spec body through `## Out of Scope`; leaves `## Split Decision` for
 7. **Fill `## Requirements`** — one FR per discrete capability, one physical line each, MUST per RFC 2119, numbered FR-1, FR-2, …
 8. **Fill `## Acceptance Criteria`** — Given/When/Then, one block per FR / Fix-Criteria cluster (not per FR), numbered AC-1, … Then mark every **observation-shaped** criterion — one whose `When` has a person operating a user-facing surface — with the evidence kind it will close under, as a trailing `Evidence: rendering test` or `Evidence: manual (observation, surface, observer, date)` line inside the block. A criterion carrying no such mark is asserting that a suite can reach it; if it cannot, the mark is what surfaces that now rather than at closure ([`spec-lifecycle.md § Rules #5`](../../../spec-workflows/spec-lifecycle.md#observation-shaped-evidence)). The requirements gate is not requested while any such criterion is unmarked.
 9. **Fill `## Out of Scope`** — explicit OS-1, OS-2, … from Q1's out-of-scope answer.
-10. **Fill `## Design`** — `Skipped — <reason>`, or `Pending — Visualize sub-step` when a [Visualize trigger](../../../spec-workflows/spec-lifecycle.md#visualize-triggers) fires.
-11. **Leave `## Split Decision`** as `Pending` until § B runs; **leave `## Tasks`** as `Pending — Plan stage only.` — never write rows here ([Rule #2](../../../spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify)).
-12. **Compression pass** — apply [`writing-specs.md § Compression pass`](../../../../docs/writing-specs.md); verify the body meets the § Length budget (≤120 physical lines, or a one-line justification); record the body line count before and after.
-13. **Write the file** atomically; set `*Last updated: <date>*` under the H1.
+10. **Fill `## Baseline Deltas`** — for every `docs/domain/*.md` baseline whose behaviour the FRs change, one `###` block with ADDED / MODIFIED / REMOVED / RENAMED entries, each new or modified requirement stating observable behaviour and carrying a `Scenario:` or `Verified by:` bullet; run `baseline-merge --check <spec>` until clean. A spec changing no baseline deletes the section and sets `baseline-impact: none — <reason>` instead ([`spec-templates-guide.md § Baseline Deltas`](../../../../docs/spec-templates-guide.md#baseline-deltas)).
+11. **Fill `## Design`** — `Skipped — <reason>`, or `Pending — Visualize sub-step` when a [Visualize trigger](../../../spec-workflows/spec-lifecycle.md#visualize-triggers) fires.
+12. **Leave `## Split Decision`** as `Pending` until § B runs; **leave `## Tasks`** as `Pending — Plan stage only.` — never write rows here ([Rule #2](../../../spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify)).
+13. **Compression pass** — apply [`writing-specs.md § Compression pass`](../../../../docs/writing-specs.md); verify the body meets the § Length budget (≤120 physical lines, or a one-line justification); record the body line count before and after.
+14. **Write the file** atomically; set `*Last updated: <date>*` under the H1.
 
 ## B. Split check (Specify, mandatory)
 

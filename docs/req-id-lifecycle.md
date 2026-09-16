@@ -1,6 +1,6 @@
 # REQ-ID Lifecycle
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-09-16*
 
 Lifecycle rules for stable numeric IDs (`REQ-<feature-prefix>-NNN`) inside per-feature requirements baselines: numbering, deletion, supersession, cross-baseline citation, and citation safety.
 
@@ -14,6 +14,12 @@ requirements without ambiguity.
 - Authors MUST NOT fill gaps left by deleted, tombstoned, or superseded IDs.
 - IDs MUST be unique within the baseline file.
 - IDs MUST NOT be reused after deletion or supersession.
+- A baseline with no IDs starts a series at `001` when a spec's delta ADDs its
+  first numbered requirement; its un-numbered entries stay unaddressable by
+  a delta, so the spec changing one edits it by hand at closure.
+
+`baseline-merge --check` reports an ADDED ID that is not `max(existing) + 1`
+— tombstoned and superseded numbers count toward the maximum.
 
 ## Deletion
 
@@ -23,7 +29,8 @@ When deleting an ID, leave a one-line tombstone in the same section:
 - ~~REQ-PCE-005~~ deleted — Why: replaced by source-of-truth copy in `REQ-PCE-012`.
 ```
 
-The tombstone preserves citation history. Do not point new work at a
+A spec's `REMOVED` delta block produces this line at closure, with its
+`Reason` as the Why and its `Migration` after it. The tombstone preserves citation history. Do not point new work at a
 deleted ID; cite the replacement ID or a section anchor instead.
 
 ## Supersession
@@ -37,6 +44,26 @@ replacement:
 
 The replacement ID MUST carry the current requirement text. The old ID
 MUST stay tombstoned and MUST NOT be reused.
+
+A spec's `RENAMED` delta block produces this pair at closure: the tombstone
+in place, and the old requirement's text beneath it under the new ID, its
+annotation ending `; renamed from <old-ID> by <spec-id>`.
+
+## Amendment
+
+A requirement changed in place keeps its ID and records who changed it, in
+its defining annotation:
+
+```markdown
+- **MUST** ... *(REQ-AIP-004; amended by BUG-20260813-ai-provider-routing-mismatch — the previous form specified the provider-less helper.)*
+```
+
+A spec's `MODIFIED` delta block produces this at closure: the replacement
+text, then the annotation's existing trail (citations, earlier amendments)
+unless the replacement restates one, then `; amended by <spec-id> — <why>`.
+History words (`retired`, `superseded`, `deleted`) never appear in an
+amendment — the validator reads an annotation carrying them as history, not
+as a definition.
 
 ## Cross-Baseline Citations
 

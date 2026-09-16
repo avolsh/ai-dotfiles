@@ -16,7 +16,7 @@ Specify stage for CR / IMP. Hard gate at the end — do not write `## Tasks`. Li
 3. **Create the spec** — run inline per [`writing-specs/references/authoring-steps.md § A`](../skills/writing-specs/references/authoring-steps.md) (CR/IMP) or § D (RES), using the Step 2 answers. Fill through `## Out of Scope`; set `## Design` from Step 5 or `Skipped — <reason>`.
 4. **Split check** — run inline per [`authoring-steps.md § B`](../skills/writing-specs/references/authoring-steps.md) using the CR Q2 / IMP Q2 separability answer; record the verdict + cited ID under `## Split Decision`.
 5. **Visualize sub-step** — if any trigger in [`spec-lifecycle.md § Visualize sub-step`](../spec-workflows/spec-lifecycle.md#visualize-triggers) applies, hand off to [`visualize-spec.prompt.md`](visualize-spec.prompt.md); else write `Skipped — <reason>` under `## Design`.
-6. **Gate** — post per-spec summary (ID + path, FR/AC count, Split Decision, `siblings:` / `depends-on:`, Visualize status, `domain-refs:` or net-new justification, open questions). Wait for explicit approval. Then hand off to [`plan-spec.prompt.md`](plan-spec.prompt.md); Plan advances the first spec with no unmet `depends-on:` first.
+6. **Gate** — post per-spec summary (ID + path, FR/AC count, Split Decision, `siblings:` / `depends-on:`, Visualize status, `domain-refs:` or net-new justification, the `baseline-merge --diff <spec>` output — or the `baseline-impact: none` marker — per [`spec-lifecycle.md` Rule 13](../spec-workflows/spec-lifecycle.md#baseline-deltas), open questions). Wait for explicit approval. Then hand off to [`plan-spec.prompt.md`](plan-spec.prompt.md); Plan advances the first spec with no unmet `depends-on:` first.
 
 ## Hard rules
 

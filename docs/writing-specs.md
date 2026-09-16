@@ -1,6 +1,6 @@
 # Writing Specs
 
-*Last updated: 2026-09-15*
+*Last updated: 2026-09-16*
 
 Consolidated guidance for spec-driven work: lifecycle pointer, stage walk-throughs (Specify, Plan), writing-style rules, RFC 2119 keywords, the self-review additions, template usage, and anti-patterns. Topic-specific deep dives live in the linked docs.
 
@@ -107,6 +107,9 @@ Mandatory step in spec authoring ([`authoring-steps.md § A`](../framework/skill
    of Scope`. See
    [`spec-format.md`](spec-format.md) and
    [`acceptance-criteria-patterns.md`](acceptance-criteria-patterns.md).
+   Write `## Baseline Deltas` for every baseline the FRs change, or set
+   `baseline-impact: none — <reason>`; `baseline-merge --check` must pass.
+   See [`spec-templates-guide.md § Baseline Deltas`](spec-templates-guide.md#baseline-deltas).
 5. **Split check** — apply [`splitting-rules.md § 2`](../framework/skills/writing-specs/references/splitting-rules.md)
    against the FR clusters + Separability answer. If any trigger fires,
    propose a split, pause for the human decision, and create sibling
@@ -117,7 +120,8 @@ Mandatory step in spec authoring ([`authoring-steps.md § A`](../framework/skill
 6. Run **Visualize sub-step** if any trigger applies — per spec, after
    the split is resolved
    (see [`spec-lifecycle.md § Visualize sub-step`](../framework/spec-workflows/spec-lifecycle.md#visualize-triggers)).
-7. **Gate:** human approves requirements (and design, if populated).
+7. **Gate:** human approves requirements (and design, if populated), with
+   the `baseline-merge --diff` output in front of them.
 
 ## Plan stage (detail)
 

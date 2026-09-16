@@ -16,6 +16,7 @@ skills:
   - <project-testing-skill>
 model-suggestion: default
 # Optional fields (domain-refs, siblings) — see docs/spec-templates-guide.md § Front-matter optional fields.
+# baseline-impact: none — <reason>   (instead of ## Baseline Deltas, when no docs/domain/ baseline changes)
 ---
 <!--
 Trivial-lane shortcut: if this BUG touches ≤2 files, single repo, no schema/boundary/prompt change,
@@ -49,6 +50,26 @@ If unsure — don't elect. Standard track is the safe default.
 <Filled during Specify once investigation is complete. If unknown: "Under investigation" + list suspects.>
 ## Design
 Skipped — isolated bug fix.
+## Baseline Deltas
+<!-- How this spec changes `docs/domain/*.md`; `baseline-merge --apply` merges it at the closure gate.
+No baseline changes? Delete this section and set `baseline-impact: none — <reason>` in front-matter.
+A BUG restoring documented behaviour without changing a REQ's text uses the marker.
+One `###` per baseline file; keep only the blocks you use. REQ text states observable behaviour only.
+See docs/spec-templates-guide.md § Baseline Deltas.
+### docs/domain/<feature>.md
+#### ADDED
+- Under `### <baseline heading>`:
+  - **MUST** <externally observable behaviour>. *(REQ-<PREFIX>-NNN)*
+    - Scenario: Given <state> When <action> Then <observable result>
+#### MODIFIED
+- REQ-<PREFIX>-NNN — Why: <one line>
+  - **MUST** <full replacement text>. *(REQ-<PREFIX>-NNN)*
+    - Verified by: `<test path>`
+#### REMOVED
+- REQ-<PREFIX>-NNN — Reason: <why> — Migration: <what replaces it>
+#### RENAMED
+- FROM REQ-<PREFIX>-NNN TO REQ-<PREFIX>-NNN — Why: <one line>
+-->
 ## Fix Criteria
 <!-- One Given/When/Then block per Fix-Criteria cluster, ≤6 lines each. -->
 ### AC-1: Bug is fixed (regression test required — see docs/spec-templates-guide.md § BUG scenario skeleton)

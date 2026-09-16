@@ -37,7 +37,11 @@ Judge the change on exactly five dimensions:
 2. **Scope** — the diff implements the spec's FRs and nothing beyond.
    Flag gold-plating, out-of-scope additions, or mixed refactor+feature.
 3. **Contract** — public interfaces, schemas, outputs, and cross-layer
-   contracts match what the spec specifies. Flag drift.
+   contracts match what the spec specifies. Flag drift. For a spec with
+   `## Baseline Deltas`, also flag a new or modified requirement whose text
+   names a file path or symbol rather than stating externally observable
+   behaviour — the validator cannot judge that
+   ([`spec-templates-guide.md § Baseline Deltas`](../../../docs/spec-templates-guide.md#baseline-deltas)).
 4. **Bugs** — correctness defects: logic errors, unhandled edge cases,
    broken invariants, regressions. Apply these checks, and flag what
    fires:

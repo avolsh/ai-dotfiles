@@ -80,6 +80,12 @@ FR and Invariant entries MAY end with an optional test pointer:
 - REQ-PCE-005 MUST copy provider coordinates into the catalog place. *(Verified by: src/contexts/place-content-generation/application/__tests__/enrich-place-catalog.use-case.test.ts)*
 ```
 
+A requirement a spec's `## Baseline Deltas` adds or modifies MUST carry at
+least one verification pointer, as a nested bullet the merge keeps with it:
+a `Scenario: Given … When … Then …`, or a `Verified by: <test path>`.
+`make validate-specs` reports `baseline_delta_scenario_missing` otherwise.
+Requirements no delta touches are not back-filled.
+
 Existing baselines MAY omit `Verified by:` entries. Future baselines and
 baselines updated under
 [`spec-lifecycle.md` Rule 11](../framework/spec-workflows/spec-lifecycle.md)
@@ -128,12 +134,12 @@ live in [`spec-lifecycle.md` Rule 13](../framework/spec-workflows/spec-lifecycle
 
 | When | Who | What |
 |---|---|---|
-| Specify stage | Spec author | Read the relevant baseline (Step 1 of `create-spec.prompt.md`); cite the touched REQ-IDs in `domain-refs:`; ask the situational REQ-touch question. |
-| Closure | Spec author | If the spec changed baseline behavior, update the touched `docs/domain/<feature>.md` in the same change; cite the diff in `## Closure Evidence`. May seed a brand-new baseline file when introducing a feature that will likely be touched again. |
+| Specify stage | Spec author | Read the relevant baseline (Step 1 of `create-spec.prompt.md`); cite the touched REQ-IDs in `domain-refs:`; ask the situational REQ-touch question. Write the change as `## Baseline Deltas`, or set `baseline-impact: none — <reason>`; put `baseline-merge --diff` in the requirements-gate summary. |
+| Closure | Spec author | If the spec changed baseline behavior, set `closed:` and run `baseline-merge --apply <spec>`, which writes the deltas and the `Last src verified` row; cite the diff in `## Closure Evidence`. May seed a brand-new baseline file when introducing a feature that will likely be touched again. |
 
 The closure rule is enforced by:
 [`spec-lifecycle.md` Rule 13](../framework/spec-workflows/spec-lifecycle.md)
-(workspace; mechanically, `baseline_stale` in `make validate-specs`) and each project's `.github/copilot/instructions/general.md`
+(workspace; mechanically, `baseline_stale`, `baseline_impact_missing` and `baseline_delta_*` in `make validate-specs`) and each project's `.github/copilot/instructions/general.md`
 (project boundary).
 
 ---
@@ -158,3 +164,7 @@ The closure rule is enforced by:
   REQ-ID, leave it out of `domain-refs:`.
 - **Restating code in the baseline** — capture *behaviour rules*, not
   type definitions or data shapes (those belong in `docs/reference/`).
+- **Naming files or symbols in requirement text** — a refactor then ages the
+  requirement without any behaviour change. File paths and symbol names
+  belong in the header's `Source files read` row or the module map; a
+  delta's REQ text states what an observer of the system sees.

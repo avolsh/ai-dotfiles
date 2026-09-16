@@ -307,3 +307,13 @@ Verbatim phrases observed:
 - spec-lifecycle (tier rule): *"the run is a closure precondition.**"*
 - spec-lifecycle (cap disposition): *"still open at the cycle cap are dispositioned `rejected` with the reason,"*
 - spec-lifecycle (waiver restraint): *"The agent never suggests the waiver and never"*
+
+### R30 — A spec states its baseline impact as a delta or a marker
+
+| | |
+|---|---|
+| **Canonical location** | `framework/spec-workflows/spec-lifecycle.md § Rules #13` |
+
+Verbatim phrases observed:
+- spec-lifecycle #13 (baseline deltas): *"**A spec that changes a baseline carries `## Baseline Deltas`; a spec that changes none sets `baseline-impact: none — <reason>`.**"*
+- spec-lifecycle #13 (hand-edit boundary): *"**A closure edits a baseline by hand only where no delta can address it — an un-numbered entry or a duplicated ID — and cites that edit in `## Closure Evidence`.**"*

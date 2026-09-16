@@ -1,4 +1,4 @@
-.PHONY: help install install-check profile-init reset project workspace links-check validate-specs lint-rules validate-anchors sync-system-templates sync-agents-check check doctor doctor-fast install-git-hooks tests spec-metrics specs-view consolidation-due
+.PHONY: help install install-check profile-init reset project workspace links-check validate-specs baseline-check lint-rules validate-anchors sync-system-templates sync-agents-check check doctor doctor-fast install-git-hooks tests spec-metrics specs-view consolidation-due
 
 help:
 	@echo "Targets:"
@@ -15,6 +15,7 @@ help:
 	@echo "  specs-view                 Active specs grouped by status, blocked ones flagged (PROJECT=path, TODAY=YYYY-MM-DD)"
 	@echo "  links-check                Verify markdown link integrity"
 	@echo "  validate-specs             Validate spec corpus (front-matter, deps, naming, etc.)"
+	@echo "  baseline-check             Preflight every active spec's Baseline Deltas against docs/domain/"
 	@echo "  lint-rules                 Flag verbatim canonical-rule duplicates outside their canonical files"
 	@echo "  validate-anchors           Verify markdown #fragment links resolve to existing anchors"
 	@echo "  sync-system-templates      Regenerate framework/templates/system/{claude,copilot,codex}/* from _canonical.md"
@@ -57,6 +58,7 @@ tests:
 	./scripts/test/pre-commit.test.sh
 	./scripts/test/spec-metrics.test.sh
 	./scripts/test/validate-specs.test.sh
+	./scripts/test/baseline-merge.test.sh
 	./scripts/test/spec-status.test.sh
 	./scripts/test/validate-quality-gates.test.sh
 	./scripts/test/consolidation-due.test.sh
@@ -91,6 +93,9 @@ links-check:
 
 validate-specs:
 	python3 ./scripts/validate-specs.py
+
+baseline-check:
+	python3 ./scripts/baseline-merge.py --check
 
 lint-rules:
 	python3 ./scripts/lint-rules.py

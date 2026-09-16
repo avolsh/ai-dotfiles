@@ -1,6 +1,6 @@
 # Spec Templates Guide
 
-*Last updated: 2026-08-20*
+*Last updated: 2026-09-16*
 
 Companion to the slimmed spec templates at
 [`framework/spec-workflows/templates/`](../framework/spec-workflows/templates/).
@@ -197,6 +197,65 @@ Split into: <sibling-BUG-ids>. This spec owns the <defect-name> defect.
 
 Canonical rules and triggers:
 [`splitting-specs.md`](splitting-specs.md).
+
+---
+
+## `## Baseline Deltas` — changing a baseline <a id="baseline-deltas"></a>
+
+A CR, IMP or BUG that changes behaviour a `docs/domain/*.md` baseline
+describes writes that change as a delta; one that changes none deletes the
+section and sets `baseline-impact: none — <reason>` in front-matter. A BUG
+restoring documented behaviour without changing a requirement's text uses
+the marker. The obligation and its enforcement live in
+[`spec-lifecycle.md` Rule 13](../framework/spec-workflows/spec-lifecycle.md#baseline-deltas).
+
+```markdown
+## Baseline Deltas
+
+### docs/domain/geo-canonicalization.md
+
+#### ADDED
+- Under `### Review status on the canonical layer (CR-20260831)`:
+  - **MUST** <behaviour>. *(REQ-GEO-CAN-024)*
+    - Scenario: Given <state> When <action> Then <observable result>
+
+#### MODIFIED
+- REQ-GEO-CAN-022 — Why: <one line>
+  - **MUST** <full replacement text>. *(REQ-GEO-CAN-022)*
+    - Verified by: `<test path>`
+
+#### REMOVED
+- REQ-GEO-CAN-011 — Reason: <why> — Migration: <what replaces it>
+
+#### RENAMED
+- FROM REQ-GEO-CAN-005 TO REQ-GEO-CAN-025 — Why: <one line>
+```
+
+- One `###` per baseline, named by its project-relative path; keep only the
+  blocks you use.
+- **ADDED** names the baseline heading exactly as written there; its IDs
+  continue at `max(existing) + 1`
+  ([`req-id-lifecycle.md § Numbering`](req-id-lifecycle.md#numbering)).
+- **MODIFIED** carries the full replacement, not a patch; `Why` is optional
+  and lands in the amendment note.
+- **REMOVED** needs `Reason` and `Migration`; **RENAMED** needs `FROM` and
+  `TO`.
+- Every added or modified requirement carries a nested `Scenario:` or
+  `Verified by:` bullet, and states what an observer of the system sees —
+  no file paths or symbol names
+  ([`baseline-citations.md § Anti-patterns`](baseline-citations.md#anti-patterns)).
+- A baseline with no REQ-IDs takes ADDED only. An un-numbered entry — or a
+  duplicated ID, which `--check` reports as ambiguous — is edited by hand at
+  the closure of the spec changing it, cited in `## Closure Evidence`; a
+  baseline body is never edited outside a spec.
+
+`scripts/baseline-merge.py` works the section:
+
+| Command | When | Effect |
+|---|---|---|
+| `--check [spec]` | Any status; `make validate-specs` runs it for every active spec | Reports malformed blocks, missing targets, taken or out-of-sequence IDs, missing headings, and a REQ-ID two unrelated active specs both change |
+| `--diff <spec>` | Requirements gate | Prints the unified diff the merge would make; writes nothing |
+| `--apply <spec>` | Closure gate, after `closed:` is set | Writes the merge — replacement plus `amended by`, tombstones per [`req-id-lifecycle.md`](req-id-lifecycle.md), `Last src verified` and `Last updated` set to `closed:` — or nothing, when `--check` fails |
 
 ---
 

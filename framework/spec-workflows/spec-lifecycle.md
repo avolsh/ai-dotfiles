@@ -36,6 +36,7 @@ siblings: # optional — sibling spec IDs produced by the Split check
   - <spec-id>
 depends-on: # optional — specs that MUST reach `done` before this one advances to `plan`
   - <spec-id>
+baseline-impact: none — <reason>        # CR / IMP / BUG — set instead of `## Baseline Deltas` when no docs/domain/ baseline changes (Rule 13)
 ---
 ```
 
@@ -144,7 +145,9 @@ for the full rule set and Iteration Log mandate.
 13. **Baseline closure rule and Summary refresh.** Any spec that changes
     baseline behaviour in a feature with an existing
     `<project>/docs/domain/<feature>.md` file MUST update that
-    file in the same change before flipping to `done`. Baselines updated
+    file in the same change before flipping to `done` — through
+    `baseline-merge --apply` for everything a delta can express (see
+    *Baseline deltas* below). Baselines updated
     under this rule MUST describe the system after the spec's changes
     are applied -- not desired future behaviour. The Closure
     Evidence row for the affected AC MUST cite the diff (path +
@@ -160,6 +163,27 @@ for the full rule set and Iteration Log mandate.
     `baseline_verified_missing` when the row or its leading date is absent.
     At closure, set `closed:` and the row to the same date, even when the
     baseline body is unchanged after re-checking `src`.
+
+    <a id="baseline-deltas"></a>**Baseline deltas.** A CR, IMP or BUG dated
+    after 2026-09-16 states its baseline impact by the requirements gate:
+
+    **A spec that changes a baseline carries `## Baseline Deltas`; a spec that changes none sets `baseline-impact: none — <reason>`.**
+
+    Every new or modified REQ in a delta states externally observable
+    behaviour and carries a `Scenario:` or `Verified by:` pointer.
+    `scripts/baseline-merge.py` works the section: `--check` runs at every
+    status inside `make validate-specs` (`baseline_delta_*`), `--diff` goes
+    into the requirements-gate summary, and `--apply` merges it at the
+    closure gate once `closed:` is set, writing the `Last src verified` row
+    itself. From `plan` on the validator reports `baseline_impact_missing`
+    and `baseline_impact_malformed`. Format and merge semantics:
+    [`spec-templates-guide.md § Baseline Deltas`](../../docs/spec-templates-guide.md#baseline-deltas).
+
+    **A closure edits a baseline by hand only where no delta can address it — an un-numbered entry or a duplicated ID — and cites that edit in `## Closure Evidence`.**
+
+    A baseline body is never edited outside a spec: the Direct lane excludes
+    it. Specs dated on or before 2026-09-16 and not yet closed may still
+    close under the hand-edit form this rule had before `--apply`.
 
     **Baseline discovery (Plan stage).** Before flipping to `plan`, scan
     `<project>/docs/domain/` for files whose feature name matches the

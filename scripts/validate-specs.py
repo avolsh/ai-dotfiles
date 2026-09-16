@@ -54,7 +54,12 @@ from speclib import (  # noqa: E402
     _parse_front_matter,
     _row_cells,
     discover_specs,
+    _declared_relations,
+    _spec_id,
+    check_deltas,
     find_repo_root,
+    index_baseline,
+    parse_baseline_deltas,
 )
 
 
@@ -1013,24 +1018,6 @@ def check_inventory_paths(specs: Iterable[Spec]) -> list[Finding]:
     return findings
 
 
-_RELATION_FIELDS = ("siblings", "depends-on")
-
-
-def _spec_id(spec: Spec) -> str:
-    value = spec.front_matter.get("id")
-    return value if isinstance(value, str) else spec.path.stem
-
-
-def _declared_relations(spec: Spec) -> set[str]:
-    """Every spec id this spec names in `siblings:` or `depends-on:`."""
-    named: set[str] = set()
-    for field in _RELATION_FIELDS:
-        value = spec.front_matter.get(field)
-        if isinstance(value, list):
-            named.update(item.strip() for item in value if isinstance(item, str))
-    return named
-
-
 def _inventory(spec: Spec) -> set[str]:
     """The spec's declared inventory, normalized the way the guard reads it."""
     paths: set[str] = set()
@@ -1675,16 +1662,8 @@ def check_agent_front_matter(agents: Iterable[Agent]) -> list[Finding]:
 # Added by IMP-20260826-spec-guard-and-validator-gaps (FR-8).
 # ---------------------------------------------------------------------------
 
-# A REQ-ID is *defined* by the trailing annotation on its requirement bullet —
-# `*(REQ-PCE-001)*` or `*(REQ-PCE-001; amended by ...)*`. The same ID named
-# anywhere else on the line is a citation, and an annotation that retires or
-# supersedes the ID is history the lifecycle requires to stay in the file
-# (docs/req-id-lifecycle.md § Deletion, § Supersession) — neither is a second
-# claim on the number.
-_REQ_DEF_RE = re.compile(r"\*\((REQ-[A-Z0-9]+(?:-[A-Z]+)*-\d+)([^)]*)\)")
-_REQ_HISTORY_RE = re.compile(
-    r"\b(retired|superseded|supersedes|deleted|tombstone)\b", re.IGNORECASE
-)
+# The REQ grammar — what defines an ID, what is a citation or history — lives in
+# speclib.index_baseline, shared with baseline-merge.py.
 
 
 def check_domain_req_ids(root: Path) -> list[Finding]:
@@ -1696,27 +1675,17 @@ def check_domain_req_ids(root: Path) -> list[Finding]:
     for path in sorted(domain.glob("*.md")):
         if path.name == "README.md":
             continue
-        seen: dict[str, int] = {}
-        text = path.read_text(encoding="utf-8")
-        for lineno, line in enumerate(text.splitlines(), 1):
-            for m in _REQ_DEF_RE.finditer(line):
-                req_id, annotation = m.group(1), m.group(2)
-                if _REQ_HISTORY_RE.search(annotation) or _REQ_HISTORY_RE.search(
-                    line[: m.start()]
-                ):
-                    continue
-                if req_id in seen:
-                    findings.append(
-                        Finding(
-                            path,
-                            lineno,
-                            "domain_req_id_duplicate",
-                            f"REQ-ID {req_id} is defined again here; "
-                            f"first definition at line {seen[req_id]}",
-                        )
-                    )
-                else:
-                    seen[req_id] = lineno
+        index = index_baseline(path.read_text(encoding="utf-8"))
+        for req_id, lineno, first in index.duplicates:
+            findings.append(
+                Finding(
+                    path,
+                    lineno,
+                    "domain_req_id_duplicate",
+                    f"REQ-ID {req_id} is defined again here; "
+                    f"first definition at line {first}",
+                )
+            )
     return findings
 
 
@@ -1877,6 +1846,82 @@ def check_log_closed(root: Path) -> list[Finding]:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Baseline deltas — every judged spec states its baseline impact
+# Added by IMP-20260914-baseline-deltas-and-merge (FR-3, FR-4, FR-6, FR-10).
+# ---------------------------------------------------------------------------
+
+# Only specs dated *after* this are judged (FR-3, FR-10): pinned to the date the checks
+# landed, so a spec written that day under the old Rule 13 stays history.
+_DELTA_CUTOFF = _dt.date(2026, 9, 16)
+# Baseline impact is known once requirements are approved, not while they are drafted.
+_DELTA_JUDGED_STATUSES = {"plan", "in-progress", "done"}
+_IMPACT_NONE_RE = re.compile(r"^none\s+(?:—|--)\s+\S")
+_SCENARIO_RE = re.compile(r"\bScenario:|\bVerified by:|\bGiven\b.*\bWhen\b.*\bThen\b")
+
+
+def check_baseline_deltas(root: Path, specs: Iterable[Spec]) -> list[Finding]:
+    """FR-6 — active specs' deltas preflighted at every status; FR-3 / FR-4 —
+    a judged spec carries deltas or the `baseline-impact: none` marker, and
+    every new or modified REQ carries a scenario."""
+    specs = list(specs)
+    findings: list[Finding] = []
+    for spec in specs:
+        if spec.path.parent.name == "active":
+            findings.extend(check_deltas(root, spec, specs))
+
+        fm = spec.front_matter
+        dated = _iso_date(fm.get("date"))
+        if (
+            dated is None
+            or dated <= _DELTA_CUTOFF
+            or fm.get("status") not in _DELTA_JUDGED_STATUSES
+            or fm.get("type") == "RES"
+        ):
+            continue
+        line = spec.front_matter_end_line or 1
+        deltas = parse_baseline_deltas(spec)
+        impact = fm.get("baseline-impact")
+        if impact is not None and not (
+            isinstance(impact, str) and _IMPACT_NONE_RE.match(impact)
+        ):
+            findings.append(
+                Finding(
+                    spec.path,
+                    line,
+                    "baseline_impact_malformed",
+                    f"baseline-impact={impact!r} must read `none — <reason>`",
+                )
+            )
+        if impact is None and (deltas is None or not deltas.baselines):
+            findings.append(
+                Finding(
+                    spec.path,
+                    line,
+                    "baseline_impact_missing",
+                    "no `## Baseline Deltas` and no `baseline-impact: none — <reason>` "
+                    "(spec-lifecycle.md Rule 13)",
+                )
+            )
+        if deltas is None:
+            continue
+        for delta in deltas.baselines:
+            changed = [(a.line, a.req_id, a.lines) for a in delta.added]
+            changed += [(m.line, m.req_id, m.lines) for m in delta.modified]
+            for req_line, req_id, lines in changed:
+                if not any(_SCENARIO_RE.search(text) for text in lines):
+                    findings.append(
+                        Finding(
+                            spec.path,
+                            req_line,
+                            "baseline_delta_scenario_missing",
+                            f"{req_id} in {delta.path} carries no `Scenario:` "
+                            f"(Given / When / Then) or `Verified by:` pointer",
+                        )
+                    )
+    return findings
+
+
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="validate-specs",
@@ -1913,6 +1958,7 @@ def main(argv: list[str]) -> int:
     findings.extend(check_domain_req_ids(root))
     findings.extend(check_baseline_freshness(root, specs))
     findings.extend(check_log_closed(root))
+    findings.extend(check_baseline_deltas(root, specs))
 
     by_check: dict[str, int] = {}
     for f in findings:
@@ -1953,8 +1999,8 @@ def main(argv: list[str]) -> int:
         )
         return rc
 
-    # + agent front-matter, + domain REQ-IDs, + baseline freshness, + log Closed
-    total_checks = len(CHECK_REGISTRY) + 4
+    # + agent front-matter, + domain REQ-IDs, + baseline freshness, + log Closed, + baseline deltas
+    total_checks = len(CHECK_REGISTRY) + 5
     if findings:
         print(
             f"\nvalidate-specs: {len(findings)} finding(s) across "

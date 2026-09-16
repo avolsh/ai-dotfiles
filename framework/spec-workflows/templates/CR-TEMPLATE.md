@@ -16,6 +16,7 @@ skills:
   - <project-skill>
 model-suggestion: default
 # Optional fields (domain-refs, siblings, depends-on) — see docs/spec-templates-guide.md § Front-matter optional fields.
+# baseline-impact: none — <reason>   (instead of ## Baseline Deltas, when no docs/domain/ baseline changes)
 ---
 <!--
 Trivial-lane shortcut: if this CR touches ≤2 files, single repo, no schema/boundary/prompt change,
@@ -46,6 +47,25 @@ When <action>
 Then <outcome>
 ## Design
 <Fill during Visualize when triggered, else `Skipped — <reason>`. See docs/spec-templates-guide.md § Design.>
+## Baseline Deltas
+<!-- How this spec changes `docs/domain/*.md`; `baseline-merge --apply` merges it at the closure gate.
+No baseline changes? Delete this section and set `baseline-impact: none — <reason>` in front-matter.
+One `###` per baseline file; keep only the blocks you use. REQ text states observable behaviour only.
+See docs/spec-templates-guide.md § Baseline Deltas.
+### docs/domain/<feature>.md
+#### ADDED
+- Under `### <baseline heading>`:
+  - **MUST** <externally observable behaviour>. *(REQ-<PREFIX>-NNN)*
+    - Scenario: Given <state> When <action> Then <observable result>
+#### MODIFIED
+- REQ-<PREFIX>-NNN — Why: <one line>
+  - **MUST** <full replacement text>. *(REQ-<PREFIX>-NNN)*
+    - Verified by: `<test path>`
+#### REMOVED
+- REQ-<PREFIX>-NNN — Reason: <why> — Migration: <what replaces it>
+#### RENAMED
+- FROM REQ-<PREFIX>-NNN TO REQ-<PREFIX>-NNN — Why: <one line>
+-->
 ## Out of Scope
 <!-- One line per item. -->
 - OS-1: <item> — <reason>

@@ -108,6 +108,8 @@ assert_silent "AC-4 a filled BUG template reports no missing affected-docs" "$ou
 # IMP-20260829 AC-5 — the same template, judged against the whole schema
 # rather than one field: a BUG written from it must not be born invalid.
 assert_silent "AC-5 a filled BUG template is missing no required field" "$out" "schema_missing_field"
+# IMP-20260914-baseline-deltas-and-merge T7 — the template's Baseline Deltas guidance is not a malformed delta.
+assert_silent "T7 a filled BUG template carries no malformed delta" "$out" "baseline_delta_"
 
 # ---------- FR-8: REQ-ID collisions inside one domain baseline ----------
 mkbaseline() { # $1 root, $2 filename, [$3 Last src verified date, or "none"], [body on stdin]
@@ -1155,6 +1157,95 @@ json_ok "AC-1 --json on a clean corpus has no findings" "$out" \
 runall "$p" --report findings
 expect "AC-1 --report findings on a clean corpus exits 0" 0 "$rc"
 assert_reports "AC-1 --report findings on a clean corpus prints its summary" "$out" "^validate-specs: 0 finding(s)"
+
+# ---------- IMP-20260914-baseline-deltas-and-merge T6: baseline impact + deltas (FR-3, FR-4, FR-6, FR-10) ----------
+# A spec from mkspec, re-dated and re-statused; the Baseline Deltas body comes from stdin.
+deltaspec() { # $1 root, $2 filename, $3 date, $4 status, $5 extra front-matter ("" for none)
+  mkspec "$1" "$2" <<EOF
+$5
+EOF
+  local f="$1/docs/specs/active/$2"
+  sed -i.bak -e "s/^date: 2026-08-26/date: $3/" -e "s/^status: specify/status: $4/" "$f" && rm "$f.bak"
+  cat >> "$f"
+}
+
+p="$(newproj impact)"
+mkbaseline "$p" "demo.md" <<'EOF'
+## Functional Requirements
+
+- **MUST** do one thing. *(REQ-X-001)*
+EOF
+deltaspec "$p" "IMP-20260920-neither.md" 2026-09-20 plan "" </dev/null
+deltaspec "$p" "IMP-20260920-marker.md" 2026-09-20 plan "baseline-impact: none — tooling only" </dev/null
+deltaspec "$p" "IMP-20260920-bare-marker.md" 2026-09-20 plan "baseline-impact: none" </dev/null
+deltaspec "$p" "IMP-20260920-drafting.md" 2026-09-20 specify "" </dev/null
+deltaspec "$p" "IMP-20260901-before.md" 2026-09-01 plan "" </dev/null
+deltaspec "$p" "IMP-20260916-cutoff-day.md" 2026-09-16 plan "" </dev/null
+deltaspec "$p" "IMP-20260920-no-scenario.md" 2026-09-20 plan "" <<'EOF'
+
+## Baseline Deltas
+
+### docs/domain/demo.md
+
+#### ADDED
+- Under `## Functional Requirements`:
+  - **MUST** do a second thing. *(REQ-X-002)*
+EOF
+deltaspec "$p" "IMP-20260920-verified.md" 2026-09-20 plan "siblings:
+  - IMP-20260920-no-scenario" <<'EOF'
+
+## Baseline Deltas
+
+### docs/domain/demo.md
+
+#### MODIFIED
+- REQ-X-001
+  - **MUST** do one thing well. *(REQ-X-001)*
+    - Verified by: `src/demo.test.ts`
+EOF
+deltaspec "$p" "IMP-20260801-stale-target.md" 2026-08-01 specify "" <<'EOF'
+
+## Baseline Deltas
+
+### docs/domain/demo.md
+
+#### REMOVED
+- REQ-X-009 — Reason: gone — Migration: none
+EOF
+run "$p"
+assert_reports "FR-3 a post-cut-off spec at plan with neither deltas nor marker is reported" "$out" "IMP-20260920-neither.md:[0-9]*:baseline_impact_missing:"
+assert_silent "FR-3 the marker with a reason satisfies the rule" "$out" "IMP-20260920-marker.md"
+assert_reports "FR-3 a marker with no reason is malformed" "$out" "IMP-20260920-bare-marker.md:[0-9]*:baseline_impact_malformed:"
+assert_silent "FR-3 a spec still at specify is not judged" "$out" "IMP-20260920-drafting.md"
+assert_silent "FR-10 a spec dated before the cut-off is not judged" "$out" "IMP-20260901-before.md"
+assert_silent "FR-10 a spec dated on the cut-off day is not judged" "$out" "IMP-20260916-cutoff-day.md:[0-9]*:baseline_impact"
+assert_reports "FR-4 an ADDED REQ with no scenario is reported" "$out" "IMP-20260920-no-scenario.md:[0-9]*:baseline_delta_scenario_missing:.*REQ-X-002"
+assert_silent "FR-4 a delta spec is not also missing its impact" "$out" "IMP-20260920-no-scenario.md:[0-9]*:baseline_impact_missing"
+assert_silent "FR-4 a Verified by pointer is a scenario" "$out" "IMP-20260920-verified.md"
+assert_reports "FR-6 the validator runs the delta check at any status and date" "$out" "IMP-20260801-stale-target.md:[0-9]*:baseline_delta_target_missing:.*REQ-X-009"
+
+# FR-10: an archived spec's deltas were merged; its targets are history, not errors.
+p="$(newproj archiveddeltas)"
+mkbaseline "$p" "demo.md" <<'EOF'
+## Functional Requirements
+
+- ~~REQ-X-001~~ deleted — Why: gone. Migration: none.
+EOF
+mkspec "$p" "IMP-20260801-merged.md" <<'EOF'
+closed: 2026-08-02
+EOF
+cat >> "$p/docs/specs/active/IMP-20260801-merged.md" <<'EOF'
+
+## Baseline Deltas
+
+### docs/domain/demo.md
+
+#### REMOVED
+- REQ-X-001 — Reason: gone — Migration: none
+EOF
+mv "$p/docs/specs/active/IMP-20260801-merged.md" "$p/docs/specs/archived/"
+run "$p"
+assert_silent "FR-10 an archived spec's merged delta is not re-checked" "$out" "baseline_delta_"
 
 if [ "$fails" -eq 0 ]; then
   echo "scripts/validate-specs.py self-tests passed ✓"
