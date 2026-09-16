@@ -81,8 +81,10 @@ Judge the change on exactly five dimensions:
 
 ## What to ignore
 
-Formatting, naming taste, import order, and other cosmetics. Those are
-the linter's and formatter's job — not the reviewer's. Do not raise them.
+Formatting, naming taste, import order, and other cosmetics. Those belong
+to the `format` and `lint` rows of the project's `_canonical.md` § Build and
+Run — not the reviewer's. Do not raise them. If a row reads `n/a`, the gap
+is the project's declared choice, not a finding for this diff.
 
 ## Output contract
 

@@ -1,6 +1,6 @@
 # Scaffold Manifest
 
-*Last updated: 2026-08-30*
+*Last updated: 2026-09-16*
 
 Manifest of artifacts the `bootstrapping-project` skill scaffolds. Walkthroughs, rationale, and rules live in [`docs/bootstrapping-project.md`](../../../../docs/bootstrapping-project.md). Placeholders use `<angle-brackets>` — replace every one before writing.
 
@@ -18,7 +18,7 @@ All scaffolded by `ai-project`, which copies templates from `<system>/templates/
 
 | # | Path (relative to `<project>/`) | Template (relative to `<system>/templates/project/`) | Purpose |
 |---|---|---|---|
-| 1 | `_canonical.md` | `_canonical.md` | **The canonical project instructions — the only one of these four a human edits.** Freestanding, no `@`-imports. Sections: Purpose, Tech Stack, Codebase Layout, Context Loading, Boundaries, Skill & prompt resolution, Available skills, Workflows, Verification by Change Type, Build and Run, Multi-agent file layout. The last two ship as skeletons: headings and placeholder tables, filled with the project's own commands at step 4 of the bootstrap. |
+| 1 | `_canonical.md` | `_canonical.md` | **The canonical project instructions — the only one of these four a human edits.** Freestanding, no `@`-imports. Sections: Purpose, Tech Stack, Codebase Layout, Context Loading, Boundaries, Skill & prompt resolution, Available skills, Workflows, Verification by Change Type, Build and Run, Multi-agent file layout. The last two ship as skeletons: headings and placeholder tables, filled with the project's own commands at step 4 of the bootstrap. The Build and Run table carries `Kind` and `Mode` columns and seeds an `n/a — to be decided` row for each required quality kind (`format`, `lint`, `duplication`, `security`), which step 4 replaces with a command or a reason. |
 | 2 | `AGENTS.md` | `AGENTS.md` (not-a-template marker) | **Rendered mechanically** from `_canonical.md` by `.github/scripts/sync-agents.sh`. No hand edits, no `@`-imports — Codex requires self-contained content. Banner names `make sync-agents`. |
 | 3 | `CLAUDE.md` | `CLAUDE.md` (not-a-template marker) | **Rendered mechanically** from `_canonical.md`, byte-identical to the other two. No hand edits. |
 | 4 | `.github/copilot-instructions.md` | `.github/copilot-instructions.md` (not-a-template marker) | **Rendered mechanically** from `_canonical.md`, byte-identical to the other two. No hand edits. |
