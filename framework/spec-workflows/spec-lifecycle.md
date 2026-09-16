@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-09-14*
+*Last updated: 2026-09-16*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -59,7 +59,7 @@ stateDiagram-v2
 | `[start]` → `specify`  | Human asked for a new spec                                                                                       | Copy template, fill front-matter, write title — status `specify` from birth |
 | `specify` → `plan`     | Human approved requirements (and design if Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                               |
 | `plan` → `in-progress` | Human approved the plan, first task begins                                                                       | Flip status **before** the first file edit of Task 1                        |
-| `in-progress` → `done` | Every AC has evidence that could have failed for it — an observation-shaped criterion needs evidence reaching its surface (see [§ Rules #5](#observation-shaped-evidence)); tests pass, docs updated. Closure approval is synchronous for `medium`/`high` risk; `low`/`trivial` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
+| `in-progress` → `done` | Every AC has evidence that could have failed for it — an observation-shaped criterion needs evidence reaching its surface (see [§ Rules #5](#observation-shaped-evidence)); tests pass, docs updated. **High tier** (`risk: high`, or `severity: high \| critical`) also needs a recorded `### Review` — a run or a waiver (see [§ Reviewer sub-step](#reviewer-substep)). Closure approval is synchronous for `medium`/`high` risk; `low`/`trivial` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
 | `done` → `archived/`   | Immediately after closure; every process the work started is already stopped ([§ Rules #14](#stop-processes-at-closure))                                                                                        | Move file from `docs/specs/active/` to `docs/specs/archived/`               |
 
 **No status is skipped. No status is revisited in place** — if the plan
@@ -386,20 +386,72 @@ one spec"* per [`splitting-rules.md § 4`](../skills/writing-specs/references/sp
 
 ## Reviewer sub-step (in-progress) <a id="reviewer-substep"></a>
 
-A **recommended, non-blocking** sub-step run during `in-progress`, before
-requesting the closure gate. Run it when **risk is `medium` or `high`**,
-or on demand for any spec.
+Run during `in-progress`, before requesting the closure gate.
+
+- **High tier — `risk: high`, or `severity: high | critical` at any risk —
+  the run is a closure precondition.** The spec does not flip to `done`
+  until the reviewer has run against the final diff or the human has waived
+  the run; either outcome is recorded under `### Review` (below).
+- **Medium and low — recommended, non-blocking.** Run it when risk is
+  `medium`, or on demand for any spec. Nothing is recorded.
 
 - The [`reviewer`](../agents/reviewer.md) judges the change **cold** in a
   fresh, read-only context: inputs are the spec + the `git diff` (it reads
-  the diff itself), output is `PASS` or `file:line → violated clause` per
-  the [`reviewing-changes`](../skills/reviewing-changes/SKILL.md) checklist.
+  the diff itself). Its reply is a `REVIEW <spec-id> <range>` header, a
+  `RESULT:` line reading `PASS` or `<N> findings`, and N numbered
+  `file:line → violated clause` findings, per the
+  [`reviewing-changes`](../skills/reviewing-changes/SKILL.md) checklist.
 - **You are the arbiter.** Decide which findings to apply, apply them, and
   re-run for **at most 1–2 cycles** — not an unbounded loop.
 - This is **not a status and not a gate.** It does not replace the human
   `in-progress → done` closure gate; it informs it.
 - Harness without an `Agent` tool: run the reviewer as a separate
-  empty-context session per [`agents/README.md § Fallback`](../agents/README.md).
+  empty-context session per
+  [`agents/README.md § Fallback`](../agents/README.md#fallback-for-harnesses-without-sub-agents).
+
+### The reviewed range <a id="reviewed-range"></a>
+
+The final diff is `<first task commit>^..<head>`, recorded as literal
+revisions so the run can be reproduced. When that range is not
+unambiguously derivable — several specs interleaved on one branch, a
+rebase, a squash — **ask the human for the range at the closure gate**
+rather than inferring one.
+
+### The hand-off <a id="reviewer-handoff"></a>
+
+When the last task passes and closure is next, a high-tier spec's agent
+emits a ready-to-paste reviewer prompt in its own fenced block, per
+[`agents/README.md § Fallback`](../agents/README.md#fallback-for-harnesses-without-sub-agents).
+It carries the absolute `spec_path`, the range, the checklist reference,
+the read-only constraint and the reply format — and no diff and no
+reasoning of the agent's own, since pasting either is what stops the read
+being cold.
+
+### Recording the outcome <a id="review-record"></a>
+
+`## Closure Evidence` gains a `### Review` sub-section whose first
+non-blank line is `RESULT:`:
+
+| Result | `RESULT:` line | Findings table |
+|---|---|---|
+| Pass | `PASS — run <date> against <range>, <harness>.` | none |
+| Findings | `<N> findings / <M> applied / <K> rejected — run <date> against <range>, <harness>.` | exactly N rows |
+| Waived | `WAIVED — by <who> <date>: <reason>. No reviewer run.` | none |
+
+A findings row is `| <n> | <path>:<line> → <FR/AC id> violated: <what +
+dimension> | <disposition> |`, the disposition opening with `applied` and
+the fixing `path:line`, or `rejected` and a one-line reason. Numbering runs
+continuously across cycles, so `<N>` is the total the gate sees. **Findings
+still open at the cycle cap are dispositioned `rejected` with the reason,
+never left unrecorded.**
+
+The human may waive the run. The agent never suggests the waiver and never
+offers it in the gate request: it emits the hand-off prompt first and
+records a waiver only when the human gives one unprompted, so the skip is
+a choice made against a concrete offer to review.
+
+`validate-specs.py` reports a high-tier spec at `done` that breaks any of
+this (`review_*` findings), judging specs dated 2026-09-16 or later.
 
 ## File naming
 

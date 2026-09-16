@@ -1,6 +1,6 @@
 # Framework Sub-agents
 
-*Last updated: 2026-06-05*
+*Last updated: 2026-09-16*
 
 System-scope sub-agent definitions. Each agent is a single markdown file
 with YAML front-matter (the contract) and a system-prompt body (the
@@ -95,8 +95,41 @@ GitHub Copilot CLI and OpenAI Codex CLI have no `Agent` mechanism. The
 principle is harness-independent: run the agent as a **separate
 empty-context session** whose only inputs are the brief the contract
 names. For the reviewer that is the spec + `git diff` + the
-`reviewing-changes` skill — run as the recommended sub-step per
+`reviewing-changes` skill — run per
 [`spec-lifecycle.md § Reviewer sub-step`](../spec-workflows/spec-lifecycle.md#reviewer-substep).
+
+### The reviewer hand-off prompt <a id="reviewer-handoff-prompt"></a>
+
+Emitted verbatim when the last task passes and a high-tier closure is
+next, in its own fenced block, for pasting into an empty-context session.
+The placeholders are the only parts the agent fills:
+
+```text
+Review a change cold. You are read-only: diagnose, never edit, never fix.
+
+spec_path:  <absolute path to the spec>
+diff_range: <first task commit>^..<head>
+
+1. Read the spec. Its `## Requirements` and `## Acceptance Criteria` are the rubric — nothing else is.
+2. Run `git diff <diff_range>` yourself and read the touched files for context. Trust no summary of the change.
+3. Judge it on the checklist in `framework/skills/reviewing-changes/SKILL.md`. Ignore style.
+
+Reply with this and nothing else — no preamble, no fixes, no diff:
+
+REVIEW <spec-id> <diff_range>
+RESULT: PASS
+
+or, when there are findings:
+
+REVIEW <spec-id> <diff_range>
+RESULT: <N> findings
+1. <path>:<line> → <FR/AC id> violated: <what + dimension>
+2. <path>:<line> → <FR/AC id> violated: <what + dimension>
+```
+
+The agent pastes no diff and no reasoning of its own into the prompt: the
+reviewer reads the change itself, which is what makes the read cold. The
+reply transcribes into the spec's `### Review` findings table row for row.
 
 ## Validator + lint integration
 

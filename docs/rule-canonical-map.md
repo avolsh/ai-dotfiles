@@ -1,6 +1,6 @@
 # Rule Canonical Map
 
-*Last updated: 2026-09-14*
+*Last updated: 2026-09-16*
 
 > **Machine-read by `scripts/lint-rules.py` — not human-maintained prose.**
 > Parser contract: a rule section starts with `### R<N> —`; it must contain a
@@ -296,3 +296,14 @@ Verbatim phrases observed:
 
 Verbatim phrases observed:
 - spec-lifecycle Rules #15 (rule statement): *"**Flip the implementation badges.**"*
+
+### R29 — A high-tier closure records the cold review, run or waived
+
+| | |
+|---|---|
+| **Canonical location** | `framework/spec-workflows/spec-lifecycle.md § Reviewer sub-step` |
+
+Verbatim phrases observed:
+- spec-lifecycle (tier rule): *"the run is a closure precondition.**"*
+- spec-lifecycle (cap disposition): *"still open at the cycle cap are dispositioned `rejected` with the reason,"*
+- spec-lifecycle (waiver restraint): *"The agent never suggests the waiver and never"*

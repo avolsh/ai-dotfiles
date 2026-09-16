@@ -5,7 +5,7 @@ description: "Spec-conformance review checklist for a code change (diff). Use wh
 
 # Reviewing Changes
 
-*Last updated: 2026-08-13*
+*Last updated: 2026-09-16*
 
 The shared review language for the framework. Both the read-only
 [`reviewer`](../../agents/reviewer.md) sub-agent (Claude) and a separate
@@ -86,22 +86,32 @@ the linter's and formatter's job — not the reviewer's. Do not raise them.
 
 ## Output contract
 
-Either:
+A header, a `RESULT:` line, and nothing else:
 
 ```
-PASS
+REVIEW <spec-id> <diff_ref>
+RESULT: PASS
 ```
 
-or one finding per line, nothing else:
+or, when there are findings, N numbered lines after the count:
 
 ```
-<path>:<line> → <FR/AC id> violated: <one-line what + which dimension>
+REVIEW <spec-id> <diff_ref>
+RESULT: <N> findings
+1. <path>:<line> → <FR/AC id> violated: <one-line what + which dimension>
 ```
 
 Diagnose only — never edit. The main agent is the arbiter: it decides
 which findings to apply, applies them, and re-runs the review for **at
 most 1–2 cycles**. The reviewer is not a gate and does not replace the
 human closure gate.
+
+**Where the output lands.** At a high-tier closure the arbiter transcribes
+this reply into the spec's `### Review` sub-section under
+`## Closure Evidence`, one findings row per numbered line, adding only the
+`Disposition` cell — see
+[`spec-lifecycle.md § Recording the outcome`](../../spec-workflows/spec-lifecycle.md#review-record).
+Below that tier the review informs the closure and nothing is recorded.
 
 ## References
 

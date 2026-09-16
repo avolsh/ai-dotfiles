@@ -633,6 +633,284 @@ for st in specify in-progress; do
   assert_silent "AC-3 the same body at $st reports no closure coverage" "$out" "traceability_ac_no_evidence"
 done
 
+# ---------- IMP-20260914-mandatory-review-for-high-risk ----------
+# A high-tier spec at `done`, dated on the cut-off so the check judges it.
+# $3 is the risk tier; the Closure Evidence body comes from stdin.
+mkreview() { # $1 root, $2 filename, $3 risk, [$4 date]
+  local f="$1/docs/specs/active/$2"
+  {
+    echo "---"
+    echo "id: ${2%.md}"
+    echo "type: CR"
+    echo "date: ${4:-2026-09-16}"
+    echo "status: done"
+    echo "owner: alex"
+    echo "risk: $3"
+    echo "affected-repos:"
+    echo "  - demo"
+    echo "affected-docs: []"
+    echo "affected-code: []"
+    echo "skills:"
+    echo "  - writing-specs"
+    echo "model-suggestion: default"
+    echo "---"
+    echo "# ${2%.md}"
+    echo "*Last updated: 2026-09-16*"
+    echo ""
+    echo "## Requirements"
+    echo ""
+    echo "- FR-1: The system MUST do one."
+    echo ""
+    echo "## Acceptance Criteria"
+    echo ""
+    echo "### AC-1: One (FR-1)"
+    echo ""
+    echo "Evidence: test"
+    echo ""
+    echo "## Tasks"
+    echo ""
+    echo "| # | Description | Status |"
+    echo "|---|---|---|"
+    echo "| T1 | One (FR-1; AC-1) | done |"
+    echo ""
+    echo "## Closure Evidence"
+    echo ""
+    echo "| AC | Evidence |"
+    echo "|---|---|"
+    echo "| AC-1 | test |"
+    cat
+  } > "$f"
+}
+
+review_ok() { # a complete three-finding review
+  cat <<'EOF'
+
+### Review
+
+RESULT: 3 findings / 2 applied / 1 rejected — run 2026-09-16 against `a1b2c3d^..e4f5a6b`, sub-agent.
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | `a.py:1` → FR-1 violated: one — contract | applied — `a.py:2` |
+| 2 | `b.py:3` → FR-1 violated: two — coverage | applied — `b.py:4` |
+| 3 | `c.py:5` → FR-1 violated: three — altitude | rejected — out of scope here |
+EOF
+}
+
+review_missing_disposition() { # row 2's Disposition cell is empty
+  cat <<'EOF'
+
+### Review
+
+RESULT: 3 findings / 2 applied / 1 rejected — run 2026-09-16 against `a1b2c3d^..e4f5a6b`, sub-agent.
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | `a.py:1` → FR-1 violated: one — contract | applied — `a.py:2` |
+| 2 | `b.py:3` → FR-1 violated: two — coverage |  |
+| 3 | `c.py:5` → FR-1 violated: three — altitude | rejected — out of scope here |
+EOF
+}
+
+review_waived() {
+  cat <<'EOF'
+
+### Review
+
+RESULT: WAIVED — by alexvolsh 2026-09-16: shipping ahead of the release freeze. No reviewer run.
+EOF
+}
+
+review_waived_no_reason() {
+  cat <<'EOF'
+
+### Review
+
+RESULT: WAIVED — by alexvolsh 2026-09-16. No reviewer run.
+EOF
+}
+
+# AC-1 — a high-tier spec at `done` with no `### Review` at all.
+p="$(newproj reviewmissing)"
+printf '' | mkreview "$p" "CR-20270101-noreview.md" high
+run "$p"
+assert_reports "AC-1 a high-tier done spec with no ### Review is named" "$out" "CR-20270101-noreview.md:.*:review_missing:"
+[ "$(printf '%s\n' "$out" | grep -c 'review_')" -eq 1 ] || {
+  echo "FAIL: AC-1 exactly one review finding (got: $out)" >&2; fails=$((fails + 1)); }
+
+# AC-1 — the same body at medium risk is not judged.
+p="$(newproj reviewmedium)"
+printf '' | mkreview "$p" "CR-20270101-noreview.md" medium
+run "$p"
+assert_silent "AC-1 the same spec at risk: medium is silent" "$out" "review_"
+
+# AC-1 — severity, not risk, can put a spec in the tier.
+p="$(newproj reviewseverity)"
+printf '' | mkreview "$p" "CR-20270101-sev.md" medium
+sed -i.bak 's/^risk: medium$/risk: medium\nseverity: critical/' "$p/docs/specs/active/CR-20270101-sev.md"
+rm -f "$p/docs/specs/active/CR-20270101-sev.md.bak"
+run "$p"
+assert_reports "AC-1 severity: critical puts a medium-risk spec in the tier" "$out" "CR-20270101-sev.md:.*:review_missing:"
+
+# FR-6 — a spec dated before the cut-off is not judged.
+p="$(newproj reviewcutoff)"
+printf '' | mkreview "$p" "CR-20260101-old.md" high 2026-09-15
+run "$p"
+assert_silent "FR-6 a spec dated before the cut-off is not judged" "$out" "review_"
+
+# FR-6 — earlier statuses are silent.
+for st in specify plan in-progress; do
+  p="$(newproj "reviewstatus$st")"
+  printf '' | mkreview "$p" "CR-20270101-noreview.md" high
+  sed -i.bak "s/^status: done$/status: $st/" "$p/docs/specs/active/CR-20270101-noreview.md"
+  rm -f "$p/docs/specs/active/CR-20270101-noreview.md.bak"
+  run "$p"
+  assert_silent "FR-6 a high-tier spec at $st is silent" "$out" "review_"
+done
+
+# AC-2 — a complete review is silent; one empty Disposition is named by row.
+p="$(newproj reviewcomplete)"
+review_ok | mkreview "$p" "CR-20270101-review.md" high
+run "$p"
+assert_silent "AC-2 a fully dispositioned review is silent" "$out" "review_"
+
+p="$(newproj reviewundisp)"
+review_missing_disposition | mkreview "$p" "CR-20270101-review.md" high
+run "$p"
+disp_line="$(grep -n 'two — coverage' "$p/docs/specs/active/CR-20270101-review.md" | cut -d: -f1)"
+assert_reports "AC-2 an empty Disposition cell is named at its row" "$out" "CR-20270101-review.md:$disp_line:review_no_disposition:.*2"
+[ "$(printf '%s\n' "$out" | grep -c 'review_')" -eq 1 ] || {
+  echo "FAIL: AC-2 exactly one review finding (got: $out)" >&2; fails=$((fails + 1)); }
+
+# FR-2 — the run header carries date, range and harness, or the result is flagged.
+p="$(newproj reviewheader)"
+{ cat <<'EOF'
+
+### Review
+
+RESULT: PASS — looks fine to me
+
+EOF
+} | mkreview "$p" "CR-20270101-header.md" high
+run "$p"
+assert_reports "FR-2 a PASS with no run header is named" "$out" "CR-20270101-header.md:.*:review_header_incomplete:"
+
+p="$(newproj reviewpassok)"
+{ cat <<'EOF'
+
+### Review
+
+RESULT: PASS — run 2026-09-16 against `a1b2c3d^..e4f5a6b`, empty-context session.
+
+EOF
+} | mkreview "$p" "CR-20270101-pass.md" high
+run "$p"
+assert_silent "FR-2 a complete PASS needs no findings table" "$out" "review_"
+
+# FR-9 — a declared count that disagrees with the table means a truncated reply.
+p="$(newproj reviewcount)"
+{ cat <<'EOF'
+
+### Review
+
+RESULT: 3 findings / 1 applied / 0 rejected — run 2026-09-16 against `a1b2c3d^..e4f5a6b`, sub-agent.
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | `a.py:1` → FR-1 violated: one — contract | applied — `a.py:2` |
+EOF
+} | mkreview "$p" "CR-20270101-count.md" high
+run "$p"
+assert_reports "FR-9 a declared count the table contradicts is named" "$out" "CR-20270101-count.md:.*:review_count_mismatch:.*3 finding"
+[ "$(printf '%s\n' "$out" | grep -c 'review_')" -eq 1 ] || {
+  echo "FAIL: FR-9 exactly one review finding for a count mismatch (got: $out)" >&2; fails=$((fails + 1)); }
+
+# AC-5 — a waiver naming a human and a reason is silent; without a reason it is not.
+p="$(newproj reviewwaived)"
+review_waived | mkreview "$p" "CR-20270101-waived.md" high
+run "$p"
+assert_silent "AC-5 a complete waiver is silent" "$out" "review_"
+
+p="$(newproj reviewwaivedbad)"
+review_waived_no_reason | mkreview "$p" "CR-20270101-waived.md" high
+run "$p"
+assert_reports "AC-5 a waiver with no reason is named" "$out" "CR-20270101-waived.md:.*:review_waiver_incomplete:"
+[ "$(printf '%s\n' "$out" | grep -c 'review_')" -eq 1 ] || {
+  echo "FAIL: AC-5 exactly one review finding for a bare waiver (got: $out)" >&2; fails=$((fails + 1)); }
+
+# Review cycle 1 findings — regressions the cold review caught.
+
+# F1 — an escaped pipe inside a Finding cell must not shift the columns.
+p="$(newproj reviewescapedpipe)"
+{ cat <<'EOF'
+
+### Review
+
+RESULT: 1 findings / 1 applied / 0 rejected — run 2026-09-16 against `a1b2c3d^..e4f5a6b`, sub-agent.
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | `a.py:1` → FR-1 violated: `severity: high \| critical` is misread — bugs | applied — `a.py:2` |
+EOF
+} | mkreview "$p" "CR-20270101-pipe.md" high
+run "$p"
+assert_silent "F1 an escaped pipe in a Finding cell does not shift the Disposition" "$out" "review_"
+
+# F2 — `RESULT:` must be the first non-blank line of the sub-section.
+p="$(newproj reviewprosefirst)"
+{ cat <<'EOF'
+
+### Review
+
+The reviewer was happy with this one.
+
+RESULT: PASS — run 2026-09-16 against `a1b2c3d^..e4f5a6b`, sub-agent.
+EOF
+} | mkreview "$p" "CR-20270101-prose.md" high
+run "$p"
+assert_reports "F2 prose before the RESULT: line is named" "$out" "CR-20270101-prose.md:.*:review_no_result:"
+
+# F3 — the tier is set by risk and severity alone; no type is exempt.
+p="$(newproj reviewres)"
+printf '' | mkreview "$p" "RES-20270101-spike.md" high
+sed -i.bak 's/^type: CR$/type: RES/' "$p/docs/specs/active/RES-20270101-spike.md"
+rm -f "$p/docs/specs/active/RES-20270101-spike.md.bak"
+run "$p"
+assert_reports "F3 a high-risk RES spec is judged like any other type" "$out" "RES-20270101-spike.md:.*:review_missing:"
+
+# F5 — a worked example in `## Design` must not be read as the section itself.
+# Before the fix, `_h2_section_lines` matched the fenced `## Closure Evidence`
+# heading inside Design and never reached the real section, so a spec with no
+# `### Review` at all passed by borrowing the example's.
+p="$(newproj reviewfencedexample)"
+{ cat <<'EOF'
+EOF
+} | mkreview "$p" "CR-20270101-fenced.md" high
+python3 - "$p/docs/specs/active/CR-20270101-fenced.md" <<'PY'
+import sys, pathlib
+f = pathlib.Path(sys.argv[1]); s = f.read_text()
+example = """
+## Design
+
+The shape a closure record takes:
+
+```markdown
+## Closure Evidence
+
+| AC | Evidence |
+|---|---|
+| AC-1 | test |
+
+### Review
+
+RESULT: PASS — run 2026-09-16 against `a^..b`, sub-agent.
+```
+"""
+f.write_text(s.replace("\n## Closure Evidence", example + "\n## Closure Evidence", 1))
+PY
+run "$p"
+assert_reports "F5 a fenced Closure Evidence example is not read as the section" "$out" "CR-20270101-fenced.md:.*:review_missing:"
+
 if [ "$fails" -eq 0 ]; then
   echo "scripts/validate-specs.py self-tests passed ✓"
 else

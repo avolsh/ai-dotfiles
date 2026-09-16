@@ -1,6 +1,6 @@
 # Agent Protocol
 
-*Last updated: 2026-08-30*
+*Last updated: 2026-09-16*
 
 Operating procedures for AI agents working in any project that participates in the AI Agent Framework: path prefixes, two-scope model, context loading order, checklists, output conventions, and the on-demand reference material (determinism, schema sync, doc freshness, skills audit).
 
@@ -219,6 +219,14 @@ a spec. Each task must independently pass all checks before proceeding.
       container, watcher and background build the work started, confirm the ports are free, and say
       what was stopped. A process the human started is theirs: ask, never kill it. See
       [`spec-lifecycle.md § Rules #14`](../framework/spec-workflows/spec-lifecycle.md#stop-processes-at-closure).
+- [ ] **Review disposition stated** — at a high-tier closure (`risk: high`,
+      or `severity: high | critical`), the gate request states
+      `findings N / applied M / rejected K` and every rejection reason, or
+      `review waived by <who> — <reason>` when the human waived the run.
+      The counts come from the spec's `### Review` sub-section; see
+      [`spec-lifecycle.md § Reviewer sub-step`](../framework/spec-workflows/spec-lifecycle.md#reviewer-substep).
+      Never offer the waiver as an option — record it only when the human
+      raises it.
 - [ ] Post **"The Bottom Line"** using the canonical format below and
       wait for explicit human approval before starting the next task.
 

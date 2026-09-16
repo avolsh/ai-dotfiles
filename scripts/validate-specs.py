@@ -37,7 +37,7 @@ import sys
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable, Iterable, NamedTuple
 
 
 # ---------------------------------------------------------------------------
@@ -1305,11 +1305,29 @@ def _traceability_judged(spec: Spec) -> bool:
 
 def _h2_section_lines(spec: Spec, titles: set[str]) -> list[tuple[int, str]]:
     """Lines of the first `## <title>` section matching `titles`, paired with
-    their 1-indexed line number in the file."""
+    their 1-indexed line number in the file.
+
+    Headings inside a fenced block are text, not structure: a spec that shows
+    the shape of a section in `## Design` — `## Closure Evidence` with a
+    `### Review` under it, say — would otherwise have its worked example read
+    as the section itself, and the real one never reached.
+    """
     lines: list[tuple[int, str]] = []
     inside = False
+    fence: str | None = None
     for i, line in enumerate(spec.body.splitlines()):
         stripped = line.lstrip()
+        if fence is not None:
+            if stripped.startswith(fence):
+                fence = None
+            if inside:
+                lines.append((spec.front_matter_end_line + i + 1, line))
+            continue
+        if stripped.startswith("```") or stripped.startswith("~~~"):
+            fence = stripped[:3]
+            if inside:
+                lines.append((spec.front_matter_end_line + i + 1, line))
+            continue
         if stripped.startswith("## "):
             if inside:
                 break
@@ -1416,15 +1434,22 @@ _AC_DEFINITION_RE = re.compile(r"^\s*#{3,6}\s+\**AC-(\d+)\b")
 
 
 def _closure_evidence_rows(spec: Spec) -> list[tuple[int, str, str]]:
-    """Table rows under `## Closure Evidence` as (line, first cell, whole row),
-    header and separator rows excluded. A row's first cell is its label — an
-    AC ID for acceptance evidence, or a named row such as `Review`."""
+    """Table rows of the acceptance table under `## Closure Evidence`, as
+    (line, first cell, whole row), header and separator rows excluded. A row's
+    first cell is its label — an AC ID for acceptance evidence, or a named row.
+
+    Reading stops at the first `###` sub-heading: `### Review` carries its own
+    findings table (IMP-20260914-mandatory-review-for-high-risk), and its rows
+    are not acceptance evidence.
+    """
     rows: list[tuple[int, str, str]] = []
     in_body = False  # past a separator row, so rows are data, not a header
     for line_no, text in _h2_section_lines(spec, {"closure evidence"}):
         stripped = text.strip()
-        if not stripped or stripped.startswith("#"):
-            in_body = False  # a table ends at a blank line or heading
+        if stripped.startswith("#"):
+            break  # a sub-section begins; its tables are not acceptance rows
+        if not stripped:
+            in_body = False  # a table ends at a blank line
         elif _TABLE_SEP_RE.match(text):
             in_body = True
         elif stripped.startswith("|") and in_body:
@@ -1466,6 +1491,207 @@ def check_ac_closure_coverage(specs: Iterable[Spec]) -> list[Finding]:
     return findings
 
 
+# IMP-20260914-mandatory-review-for-high-risk — the cold review is a closure
+# precondition for the high tier, and its outcome is recorded where the gate
+# and this validator can both read it.
+_REVIEW_CUTOFF = _dt.date(2026, 9, 16)  # pinned to this IMP's closure date
+_HIGH_SEVERITIES = {"high", "critical"}
+# Splits a table row on real column separators only. The corpus writes
+# `severity: high \| critical` inside cells; splitting on that escaped pipe
+# would shift every later column and mis-read the one it lands on.
+_UNESCAPED_PIPE_RE = re.compile(r"(?<!\\)\|")
+
+# The sub-section's first non-blank line: `RESULT: <result> — <tail>`.
+_REVIEW_RESULT_RE = re.compile(r"^RESULT:\s*(\S.*?)\s*$")
+# `PASS — run 2026-09-16 against `a^..b`, sub-agent.`
+_REVIEW_PASS_RE = re.compile(r"^PASS\s+[–—-]\s+(?P<tail>\S.*)$")
+# `3 findings / 2 applied / 1 rejected — run …`
+_REVIEW_FINDINGS_RE = re.compile(
+    r"^(?P<n>\d+)\s+findings?\s*/\s*\d+\s+applied\s*/\s*\d+\s+rejected"
+    r"\s+[–—-]\s+(?P<tail>\S.*)$"
+)
+# `WAIVED — by alexvolsh 2026-09-16: shipping ahead of the freeze. …`
+_REVIEW_WAIVED_RE = re.compile(
+    r"^WAIVED\s+[–—-]\s+by\s+(?P<who>\S+)\s+(?P<date>\d{4}-\d{2}-\d{2})"
+    r"\s*:\s*(?P<reason>\S.*)$"
+)
+# The run header shared by PASS and findings results (FR-2's four fields).
+_REVIEW_HEADER_RE = re.compile(
+    r"^run\s+(?P<date>\d{4}-\d{2}-\d{2})\s+against\s+(?P<range>.+?),"
+    r"\s*(?P<harness>\S.*?)\.\s*$"
+)
+_DISPOSITION_RE = re.compile(r"^(applied|rejected)\b")
+
+
+def _high_tier(spec: Spec) -> bool:
+    """FR-1 — `risk: high`, or `severity: high | critical` at any risk."""
+    front = spec.front_matter
+    if str(front.get("risk", "")).strip().lower() == "high":
+        return True
+    return str(front.get("severity", "")).strip().lower() in _HIGH_SEVERITIES
+
+
+def _row_cells(stripped: str) -> list[str]:
+    """Cells of a markdown table row, split on unescaped pipes only."""
+    return [c.strip() for c in _UNESCAPED_PIPE_RE.split(stripped.strip("|"))]
+
+
+def _review_judged(spec: Spec) -> bool:
+    try:
+        dated = _dt.date.fromisoformat(str(spec.front_matter.get("date")))
+    except ValueError:
+        return False  # the schema check reports a malformed date
+    return dated >= _REVIEW_CUTOFF
+
+
+class ReviewSection(NamedTuple):
+    heading_line: int
+    result_line: int | None
+    result: str | None
+    rows: list[tuple[int, str, str]]  # (line, `#` cell, `Disposition` cell)
+
+
+def _review_section(spec: Spec) -> ReviewSection | None:
+    """The `### Review` sub-section of `## Closure Evidence`, or None.
+
+    Rows are the findings table's, as (line, number cell, disposition cell).
+    """
+    lines = _h2_section_lines(spec, {"closure evidence"})
+    start: int | None = None
+    for i, (_, text) in enumerate(lines):
+        if text.lstrip().lower().startswith("### review"):
+            start = i
+            break
+    if start is None:
+        return None
+    result_line: int | None = None
+    result: str | None = None
+    rows: list[tuple[int, str, str]] = []
+    in_body = False
+    for line_no, text in lines[start + 1 :]:
+        stripped = text.strip()
+        if stripped.startswith("#"):
+            break  # the next sub-section
+        if not stripped:
+            in_body = False
+            continue
+        if result is None:
+            # FR-2: the first non-blank line is `RESULT:`. Prose before it
+            # means the sub-section records no result at all.
+            match = _REVIEW_RESULT_RE.match(stripped)
+            if not match:
+                break
+            result_line, result = line_no, match.group(1)
+            continue
+        if _TABLE_SEP_RE.match(text):
+            in_body = True
+        elif stripped.startswith("|") and in_body:
+            cells = _row_cells(stripped)
+            number = cells[0] if cells else ""
+            disposition = cells[2] if len(cells) > 2 else ""
+            rows.append((line_no, number, disposition))
+    return ReviewSection(lines[start][0], result_line, result, rows)
+
+
+def check_review_disposition(specs: Iterable[Spec]) -> list[Finding]:
+    """FR-1, FR-2, FR-3, FR-6, FR-10 — a high-tier spec at `done` records a
+    `### Review` whose result is `PASS`, a finding count with every finding
+    dispositioned, or a waiver naming a human and a reason."""
+    findings: list[Finding] = []
+    for spec in specs:
+        if spec.front_matter.get("status") != "done":
+            continue
+        if not _high_tier(spec) or not _review_judged(spec):
+            continue
+        section = _review_section(spec)
+        if section is None:
+            findings.append(
+                Finding(
+                    spec.path,
+                    spec.front_matter_end_line or 1,
+                    "review_missing",
+                    "high tier at `done` with no `### Review` sub-section "
+                    "under `## Closure Evidence` (a waiver is recorded there "
+                    "too, never left out)",
+                )
+            )
+            continue
+        if section.result is None:
+            findings.append(
+                Finding(
+                    spec.path,
+                    section.heading_line,
+                    "review_no_result",
+                    "`### Review` has no `RESULT:` line",
+                )
+            )
+            continue
+        anchor = section.result_line or section.heading_line
+        waived = _REVIEW_WAIVED_RE.match(section.result)
+        if section.result.startswith("WAIVED"):
+            if not waived:
+                findings.append(
+                    Finding(
+                        spec.path,
+                        anchor,
+                        "review_waiver_incomplete",
+                        "a waived review must read `WAIVED — by <who> <date>: "
+                        "<reason>` — the human and the reason are the record",
+                    )
+                )
+            continue
+        passed = _REVIEW_PASS_RE.match(section.result)
+        counted = _REVIEW_FINDINGS_RE.match(section.result)
+        if not passed and not counted:
+            findings.append(
+                Finding(
+                    spec.path,
+                    anchor,
+                    "review_bad_result",
+                    "`RESULT:` must read `PASS`, `<N> findings / <M> applied "
+                    "/ <K> rejected`, or `WAIVED`",
+                )
+            )
+            continue
+        tail = (passed or counted).group("tail")
+        if not _REVIEW_HEADER_RE.match(tail):
+            findings.append(
+                Finding(
+                    spec.path,
+                    anchor,
+                    "review_header_incomplete",
+                    "`RESULT:` must end `— run <date> against <range>, "
+                    "<harness>.` (FR-2's four fields)",
+                )
+            )
+        if passed:
+            continue
+        declared = int(counted.group("n"))
+        if declared != len(section.rows):
+            findings.append(
+                Finding(
+                    spec.path,
+                    anchor,
+                    "review_count_mismatch",
+                    f"`RESULT:` declares {declared} finding(s) but the table "
+                    f"has {len(section.rows)} row(s) — a truncated reply is "
+                    "re-run, not patched by hand",
+                )
+            )
+        for line_no, number, disposition in section.rows:
+            if not _DISPOSITION_RE.match(disposition):
+                findings.append(
+                    Finding(
+                        spec.path,
+                        line_no,
+                        "review_no_disposition",
+                        f"finding {number or '?'} has no disposition — the "
+                        "cell must open with `applied` or `rejected`",
+                    )
+                )
+    return findings
+
+
 CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_front_matter_schema,
     check_filename_id_parity,
@@ -1483,6 +1709,7 @@ CHECK_REGISTRY: list[Callable[[Iterable[Spec]], list[Finding]]] = [
     check_fr_ac_coverage,
     check_fr_task_coverage,
     check_ac_closure_coverage,
+    check_review_disposition,
 ]
 
 

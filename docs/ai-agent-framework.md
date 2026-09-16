@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-08-13*
+*Last updated: 2026-09-16*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -126,11 +126,12 @@ and isolates context that belongs together. Spec authoring, the Split
 check, and task decomposition therefore run **inline in the main
 context** (see [`writing-specs/references/authoring-steps.md`](../framework/skills/writing-specs/references/authoring-steps.md)).
 
-The one bespoke sub-agent is the read-only **reviewer**:
+The one bespoke sub-agent is the read-only **reviewer**. Its run is a
+closure precondition for the high tier and a recommendation below it:
 
 | Agent | When | Model | Tools | Purpose |
 |---|---|---|---|---|
-| `reviewer` | in-progress (recommended sub-step) | deep | read-only | Judges a change cold against its spec; returns `PASS` or `file:line → violated clause`. |
+| `reviewer` | in-progress (required at high tier, recommended below) | deep | read-only | Judges a change cold against its spec; returns a `RESULT:` line — `PASS` or `<N> findings` — and N numbered `file:line → violated clause` findings. |
 
 Precedent search at task-start is the main agent's own `Grep`/`Glob` or
 the built-in read-only explore sub-agent — not a bespoke agent.
