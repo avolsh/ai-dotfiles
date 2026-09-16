@@ -229,6 +229,13 @@ a spec. Each task must independently pass all checks before proceeding.
       [`spec-lifecycle.md § Reviewer sub-step`](../framework/spec-workflows/spec-lifecycle.md#reviewer-substep).
       Never offer the waiver as an option — record it only when the human
       raises it.
+- [ ] **Accepted duplication recorded** — a duplication accepted under
+      `boundaries.md` Always do #16 is a `- **Accepted duplication:**` bullet
+      in the spec's `## Closure Evidence`, not only a Bottom Line note.
+- [ ] **Consolidation checked** — at spec closure, run the
+      [`spec-lifecycle.md § Consolidation sub-step`](../framework/spec-workflows/spec-lifecycle.md#consolidation-substep)
+      and post each due context's recommendation after the closure summary;
+      log the human's answer in `docs/consolidation-log.md`.
 - [ ] Post **"The Bottom Line"** using the canonical format below and
       wait for explicit human approval before starting the next task.
 

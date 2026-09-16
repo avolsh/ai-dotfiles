@@ -17,7 +17,6 @@ from __future__ import annotations
 import argparse
 import datetime as _dt
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -27,52 +26,13 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from speclib import (  # noqa: E402
     _LAST_UPDATED_RE,
-    _TABLE_SEP_RE,
-    Spec,
-    _h2_section_lines,
-    _row_cells,
     discover_specs,
     find_repo_root,
+    task_counts,
 )
 
 SCHEMA_VERSION = 1
 _LIFECYCLE = ("specify", "plan", "in-progress", "done")
-# A Status cell opens with an optional glyph (`☑`, `✅`, `☐`, `⊘`, …) before its word.
-_STATUS_WORD_RE = re.compile(r"[A-Za-z][A-Za-z-]*")
-_EXCLUDED_WORDS = {"descoped", "cancelled", "canceled"}
-
-
-def _task_counts(spec: Spec) -> dict[str, int] | None:
-    """Done / total / excluded rows of the `## Tasks` table, or None without one.
-
-    The Status column is found by its header, so a table with extra or reordered
-    columns still reads right. Descoped and cancelled rows leave the total.
-    """
-    status_col: int | None = None
-    counts = {"done": 0, "total": 0, "excluded": 0}
-    for _, line in _h2_section_lines(spec, {"tasks"}):
-        stripped = line.strip()
-        if not stripped.startswith("|") or _TABLE_SEP_RE.match(stripped):
-            continue
-        cells = _row_cells(stripped)
-        if status_col is None:
-            headers = [c.lower() for c in cells]
-            if "status" in headers:
-                status_col = headers.index("status")
-            continue
-        if len(cells) <= status_col:
-            continue
-        m = _STATUS_WORD_RE.search(cells[status_col])
-        word = m.group(0).lower() if m else ""
-        if word in _EXCLUDED_WORDS:
-            counts["excluded"] += 1
-            continue
-        counts["total"] += 1
-        if word == "done":
-            counts["done"] += 1
-    return counts if status_col is not None else None
-
-
 def _as_list(value: object) -> list[str]:
     if isinstance(value, list):
         return [str(v) for v in value]
@@ -106,7 +66,7 @@ def build_report(root: Path, today: _dt.date) -> dict[str, object]:
                 "risk": _optional(fm.get("risk")),
                 "severity": _optional(fm.get("severity")),
                 "owner": _optional(fm.get("owner")),
-                "tasks": _task_counts(spec),
+                "tasks": task_counts(spec),
                 # Unresolvable IDs are unmet too; validate-specs names them as dangling.
                 "unmetDependsOn": [
                     dep for dep in _as_list(fm.get("depends-on")) if status_by_id.get(dep) != "done"

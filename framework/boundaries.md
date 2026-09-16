@@ -1,6 +1,6 @@
 # Boundaries
 
-*Last updated: 2026-08-30*
+*Last updated: 2026-09-16*
 
 <!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R11; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
@@ -36,7 +36,9 @@
 15. **Challenge before complying.** Do not treat the author as always correct. When an instruction, assumption, or proposed approach appears factually wrong, suboptimal, or has a materially better alternative: (1) verify any checkable claim against the codebase or framework docs first; (2) surface the doubt with evidence; (3) propose the alternative(s). Use the § Escalation protocol format when stopping; a brief inline note suffices when proceeding with a caveat.
 16. <a id="named-shared-cause"></a>**Name the shared cause before the third copy.** When the same fix must be applied
     in more than two places, stop and name the shared cause before applying it, recording the decision in the Bottom
-    Line. The outcome may be a shared fix or an accepted duplication — it may not be a third silent copy. Depth: [
+    Line. The outcome may be a shared fix or an accepted duplication — it may not be a third silent copy. An accepted
+    duplication is also recorded as a `- **Accepted duplication:**` bullet in the spec's `## Closure Evidence`, where
+    the consolidation checkpoint reads it. Depth: [
     `skills/avoiding-duplication`](skills/avoiding-duplication/SKILL.md).
 17. <a id="classify-caught-failures"></a>**Classify a caught failure — never settle it.** A failure caught at a
     process boundary is recorded as retryable, permanent, or valid-empty, or it propagates. It is never written as a

@@ -375,6 +375,27 @@ the closure approval MAY run **review-after** (IMP-20260610-mechanize-framework-
 gates remain blocking for **all** lanes — review-after applies to the
 closure gate only.
 
+## Consolidation sub-step (after closure) <a id="consolidation-substep"></a>
+
+`Never do #5` keeps refactoring out of feature tasks; this sub-step brings it back on a schedule
+(IMP-20260914-consolidation-checkpoint). It runs after **every** spec reaches `done` — any lane, any tier.
+
+1. **Run** `make consolidation-due PROJECT=<project> CLOSED=<spec-id>` from `$AI_DOTFILES`. It lists the bounded
+   contexts the closed spec maps to, each with its count since that context's last checkpoint and whether it is
+   due — at the log's `threshold` (default 5), or at once when the closed spec has `risk: high`, more than 8 tasks,
+   or more than 15 `affected-code` entries.
+2. **Nothing due → nothing posted.** Otherwise, for each due context run
+   `make consolidation-due PROJECT=<project> CONTEXT="<name>"` and post its recommendation **after** the closure
+   summary: the trigger, the accepted-duplication bullets, the rejected reviewer findings, the improvements-log
+   entries and the duplication figure — or the stated cause of its absence — each with its source.
+3. **The human decides.** Never create the IMP without an explicit accept. The agent never declines on the human's
+   behalf, and never waits on the answer to continue other work.
+4. **Log either answer** by appending an entry to the project's `docs/consolidation-log.md` per
+   [`docs/consolidation-log-format.md`](../../docs/consolidation-log-format.md): `accepted — <IMP id>` or
+   `declined — <reason>`. Either resets that context's counter; the accepted IMP's own closure never counts.
+5. **An accepted IMP is refactor-only** (`Never do #5`): no behaviour change, and its `## Current State` cites the
+   recommendation's inputs by source path. It then runs the normal lifecycle from Specify.
+
 ## Visualize sub-step (Specify) <a id="visualize-triggers"></a>
 
 Run inside Specify before the requirements gate when **any** apply:

@@ -1,4 +1,4 @@
-.PHONY: help install install-check profile-init reset project workspace links-check validate-specs lint-rules validate-anchors sync-system-templates sync-agents-check check doctor doctor-fast install-git-hooks tests spec-metrics specs-view
+.PHONY: help install install-check profile-init reset project workspace links-check validate-specs lint-rules validate-anchors sync-system-templates sync-agents-check check doctor doctor-fast install-git-hooks tests spec-metrics specs-view consolidation-due
 
 help:
 	@echo "Targets:"
@@ -59,6 +59,7 @@ tests:
 	./scripts/test/validate-specs.test.sh
 	./scripts/test/spec-status.test.sh
 	./scripts/test/validate-quality-gates.test.sh
+	./scripts/test/consolidation-due.test.sh
 	./scripts/test/report-duplication.test.sh
 	./scripts/test/profile-links.test.sh
 	./scripts/test/ai-switch.test.sh
@@ -72,6 +73,12 @@ PROJECT ?= .
 TODAY ?=
 specs-view:
 	@python3 ./scripts/spec-status.py --view $(if $(TODAY),--today $(TODAY)) "$(PROJECT)"
+
+# CLOSED limits the report to one spec's contexts; CONTEXT prints that context's recommendation.
+CLOSED ?=
+CONTEXT ?=
+consolidation-due:
+	@python3 ./scripts/consolidation-due.py $(if $(CLOSED),--closed $(CLOSED)) $(if $(CONTEXT),--recommend "$(CONTEXT)") "$(PROJECT)"
 
 doctor:
 	./scripts/ai-doctor.sh
