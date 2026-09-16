@@ -63,6 +63,7 @@ risk: medium
 | T5 | fifth | `e` | — | T4 | — | default | in progress |
 | T6 | sixth | `f` | — | — | — | default | ⊘ descoped |
 | T7 | seventh | `g` | — | — | — | default | ☒ cancelled |
+| T8 | eighth | `h` | — | T5 | — | default | ◐ awaiting approval |
 
 ## Closure Evidence
 
@@ -101,8 +102,9 @@ set -e
 [ -s "$TMP/stderr" ] && fail "AC-2 --json leaves stderr empty (got: $(cat "$TMP/stderr"))"
 json_ok "AC-2 lists active specs only, specify before in-progress" "$out" \
   "d['schemaVersion'] == 1 and d['today'] == '2026-09-16' and [s['id'] for s in d['specs']] == ['BUG-20260905-blocked', 'CR-20260901-progress']"
-json_ok "AC-2 counts the in-progress spec at 3 of 5" "$out" \
-  "d['specs'][1]['tasks'] == {'done': 3, 'total': 5, 'excluded': 2}"
+# `◐ awaiting approval` is complete but unapproved — in the total, not done.
+json_ok "AC-2 counts the in-progress spec at 3 of 6" "$out" \
+  "d['specs'][1]['tasks'] == {'done': 3, 'total': 6, 'excluded': 2}"
 json_ok "AC-2 reports only the unmet depends-on ID" "$out" \
   "d['specs'][0]['unmetDependsOn'] == ['CR-20260901-progress'] and d['specs'][1]['unmetDependsOn'] == []"
 json_ok "AC-2 a prose-only Tasks section has no task counts" "$out" "d['specs'][0]['tasks'] is None"
@@ -115,7 +117,7 @@ json_ok "AC-2 paths are relative to the project root" "$out" \
 
 # The text form carries the same facts.
 text="$(python3 "$SUT" --today 2026-09-16 "$P")"
-printf '%s\n' "$text" | grep -q 'CR-20260901-progress.*3/5' || fail "AC-2 text shows 3/5 (got: $text)"
+printf '%s\n' "$text" | grep -q 'CR-20260901-progress.*3/6' || fail "AC-2 text shows 3/6 (got: $text)"
 printf '%s\n' "$text" | grep -q 'BUG-20260905-blocked.*CR-20260901-progress' || fail "AC-2 text shows the unmet ID (got: $text)"
 
 [ "$(snapshot)" = "$before" ] || fail "AC-2 FR-5 the fixture tree is byte-identical afterwards"
@@ -139,7 +141,7 @@ specify (1, 1 blocked)
 
 in-progress (1)
   FLAG  ID                    TYPE  TIER         OWNER  TASKS  AGE  BLOCKED ON
-        CR-20260901-progress  CR    risk:medium  sam    3/5    6d   —
+        CR-20260901-progress  CR    risk:medium  sam    3/6    6d   —
 
 2 active spec(s); 1 blocked.
 SNAP

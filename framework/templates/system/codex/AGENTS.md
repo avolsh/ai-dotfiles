@@ -16,6 +16,7 @@
 | "visualize", "architecture" | `<system>/prompts/visualize-spec.prompt.md` |
 | "bug", "triage", "investigate issue" | `<system>/prompts/bug-triage.prompt.md` |
 | "plan", "break into tasks" | `<system>/prompts/plan-spec.prompt.md` |
+| "resume", "where were we" | `<system>/prompts/resume-spec.prompt.md` |
 
 Framework overview — skills catalog, two-scope model, multi-agent notes, spec-type table: `docs/ai-agent-framework.md`.
 Spec lifecycle and human-gate rules: `docs/spec-workflow-guide.md`.

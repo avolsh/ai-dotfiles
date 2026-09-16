@@ -1,6 +1,6 @@
 # Spec Workflow — How We Work
 
-*Last updated: 2026-08-27*
+*Last updated: 2026-09-16*
 
 Every change — feature, bug fix, or improvement — follows the same
 four-status lifecycle. Each status transition ends with a **human gate**:
@@ -378,6 +378,7 @@ Identical to [Getting Started](../README.md#3-start-working).
 | Add a new project | `bootstrap project`, `new project` | AI scans the repo → scaffolds framework files |
 | Refresh project framework | `update project framework`, `refresh docs` | AI re-bootstraps an existing project |
 | Approve & advance | `continue` | Approves the current task; AI starts the next single task |
+| Resume after a break | `resume`, `where were we` | AI finds the spec's next task; re-asks approval for a task still `◐`, else posts preflight |
 
 ---
 

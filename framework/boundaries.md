@@ -28,7 +28,9 @@
    `docs/agent-protocol.md § Bottom Line`](../docs/agent-protocol.md#the-bottom-line--canonical-format)) and wait for
    explicit human approval before the next task.
 10. <a id="last-updated-stamp"></a>**Update `*Last updated: YYYY-MM-DD*`** on every modified doc.
-11. <a id="task-row-status-in-place"></a>**Update task row status in-place** as each task completes.
+11. <a id="task-row-status-in-place"></a>**Update task row status in-place** so the spec, not the chat, records
+    approval: `☐ pending` → `◐ awaiting approval` when the task's Bottom Line is posted → `☑ done` only once the human
+    approves that task (per Never do #6). A change request returns the row to `☐ pending`.
 12. **Update the project's `module-map.md`** if the task added, removed, or renamed bounded contexts, key files, or
     workflow steps.
 13. **Log process improvements immediately** to the project's `docs/improvements-log.md` — do not defer.

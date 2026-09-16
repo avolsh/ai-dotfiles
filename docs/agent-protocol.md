@@ -399,13 +399,15 @@ by boundaries.
 
 **After the task:**
 6. Follow the post-task checklist (above).
-7. Update the task status in the spec.
+7. Set the task row to `◐ awaiting approval` when posting the Bottom Line, and to `☑ done` only after the human
+   approves it — see [`boundaries.md § Always do #11`](../framework/boundaries.md#task-row-status-in-place).
 
 ### Interpreting "continue" in spec work
 
 When a user says "continue spec implementation", this grants permission for
 the **next single task only**. After that task, the agent must stop again and
-wait for explicit approval to proceed.
+wait for explicit approval to proceed. That approval is what flips the
+preceding task's row from `◐` to `☑` — never a later one.
 
 **On bug fix:**
 Follow the bug-fix protocol in the BUG template.
