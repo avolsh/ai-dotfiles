@@ -24,6 +24,7 @@ model-suggestion: default
 depends-on:
   - IMP-20260914-machine-readable-spec-reports
 siblings:
+  - IMP-20260916-quality-gates-check
   - IMP-20260914-baseline-verification-freshness
   - IMP-20260914-mandatory-review-for-high-risk
   - IMP-20260914-responsive-behaviour-and-design-first-figma
@@ -31,7 +32,7 @@ siblings:
 
 # IMP-20260914-consolidation-checkpoint
 
-*Last updated: 2026-09-14*
+*Last updated: 2026-09-16*
 
 ## Summary
 
@@ -62,7 +63,10 @@ receives a consolidation decision (accepted or declined with reason) at most N c
 - FR-2: A recommendation MUST fire when a context's count reaches N (project-configurable, default 5), or at the
   closure of any spec with `risk: high`, more than 8 tasks, or more than 15 `affected-code` entries.
 - FR-3: A recommendation MUST gather for the context: accepted-duplication decisions, reviewer findings rejected in
-  `Review` rows, improvements-log entries naming it, and the duplication report when the project declares one.
+  `Review` rows, improvements-log entries naming it, and the context's figures from the report file named by the
+  project's `duplication` row.
+- FR-8: When the project's `duplication` row is `n/a`, absent, or its report file is missing, the recommendation MUST
+  say so in one line naming the cause, instead of omitting the duplication input silently (added 2026-09-16).
 - FR-4: An accepted-duplication decision under `Always do #16` MUST be recorded in the spec's Closure Evidence, not
   only in the Bottom Line.
 - FR-5: The agent MUST post the recommendation after the triggering spec's closure summary and MUST NOT create the
@@ -86,6 +90,15 @@ Given context A's closures include one Closure Evidence accepted-duplication ent
 and one improvements-log entry naming A
 When the recommendation for A is produced
 Then all three appear with their source paths
+Evidence: `consolidation-due.test.sh`
+
+### AC-4: A missing duplication input is stated, not skipped (FR-3, FR-8)
+
+Given three fixture projects — a `duplication` row with a report on disk, the same row with the file deleted, and an
+`n/a — <reason>` row
+When the recommendation for a due context is produced in each
+Then the first carries that context's duplicated lines and clones, the second states the report is missing at its
+path, the third states the `n/a` reason
 Evidence: `consolidation-due.test.sh`
 
 ### AC-3: A decision resets the counter (FR-5, FR-6)
@@ -135,6 +148,8 @@ Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 
 ## Rollout / migration notes
 
-- Reads the duplication report from `tobevisit-content` `IMP-20260914-duplicate-report-and-format-scope` when
-  present; works without it (FR-3 lists it as conditional).
+- Reads the duplication report through the project's `duplication` row: `tobevisit-content`
+  (`IMP-20260914-duplicate-report-and-format-scope`, report at `.duplication-report/jscpd-report.json`) and
+  `tobevisit-web` (`IMP-20260916-quality-gates-adoption`). Without one it runs and says so (FR-8); the row itself is
+  enforced by `IMP-20260916-quality-gates-check`.
 - First run on `tobevisit-content` counts from 2026-09-14, not from history, so it does not open with every context due.
