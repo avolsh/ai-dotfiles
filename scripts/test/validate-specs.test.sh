@@ -1094,6 +1094,68 @@ mkspec "$p" "IMP-20260826-anchor.md" </dev/null
 run "$p"
 assert_silent "AC-5 a project without an improvements log is a no-op" "$out" "log_closed_missing"
 
+# ---------- IMP-20260914-machine-readable-spec-reports AC-1: output is data ----------
+# One finding each of two checks: a bare-string `domain-refs` (schema_type) and a
+# link to a file that does not exist (link_broken).
+p="$(newproj reports)"
+mkspec "$p" "IMP-20260826-two-findings.md" <<'EOF'
+domain-refs: REQ-PCE-001
+EOF
+printf '\nSee [gone](missing.md).\n' >> "$p/docs/specs/active/IMP-20260826-two-findings.md"
+runall() { # $1 root, then flags — sets $out (stdout), $err (stderr) and $rc
+  local root="$1"; shift
+  set +e
+  out="$(python3 "$VALIDATOR" "$@" "$root/docs/specs" 2>"$TMP/stderr")"; rc=$?
+  set -e
+  err="$(cat "$TMP/stderr")"
+}
+json_ok() { # $1 desc, $2 json, $3 python expression over `d` that must be True
+  if ! printf '%s' "$2" | python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if ($3) else 1)" 2>/dev/null; then
+    echo "FAIL: $1 (JSON check failed: $3)" >&2
+    fails=$((fails + 1))
+  fi
+}
+
+runall "$p" --json
+expect "AC-1 --json keeps exit 1 on findings" 1 "$rc"
+json_ok "AC-1 --json carries both findings" "$out" \
+  "d['schemaVersion'] == 1 and len(d['findings']) == 2 and d['summary']['total'] == 2"
+json_ok "AC-1 --json counts one finding per check" "$out" \
+  "d['summary']['byCheck'] == {'schema_type': 1, 'link_broken': 1}"
+json_ok "AC-1 --json findings carry path, line, check and message" "$out" \
+  "all(set(f) == {'path', 'line', 'check', 'message'} for f in d['findings']) and d['findings'][0]['path'] == 'docs/specs/active/IMP-20260826-two-findings.md' and isinstance(d['findings'][0]['line'], int)"
+[ -z "$err" ] || { echo "FAIL: AC-1 --json leaves stderr empty (got: $err)" >&2; fails=$((fails + 1)); }
+
+runall "$p" --report findings
+expect "AC-1 --report findings keeps exit 1 on findings" 1 "$rc"
+[ "$(printf '%s\n' "$out" | wc -l | tr -d ' ')" -eq 3 ] \
+  || { echo "FAIL: AC-1 --report findings prints two findings plus one summary line (got: $out)" >&2; fails=$((fails + 1)); }
+assert_reports "AC-1 --report findings keeps the finding line format" "$out" \
+  "^docs/specs/active/IMP-20260826-two-findings.md:[0-9]*:link_broken:"
+assert_reports "AC-1 --report findings summary counts each check" "$out" \
+  "^validate-specs: 2 finding(s).*link_broken=1, schema_type=1$"
+[ -z "$err" ] || { echo "FAIL: AC-1 --report findings leaves stderr empty (got: $err)" >&2; fails=$((fails + 1)); }
+
+# The default output is what consuming Makefiles already read: unchanged.
+runall "$p"
+expect "AC-1 default output keeps exit 1" 1 "$rc"
+[ "$(printf '%s\n' "$out" | wc -l | tr -d ' ')" -eq 2 ] \
+  || { echo "FAIL: AC-1 default stdout is the two finding lines only (got: $out)" >&2; fails=$((fails + 1)); }
+assert_reports "AC-1 default summary stays on stderr" "$err" "^validate-specs: 2 finding(s) across 1 spec(s) + 0 agent(s)\.$"
+
+# Flags may precede or follow the path; a clean corpus reports zero and exits 0.
+p="$(newproj reportsclean)"
+mkspec "$p" "IMP-20260826-clean.md" </dev/null
+set +e
+out="$(python3 "$VALIDATOR" "$p/docs/specs" --json 2>/dev/null)"; rc=$?
+set -e
+expect "AC-1 --json on a clean corpus exits 0" 0 "$rc"
+json_ok "AC-1 --json on a clean corpus has no findings" "$out" \
+  "d['findings'] == [] and d['summary'] == {'total': 0, 'specs': 1, 'agents': 0, 'byCheck': {}}"
+runall "$p" --report findings
+expect "AC-1 --report findings on a clean corpus exits 0" 0 "$rc"
+assert_reports "AC-1 --report findings on a clean corpus prints its summary" "$out" "^validate-specs: 0 finding(s)"
+
 if [ "$fails" -eq 0 ]; then
   echo "scripts/validate-specs.py self-tests passed ✓"
 else

@@ -1,4 +1,4 @@
-.PHONY: help install install-check profile-init reset project workspace links-check validate-specs lint-rules validate-anchors sync-system-templates sync-agents-check check doctor doctor-fast install-git-hooks tests spec-metrics
+.PHONY: help install install-check profile-init reset project workspace links-check validate-specs lint-rules validate-anchors sync-system-templates sync-agents-check check doctor doctor-fast install-git-hooks tests spec-metrics specs-view
 
 help:
 	@echo "Targets:"
@@ -12,6 +12,7 @@ help:
 	@echo "  install-git-hooks          Point this repo's core.hooksPath at scripts/git-hooks"
 	@echo "  tests                      Run all script self-tests (hooks, doctor, pre-commit, metrics)"
 	@echo "  spec-metrics               Report framework-vs-product spec share by month"
+	@echo "  specs-view                 Active specs grouped by status, blocked ones flagged (PROJECT=path, TODAY=YYYY-MM-DD)"
 	@echo "  links-check                Verify markdown link integrity"
 	@echo "  validate-specs             Validate spec corpus (front-matter, deps, naming, etc.)"
 	@echo "  lint-rules                 Flag verbatim canonical-rule duplicates outside their canonical files"
@@ -56,6 +57,7 @@ tests:
 	./scripts/test/pre-commit.test.sh
 	./scripts/test/spec-metrics.test.sh
 	./scripts/test/validate-specs.test.sh
+	./scripts/test/spec-status.test.sh
 	./scripts/test/validate-quality-gates.test.sh
 	./scripts/test/report-duplication.test.sh
 	./scripts/test/profile-links.test.sh
@@ -64,6 +66,12 @@ tests:
 
 spec-metrics:
 	python3 ./scripts/spec-metrics.py
+
+# PROJECT points at another project's corpus; TODAY pins the ages (snapshot tests).
+PROJECT ?= .
+TODAY ?=
+specs-view:
+	@python3 ./scripts/spec-status.py --view $(if $(TODAY),--today $(TODAY)) "$(PROJECT)"
 
 doctor:
 	./scripts/ai-doctor.sh

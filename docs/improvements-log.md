@@ -391,3 +391,12 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** Hooking a new self-test into `make tests` is one line in `Makefile`. `spec-status-guard.sh` blocks the edit unless the in-progress spec claims `Makefile` in `affected-code:`; once claimed, `check_active_spec_overlap` fails because four other active specs (all at `specify`) claim it too, and its only remedies are `siblings:` / `depends-on:` or a merge. None of those is true of the relationship — the specs share a file, not a scope.
 - **What was changed:** The four specs were listed in this spec's `siblings:` with the reason written under § Rollout, so both checks pass. No tooling change.
 - **Suggested follow-up:** Give the overlap check a way to record a shared *registry* file (e.g. `Makefile`, a test list) without asserting a sibling relation — a `shared-paths:` front-matter field, or an allowlist of append-only files — so `siblings:` keeps meaning "split from the same cluster".
+
+### 2026-09-16 — Spec state was only readable by opening every spec
+
+- **Spec / task:** IMP-20260914-machine-readable-spec-reports / T1–T5 (review-after closure)
+- **Category:** tooling
+- **What was found:** No command answered "what is active, at which status, how far along, blocked on what", and `validate-specs` findings could only be consumed by re-parsing text. Counting task progress across the corpus needs to accept six spellings of a Status cell (`☑ done`, `✅ done (date)`, `Done`, `☐ pending`, `⊘ descoped`, `☒ cancelled`, often with a trailing note) and an escaped pipe inside descriptions. The first run on this repository shows three of eight active specs blocked on unmet `depends-on:`.
+- **What was changed:** The corpus reader (`Spec`, `Finding`, front-matter parser, discovery, section reader, row splitter, stamp and table patterns) moved to `scripts/speclib.py`, with `validate-specs.py` output byte-identical before and after. `validate-specs.py` gains `--json` and `--report findings`; new `scripts/spec-status.py` (text, `--json`, `--view`, `--today`) and `make specs-view PROJECT= TODAY=`; both self-tested in `make tests`; cheat sheet in `docs/ai-agent-framework.md` updated.
+- **Suggested follow-up:** `scripts/spec-metrics.py` still carries its own front-matter parser; move it onto `speclib.py` so the corpus has one reader. `IMP-20260914-consolidation-checkpoint` can now leave `specify` on this dependency and should read archived closure data through `speclib.py`.
+

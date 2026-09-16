@@ -11,7 +11,7 @@ finding is emitted.
 Design decisions (per spec FR-7 — stdlib only):
 
 - YAML front-matter is parsed by a deliberately-minimal inline parser
-  (`_parse_front_matter`). It handles only the subset present in the
+  (`_parse_front_matter`, shared with `spec-status.py` from `speclib.py`). It handles only the subset present in the
   framework's spec front-matter schema:
     * `key: scalar` (string, int, bool literal)
     * `key:` followed by 2-space-indented `- item` list entries
@@ -31,7 +31,9 @@ keeps the harness shape stable and the dispatch table honest.
 
 from __future__ import annotations
 
+import argparse
 import datetime as _dt
+import json
 import re
 import sys
 import unicodedata
@@ -39,167 +41,21 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable, NamedTuple
 
-
-# ---------------------------------------------------------------------------
-# Domain types
-# ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class Spec:
-    """A spec file on disk, with its parsed front-matter and body text."""
-
-    path: Path
-    front_matter: dict[str, object]
-    body: str  # raw body without front-matter
-    front_matter_end_line: int  # 1-indexed line where '---' closes
-
-
-@dataclass(frozen=True)
-class Finding:
-    """A single validation problem. Rendered as path:line:check:message."""
-
-    path: Path
-    line: int
-    check: str
-    message: str
-
-    def render(self, root: Path) -> str:
-        rel = self.path.relative_to(root)
-        return f"{rel}:{self.line}:{self.check}:{self.message}"
-
-
-# ---------------------------------------------------------------------------
-# Minimal YAML front-matter parser (zero deps per FR-7)
-# ---------------------------------------------------------------------------
-
-
-_SCALAR_BOOLS = {"true": True, "false": False, "yes": True, "no": False}
-
-
-def _coerce_scalar(raw: str) -> object:
-    """Coerce a YAML scalar string to Python: bool / int / string."""
-    raw = raw.strip()
-    if not raw:
-        return ""
-    low = raw.lower()
-    if low in _SCALAR_BOOLS:
-        return _SCALAR_BOOLS[low]
-    if raw.lstrip("-").isdigit():
-        return int(raw)
-    # Strip matching surrounding quotes
-    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in {"'", '"'}:
-        return raw[1:-1]
-    return raw
-
-
-def _parse_front_matter(
-    text: str, path: Path
-) -> tuple[dict[str, object], str, int, list[Finding]]:
-    """Return (front_matter, body, end_line, parser_findings).
-
-    end_line is the 1-indexed line number of the closing '---' fence.
-    parser_findings carries any non-fatal parser complaints.
-    """
-    findings: list[Finding] = []
-    lines = text.splitlines()
-    if not lines or lines[0].strip() != "---":
-        findings.append(
-            Finding(path, 1, "front_matter_missing", "no opening '---' fence")
-        )
-        return {}, text, 0, findings
-
-    # Find closing fence
-    end = None
-    for i in range(1, len(lines)):
-        if lines[i].strip() == "---":
-            end = i
-            break
-    if end is None:
-        findings.append(
-            Finding(path, len(lines), "front_matter_missing", "no closing '---' fence")
-        )
-        return {}, text, 0, findings
-
-    fm_lines = lines[1:end]
-    body = "\n".join(lines[end + 1 :])
-    fm: dict[str, object] = {}
-    current_key: str | None = None
-    current_list: list[object] | None = None
-
-    for offset, raw in enumerate(fm_lines, start=2):  # +2 = past opening fence
-        if not raw.strip() or raw.lstrip().startswith("#"):
-            continue
-        # List item under current_key
-        if raw.startswith("  - ") or raw.startswith("- "):
-            if current_list is None:
-                findings.append(
-                    Finding(path, offset, "front_matter_parse", "list item without key")
-                )
-                continue
-            item = raw.lstrip()[2:].strip()
-            current_list.append(_coerce_scalar(item))
-            continue
-        # key: value or key:
-        m = re.match(r"^([A-Za-z][A-Za-z0-9_-]*):\s*(.*)$", raw)
-        if not m:
-            findings.append(
-                Finding(path, offset, "front_matter_parse", f"unparseable line: {raw!r}")
-            )
-            current_list = None
-            continue
-        key, value = m.group(1), m.group(2)
-        if value == "" or value == "[]":
-            current_key = key
-            current_list = [] if value == "" else []
-            fm[key] = current_list
-            continue
-        fm[key] = _coerce_scalar(value)
-        current_key = key
-        current_list = None
-
-    return fm, body, end + 1, findings
-
-
-# ---------------------------------------------------------------------------
-# Spec discovery
-# ---------------------------------------------------------------------------
-
-
-def find_repo_root(start: Path) -> Path:
-    """Walk up from `start` until a `docs/specs` directory is found."""
-    cur = start.resolve()
-    for candidate in [cur, *cur.parents]:
-        if (candidate / "docs" / "specs").is_dir():
-            return candidate
-    raise SystemExit(
-        f"validate-specs: no docs/specs/ ancestor found starting at {start}"
-    )
-
-
-def discover_specs(root: Path) -> tuple[list[Spec], list[Finding]]:
-    """Load every *.md under docs/specs/{active,archived}/."""
-    specs: list[Spec] = []
-    findings: list[Finding] = []
-    for sub in ("active", "archived"):
-        d = root / "docs" / "specs" / sub
-        if not d.is_dir():
-            continue
-        for path in sorted(d.glob("*.md")):
-            if path.name == "README.md":
-                continue
-            text = path.read_text(encoding="utf-8")
-            fm, body, end_line, parse_findings = _parse_front_matter(text, path)
-            findings.extend(parse_findings)
-            specs.append(
-                Spec(
-                    path=path,
-                    front_matter=fm,
-                    body=body,
-                    front_matter_end_line=end_line,
-                )
-            )
-    return specs, findings
+# The corpus reader lives beside this script; a direct run has no package to import it through.
+# No bytecode cache either: these commands write nothing, not even `__pycache__/` beside them.
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from speclib import (  # noqa: E402
+    _LAST_UPDATED_RE,
+    _TABLE_SEP_RE,
+    Finding,
+    Spec,
+    _h2_section_lines,
+    _parse_front_matter,
+    _row_cells,
+    discover_specs,
+    find_repo_root,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -537,11 +393,6 @@ def check_filename_id_parity(specs: Iterable[Spec]) -> list[Finding]:
     return findings
 
 
-# Match a markdown table separator row: `|---|---|...` with optional
-# colons (alignment) and whitespace. Two-or-more pipe-segments suffice.
-_TABLE_SEP_RE = re.compile(r"^\s*\|(?:\s*:?-+:?\s*\|)+\s*$")
-
-
 def _has_tasks_table(body: str) -> bool:
     """True iff the body has a `## Tasks` H2 followed by an actual table.
 
@@ -612,8 +463,6 @@ def check_status_invariants(specs: Iterable[Spec]) -> list[Finding]:
     return findings
 
 
-# Pattern: `*Last updated: YYYY-MM-DD*` anywhere in the body.
-_LAST_UPDATED_RE = re.compile(r"\*Last updated:\s*(\d{4}-\d{2}-\d{2})\*")
 _FRESHNESS_MAX_DAYS = 60
 
 
@@ -1337,41 +1186,6 @@ def _traceability_judged(spec: Spec) -> bool:
     return dated >= _TRACEABILITY_CUTOFF
 
 
-def _h2_section_lines(spec: Spec, titles: set[str]) -> list[tuple[int, str]]:
-    """Lines of the first `## <title>` section matching `titles`, paired with
-    their 1-indexed line number in the file.
-
-    Headings inside a fenced block are text, not structure: a spec that shows
-    the shape of a section in `## Design` — `## Closure Evidence` with a
-    `### Review` under it, say — would otherwise have its worked example read
-    as the section itself, and the real one never reached.
-    """
-    lines: list[tuple[int, str]] = []
-    inside = False
-    fence: str | None = None
-    for i, line in enumerate(spec.body.splitlines()):
-        stripped = line.lstrip()
-        if fence is not None:
-            if stripped.startswith(fence):
-                fence = None
-            if inside:
-                lines.append((spec.front_matter_end_line + i + 1, line))
-            continue
-        if stripped.startswith("```") or stripped.startswith("~~~"):
-            fence = stripped[:3]
-            if inside:
-                lines.append((spec.front_matter_end_line + i + 1, line))
-            continue
-        if stripped.startswith("## "):
-            if inside:
-                break
-            inside = stripped[3:].strip().lower() in titles
-            continue
-        if inside:
-            lines.append((spec.front_matter_end_line + i + 1, line))
-    return lines
-
-
 def _citations(pattern: re.Pattern[str], text: str) -> set[int]:
     """ID numbers `pattern` cites in `text`, a range expanded to its members."""
     cited: set[int] = set()
@@ -1530,10 +1344,6 @@ def check_ac_closure_coverage(specs: Iterable[Spec]) -> list[Finding]:
 # and this validator can both read it.
 _REVIEW_CUTOFF = _dt.date(2026, 9, 16)  # pinned to this IMP's closure date
 _HIGH_SEVERITIES = {"high", "critical"}
-# Splits a table row on real column separators only. The corpus writes
-# `severity: high \| critical` inside cells; splitting on that escaped pipe
-# would shift every later column and mis-read the one it lands on.
-_UNESCAPED_PIPE_RE = re.compile(r"(?<!\\)\|")
 
 # The sub-section's first non-blank line: `RESULT: <result> — <tail>`.
 _REVIEW_RESULT_RE = re.compile(r"^RESULT:\s*(\S.*?)\s*$")
@@ -1563,11 +1373,6 @@ def _high_tier(spec: Spec) -> bool:
     if str(front.get("risk", "")).strip().lower() == "high":
         return True
     return str(front.get("severity", "")).strip().lower() in _HIGH_SEVERITIES
-
-
-def _row_cells(stripped: str) -> list[str]:
-    """Cells of a markdown table row, split on unescaped pipes only."""
-    return [c.strip() for c in _UNESCAPED_PIPE_RE.split(stripped.strip("|"))]
 
 
 def _review_judged(spec: Spec) -> bool:
@@ -2072,11 +1877,30 @@ def check_log_closed(root: Path) -> list[Finding]:
 # ---------------------------------------------------------------------------
 
 
+def _parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        prog="validate-specs",
+        description="Validate a project's spec corpus under docs/specs/.",
+    )
+    # An optional path lets a consuming project validate its own specs: the walk-up
+    # starts there instead of at this file, which otherwise always resolves to
+    # ai-dotfiles and silently reports on the wrong corpus.
+    parser.add_argument("path", nargs="?", help="project path (default: this repository)")
+    output = parser.add_mutually_exclusive_group()
+    output.add_argument(
+        "--json", action="store_true", help="print one JSON report to stdout, nothing to stderr"
+    )
+    output.add_argument(
+        "--report",
+        choices=["findings"],
+        help="findings: finding lines plus one per-check summary line, all on stdout",
+    )
+    return parser.parse_args(argv[1:])
+
+
 def main(argv: list[str]) -> int:
-    # An optional path argument lets a consuming project validate its own specs:
-    # the walk-up starts there instead of at this file, which otherwise always
-    # resolves to ai-dotfiles and silently reports on the wrong corpus.
-    start = Path(argv[1]).resolve() if len(argv) > 1 else Path(__file__).resolve().parent
+    args = _parse_args(argv)
+    start = Path(args.path).resolve() if args.path else Path(__file__).resolve().parent
     root = find_repo_root(start)
     specs, discovery_findings = discover_specs(root)
     agents, agent_discovery_findings = discover_agents(root)
@@ -2090,8 +1914,44 @@ def main(argv: list[str]) -> int:
     findings.extend(check_baseline_freshness(root, specs))
     findings.extend(check_log_closed(root))
 
+    by_check: dict[str, int] = {}
+    for f in findings:
+        by_check[f.check] = by_check.get(f.check, 0) + 1
+    rc = 1 if findings else 0
+
+    if args.json:
+        report = {
+            "schemaVersion": 1,
+            "root": str(root),
+            "findings": [
+                {
+                    "path": str(f.path.relative_to(root)),
+                    "line": f.line,
+                    "check": f.check,
+                    "message": f.message,
+                }
+                for f in findings
+            ],
+            "summary": {
+                "total": len(findings),
+                "specs": len(specs),
+                "agents": len(agents),
+                "byCheck": by_check,
+            },
+        }
+        print(json.dumps(report, indent=2, ensure_ascii=False))
+        return rc
+
     for f in findings:
         print(f.render(root))
+
+    if args.report == "findings":
+        counts = ", ".join(f"{check}={n}" for check, n in sorted(by_check.items()))
+        print(
+            f"validate-specs: {len(findings)} finding(s) across {len(specs)} spec(s) "
+            f"+ {len(agents)} agent(s)" + (f"; {counts}" if counts else ".")
+        )
+        return rc
 
     # + agent front-matter, + domain REQ-IDs, + baseline freshness, + log Closed
     total_checks = len(CHECK_REGISTRY) + 4

@@ -224,6 +224,9 @@ hidden debt.
 | Regenerate project `AGENTS.md` after editing `copilot-instructions.md` | `make sync-agents` (per project) |
 | Verify no drift (used by CI) | `make sync-agents-check` |
 | Validate spec corpus (front-matter, deps, naming, freshness, links, English-only, status invariants) | `make validate-specs` |
+| Validator findings as data — one JSON report, or finding lines plus a per-check summary on stdout | `python3 scripts/validate-specs.py [path] --json` / `--report findings` |
+| Active specs grouped by status, task progress, blocked ones flagged | `make specs-view` (`PROJECT=<path>` for another project) |
+| The same spec status as JSON for scripts and agents | `python3 scripts/spec-status.py [path] --json` |
 | Verify active-profile invariants (symlinks, manifest) | `make doctor` |
 | Install the git pre-commit backstop (secrets, stamps) | `make install-git-hooks` |
 | Run all script self-tests | `make tests` |
