@@ -425,3 +425,12 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** A `☑ done` row was set before approval, so a resumed session could not tell an approved task from an unapproved one. The Workflows table exists twice — system and project `_canonical.md` — and a spec naming only the system copy leaves project agents unable to route the new trigger. The guide's command list is declared identical to `README.md` §3, a coupling no check enforces. The Visualize draft also claimed a validator rejects a `done` spec with unfinished rows; none does.
 - **What was changed:** `◐ awaiting approval` added (`boundaries.md § Always do #11`); `framework/prompts/resume-spec.prompt.md` with worked examples; the row added to the system template, guide and README.
 - **Suggested follow-up:** Add the `resume` row to `framework/templates/project/_canonical.md` and re-run `make sync-agents` per project; have `lint-rules` or `links-check` compare the two Workflows tables and the guide/README command lists. Re-run AC-1 in a cold session.
+
+### 2026-09-16 — Cold runs found a dead `<system>/docs/` prefix and two resume gaps
+
+- **Spec / task:** IMP-20260916-resume-bottom-line-gaps / T1; BUG-20260916-system-docs-prefix-unresolved / T1–T2 (review-after closures)
+- **Category:** tooling
+- **Closed:** 2026-09-16
+- **What was found:** Ten framework files cite `<system>/docs/agent-protocol.md`, but profile wiring never linked `docs/`, and `ai-doctor` checked the same short list, so the dead prefix went unreported; every cold agent first looked in `framework/docs/`. Step 5 of `resume-spec.prompt.md` left empty Bottom Line fields and early-committed later-task files to guesswork. The first fix ("any empty field reads `none on record`") collided with the canonical `none` — found only by a second cold run.
+- **What was changed:** `profile-links.sh` links `$AI_DOTFILES/docs` as `<tool>/docs`; `ai-doctor` checks it; regression tests in both suites; Path prefixes table lists it; real profiles patched. Step 5 names the two fields that read `none on record` and routes a later task's file to Divergences.
+- **Suggested follow-up:** Re-run `ai work` / `ai-profile-init work` — the `work` profile fails 18 doctor checks unrelated to this fix. A cold sub-agent run is cheap (~30 s) and caught what the implementing session could not; consider making it the default evidence for prompt ACs.

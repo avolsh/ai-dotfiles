@@ -27,11 +27,13 @@ mkdir -p "$DF/framework/spec-workflows" "$DF/framework/prompts" \
          "$DF/framework/agents" "$DF/framework/upstream"
 echo "# b" > "$DF/framework/boundaries.md"
 echo "# c" > "$DF/framework/templates/system/claude/CLAUDE.md"
+mkdir -p "$DF/docs" && echo "# ap" > "$DF/docs/agent-protocol.md"
 
 P="$DF/profiles/test/claude"
 mkdir -p "$P"
 ln -s "$DF/framework/templates/system/claude/CLAUDE.md" "$P/CLAUDE.md"
 ln -s "$DF/framework/boundaries.md" "$P/boundaries.md"
+ln -s "$DF/docs" "$P/docs"
 for ref in spec-workflows prompts templates skills agents upstream; do
   ln -s "$DF/framework/$ref" "$P/$ref"
 done
@@ -59,6 +61,15 @@ set +e
 AI_DOTFILES="$DF" "$SUT" test >/dev/null 2>&1; rc=$?
 set -e
 expect "repaired profile passes" 0 "$rc"
+
+# 3b. a missing docs link fails and is named (BUG-20260916-system-docs-prefix-unresolved)
+rm "$P/docs"
+set +e
+out="$(AI_DOTFILES="$DF" "$SUT" test 2>&1)"; rc=$?
+set -e
+expect "missing docs link fails" 1 "$rc"
+echo "$out" | grep -q "/docs" || { echo "FAIL: missing docs link must be named" >&2; fails=$((fails+1)); }
+ln -s "$DF/docs" "$P/docs"
 
 # 4. fast mode ignores ref links (only instruction + manifest)
 rm "$DF/framework/boundaries.md"
