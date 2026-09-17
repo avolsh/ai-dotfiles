@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-17*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -28,7 +28,7 @@ ai-dotfiles/
 │   ├── boundaries.md              ← Rules: always do / ask first / never do
 │   ├── spec-workflows/            ← The spec lifecycle (stages, templates, questions)
 │   ├── skills/                    ← Reusable knowledge modules
-│   ├── prompts/                   ← Workflow triggers ("create CR", "plan", etc.)
+│   ├── prompts/                   ← Workflow triggers ("explore", "create CR", "plan", etc.)
 │   └── templates/                 ← Bootstrap templates
 │       ├── system/                ← Per-tool system templates (rendered by ai-profile-init)
 │       ├── workspace/             ← Workspace scaffold templates (used by ai-workspace)

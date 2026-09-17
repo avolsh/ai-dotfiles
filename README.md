@@ -1,6 +1,6 @@
 # ai-dotfiles
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-17*
 
 Personal AI Agent Framework dotfiles — skills, spec-workflows, prompts, and
 identity profiles for GitHub Copilot, Claude Code, and OpenAI Codex CLI.
@@ -77,6 +77,7 @@ Trigger phrases below map 1:1 to `<system>/prompts/*.prompt.md`.
 
 | What you want | What to say | What happens |
 |---|---|---|
+| Think an idea through | `explore`, `think through`, `compare options` | AI reads and asks, writes nothing → hands off settled answers to create-spec |
 | Build a feature | `create CR`, `new feature`, `specify` | AI asks questions → writes spec → waits for approval |
 | Improve / refactor | `create IMP`, `improve`, `refactor` | AI writes improvement spec → waits for approval |
 | Fix a bug | `bug`, `triage`, `investigate issue` | AI investigates → writes bug spec → waits for approval |

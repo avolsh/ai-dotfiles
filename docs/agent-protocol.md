@@ -1,6 +1,6 @@
 # Agent Protocol
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-17*
 
 Operating procedures for AI agents working in any project that participates in the AI Agent Framework: path prefixes, two-scope model, context loading order, checklists, output conventions, and the on-demand reference material (determinism, schema sync, doc freshness, skills audit).
 
@@ -79,7 +79,11 @@ An AI agent starting work MUST read files in this order:
    the change is cross-project, or shared framework files are involved. Skip
    if the host has no `<workspace>` configured.
 4. Relevant spec from the project's `docs/specs/active/` (if working on a spec).
-   Once the spec exists, load the current spec file rather than the template.
+   Once the spec exists, load the current spec file rather than the template,
+   then run `python3 "$AI_DOTFILES/scripts/spec-next.py" <spec>` and load its
+   output and the files under its `Load:` instead of the lifecycle docs — it
+   prints the next step's missing sections, questions, gate and rules read from
+   those docs. If it is missing or exits non-zero, load the lifecycle docs in full.
    Read `## Summary` first to anchor Goal, Scope, and Out of scope before
    reading detailed requirements or tasks.
 5. Specific docs referenced by the spec's `affected-docs` field that are
@@ -110,7 +114,7 @@ Load only what the current task requires. Not every task needs the full protocol
 |---|---|---|
 | Quick fix / typo | `<system>` instruction file + project `AGENTS.md` | -- |
 | Feature work (no spec) | Above + `<system>/boundaries.md` + relevant skill(s) | `agent-protocol.md` if ambiguity arises |
-| Spec-driven work | Above + current spec + `agent-protocol.md` + `spec-lifecycle.md` + stage skills (see `spec-types.md` § Skills per stage) | Question templates, ADR conventions, this doc's on-demand sections for determinism/schema-sync/doc-freshness |
+| Spec-driven work | Above + current spec + `spec-next` output and the files it lists + stage skills (see `spec-types.md` § Skills per stage) | `agent-protocol.md` + `spec-lifecycle.md` when `spec-next` is unavailable; question templates, ADR conventions, this doc's on-demand sections for determinism/schema-sync/doc-freshness |
 | Skills audit | `<workspace>/CLAUDE.md` + `<system>/skills/` + project `<project>/.github/copilot/skills/` + upstream catalog tree | Individual upstream `SKILL.md` files |
 | Framework changes | Full protocol + both scopes | All framework docs |
 

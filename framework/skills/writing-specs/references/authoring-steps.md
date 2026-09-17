@@ -1,6 +1,6 @@
 # Authoring Steps — inline procedures
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-17*
 
 <!-- Anchors in this file (per `docs/rule-canonical-map.md`): R14 `§ C step 5` (the cap counts decisions) · R15 `§ C step 6` (adjudicated cluster is an override, not a re-run). -->
 
@@ -78,7 +78,7 @@ Plan-stage safety net ([`splitting-rules.md § 3`](splitting-rules.md)).
    **A P-signal whose cluster matches a trigger already adjudicated at the Specify gate is recorded as an override under `## Split Decision`, not re-run.**
    Write the table, keep `status: plan`, and have the override cite the P-signal, the Specify trigger it repeats, and the exception the human elected; surface it at the Plan gate so the human can still reject it.
    The flip back to `specify` is for clusters the Split check never named — there, do NOT write the table: flip `status: plan → specify` and re-run the Split check.
-7. **Format `## Tasks`** — first the line `> **Before starting Task <T1>, set status: in-progress in the front-matter above.**`, then the 8-column table: `| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |`.
+7. <a id="tasks-table-format"></a>**Format `## Tasks`** — first the line `> **Before starting Task <T1>, set status: in-progress in the front-matter above.**`, then the 8-column table: `| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |`.
 
 ## D. Research authoring (RES)
 

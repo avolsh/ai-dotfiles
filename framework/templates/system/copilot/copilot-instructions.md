@@ -10,6 +10,7 @@
 
 | User says | Load prompt |
 |---|---|
+| "explore", "think through", "compare options" | `<system>/prompts/explore.prompt.md` |
 | "create CR", "new feature", "specify" | `<system>/prompts/create-spec.prompt.md` |
 | "create IMP", "improve", "refactor" | `<system>/prompts/create-spec.prompt.md` |
 | "research", "spike", "POC", "investigate (open-ended)" | `<system>/prompts/research-spec.prompt.md` |

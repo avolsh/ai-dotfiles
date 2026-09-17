@@ -8,6 +8,13 @@
 # (the violation), `line` and a `message` (str.format over the bound names). Expressions are
 # single-key maps `{op: args}`; `$name` is a variable, `$fm.<key>` front matter, `$doc.<attr>`
 # the document. Checks that read structure in Python are `plugins:`, named with the ids they own.
+#
+# `question_lists:` and `stages:` drive `scripts/spec-next.py` (IMP-20260914-spec-next-instructions). A stage is
+# `stages.<status>.<lane>` (lane: standard | trivial | research), an ordered list of steps; the next step is the
+# first whose `until` is not met — `required` (the type's required_sections up to this status, filled), a list of
+# section titles (filled; `required` may appear in it), or `tasks_done` (no task row left unticked). A step names a `questions` list, a
+# `procedure` and `refs` as `path#anchor` into the canonical docs, and the last step of a status its `gate`.
+# spec-next prints each reference's first sentence from the doc; validate-anchors.py checks every reference resolves.
 
 consts:
   enums:
@@ -342,6 +349,83 @@ plugins:
   - {fn: check_baseline_freshness, args: [root, specs], ids: [baseline_stale, baseline_verified_missing]}
   - {fn: check_log_closed, args: [root], ids: [log_closed_missing]}
   - {fn: check_baseline_deltas, args: [root, specs], ids: ['baseline_delta_*', 'baseline_impact_*']}
+
+# ---- Stages: what spec-next prints for one spec's next step -------------------
+question_lists:
+  CR: {ref: framework/spec-workflows/questions/cr-questions.md#standard-questions-ask-10-per-round, limit: '≤10', mandatory: [1, 2]}
+  IMP: {ref: framework/spec-workflows/questions/imp-questions.md#standard-questions-ask-10-per-round, limit: '≤10', mandatory: [1, 2]}
+  BUG: {ref: framework/spec-workflows/questions/bug-questions.md#standard-questions-ask-10-per-round, limit: '≤10', mandatory: [2]}
+  RES: {ref: framework/spec-workflows/questions/res-questions.md#standard-questions-ask-all-5-single-round-re-ask-on-backflip-per--how-to-use, limit: exactly 5, mandatory: [1, 2, 3, 4, 5]}
+  trivial: {ref: framework/spec-workflows/questions/trivial-questions.md#standard-questions-ask-all-3-single-round, limit: exactly 3, mandatory: [1, 2, 3]}
+  design: {ref: framework/spec-workflows/questions/design-questions.md#questions-ask-5, limit: '≤5', mandatory: []}
+
+stages:
+  specify:
+    standard:
+      - id: author
+        label: Question round, then write the spec body
+        until: required
+        questions: by_type
+        procedure: framework/skills/writing-specs/references/authoring-steps.md#a-spec-authoring-cr--imp
+        refs: [framework/boundaries.md#never-skip-specify, framework/spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify, framework/spec-workflows/spec-lifecycle.md#observation-shaped-evidence, framework/spec-workflows/spec-lifecycle.md#baseline-deltas, docs/writing-specs.md#length-budget]
+      - id: split
+        label: Split check
+        until: [Split Decision]
+        procedure: framework/skills/writing-specs/references/authoring-steps.md#b-split-check-specify-mandatory
+        refs: [framework/spec-workflows/spec-lifecycle.md#split-check-mandatory, framework/skills/writing-specs/references/splitting-rules.md#-2-specify-stage-triggers-must-split, framework/skills/writing-specs/references/splitting-rules.md#-4-keep-as-one-exceptions-must-not-split]
+      - id: design
+        label: Design Decisions, then Visualize
+        until: [Design]
+        questions: design
+        procedure: framework/spec-workflows/spec-lifecycle.md#design-decisions-triggers
+        refs: [framework/spec-workflows/spec-lifecycle.md#visualize-triggers, framework/spec-workflows/spec-lifecycle.md#design-departure-adr]
+      - id: gate
+        label: Requirements gate
+        gate: Post the per-spec summary and wait for explicit approval of the requirements
+        refs: [framework/spec-workflows/spec-lifecycle.md#never-flip-without-gate, framework/spec-workflows/spec-lifecycle.md#depends-on-blocks-plan, framework/spec-workflows/spec-lifecycle.md#inventory-overlap-restales]
+    trivial:
+      - id: author
+        label: Three questions, then the combined-gate body with its one Tasks row
+        until: [required, Design, Split Decision, Tasks]
+        questions: trivial
+        procedure: framework/spec-workflows/spec-lifecycle.md#combined-gate-format
+        refs: [framework/spec-workflows/spec-lifecycle.md#eligibility-validator-enforced, framework/spec-workflows/spec-lifecycle.md#rules-for-the-lane-1, framework/spec-workflows/spec-lifecycle.md#observation-shaped-evidence]
+      - id: gate
+        label: Combined specify+plan gate
+        gate: Post requirements and the one-row Tasks table together and wait for explicit approval
+        refs: [framework/spec-workflows/spec-lifecycle.md#status-sequence, framework/spec-workflows/spec-lifecycle.md#never-flip-without-gate]
+    research:
+      - id: author
+        label: Five questions, then the RES body
+        until: required
+        questions: by_type
+        procedure: framework/skills/writing-specs/references/authoring-steps.md#d-research-authoring-res
+        refs: [framework/spec-workflows/spec-lifecycle.md#res-exception, framework/spec-workflows/spec-lifecycle.md#front-matter-additions-res-only, framework/spec-workflows/spec-lifecycle.md#rules-for-the-lane]
+      - id: gate
+        label: RES gate — hypothesis, kill criteria and sandbox
+        gate: Post the hypothesis, kill criteria and sandbox path and wait for explicit approval to start the loop
+        refs: [framework/spec-workflows/spec-lifecycle.md#status-transitions-res-only, framework/spec-workflows/spec-lifecycle.md#never-flip-without-gate]
+  plan:
+    standard:
+      - id: decompose
+        label: Decompose into vertical-slice tasks
+        until: [Tasks]
+        procedure: framework/skills/writing-specs/references/authoring-steps.md#c-task-decomposition-plan
+        refs: [framework/skills/writing-specs/references/authoring-steps.md#tasks-table-format, framework/skills/writing-specs/references/splitting-rules.md#-3-plan-stage-safety-net-discovered-later, framework/spec-workflows/spec-lifecycle.md#depends-on-blocks-plan, framework/spec-workflows/spec-lifecycle.md#inventory-overlap-restales]
+      - id: gate
+        label: Plan gate
+        gate: Post task count, file count, model tiers and execution order and wait for explicit plan approval
+        refs: [framework/spec-workflows/spec-lifecycle.md#status-transitions, framework/boundaries.md#task-row-status-in-place]
+  in-progress:
+    standard:
+      - id: task
+        label: Next task
+        until: tasks_done
+        refs: [framework/boundaries.md#task-row-status-in-place, framework/boundaries.md#stop-what-you-started, framework/boundaries.md#last-updated-stamp]
+      - id: closure
+        label: Closure gate
+        gate: Record Closure Evidence per AC, post the closure summary and wait for approval (low/trivial may close review-after)
+        refs: [framework/spec-workflows/spec-lifecycle.md#observation-shaped-evidence, framework/spec-workflows/spec-lifecycle.md#reviewer-substep, framework/spec-workflows/spec-lifecycle.md#review-after-closure, framework/spec-workflows/spec-lifecycle.md#stop-processes-at-closure, framework/spec-workflows/spec-lifecycle.md#consolidation-substep]
 
 # ---- Advisory: required sections, from the four templates + lifecycle gates --
 # Advisory: validate-specs.py does not enforce these; `spec-next` and `lifecycle_engine.py --advisory` read them.

@@ -235,6 +235,10 @@ for the full rule set and Iteration Log mandate.
 
 ## RES exception <a id="res-exception"></a>
 
+**Lane review 2026-09-17 — keep.** Two uses in 160 archived specs, one of them the spike that produced
+`lifecycle.yaml`; `explore.prompt.md` takes exploration that needs no running code. Evidence:
+[lane review](../../docs/specs/archived/artifacts/IMP-20260914-explore-mode-and-lane-review-lane-review.md).
+
 The RES (Research / Spike / POC) spec type implements a fundamentally
 different lifecycle from CR / BUG / IMP: the work is **iterative**, not
 forward-only. A RES spec may transition `in-progress → specify` an
@@ -298,6 +302,11 @@ being `done`.
 
 ## Trivial lane <a id="trivial-lane"></a>
 
+**Lane review 2026-09-17 — remove.** One use in 160 archived specs at the highest footprint per use (328 lines); the
+Direct lane covers the small end and the standard track the rest. The lane stays in force until the follow-up
+[`IMP-20260917-remove-trivial-lane`](../../docs/specs/active/IMP-20260917-remove-trivial-lane.md) closes; specs dated
+before that change keep validating with `risk: trivial` / `severity: trivial`.
+
 The Trivial lane is a parallel short-circuit of the standard lifecycle for changes too small to warrant the full
 Specify → Plan → in-progress gate sequence. It elects in via `risk: trivial` (CR/IMP) or `severity: trivial` (BUG). The
 Closure evidence requirement is **unchanged** — every AC still needs evidence; the closure approval may run
@@ -358,6 +367,9 @@ IMP-20260514-trivial-lane Task T2).
    flipped to `trivial`. The lane applies only to specs created after this rule lands.
 
 ## Direct lane <a id="direct-lane"></a>
+
+**Lane review 2026-09-17 — keep.** Eight improvements-log entries across both corpora at 122 lines of footprint, the
+cheapest lane per use.
 
 The Direct lane covers owner-approved changes too small for any spec — the
 "owner-approved direct edit" practice the improvements log already records,

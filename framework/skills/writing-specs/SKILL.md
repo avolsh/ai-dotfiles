@@ -9,7 +9,7 @@ description: >
 
 # Writing Specs
 
-*Last updated: 2026-06-16*
+*Last updated: 2026-09-17*
 
 Spec authoring, the Split check, and task decomposition run **inline in
 the main context** — they are not delegated to subagents. The
@@ -26,6 +26,8 @@ step-by-step procedures live in
 - Closing a spec (evidence, status flip, move to `archived/`).
 
 ## References
+
+- `python3 "$AI_DOTFILES/scripts/spec-next.py" <spec> [--json]` — run first at every stage: the next step's missing sections, questions, gate and rules for this spec alone, read from the canonical docs through `stages:` in [`lifecycle.yaml`](../../spec-workflows/lifecycle.yaml). Fall back to the references below when it is unavailable.
 
 - [`references/authoring-steps.md`](references/authoring-steps.md) — inline procedures for spec authoring (CR/IMP/RES), the Split check, and task decomposition.
 - [`docs/writing-specs.md`](../../../docs/writing-specs.md) — lifecycle pointer, stage walk-throughs (Specify, Plan), writing-style rules, length budget, gated compression pass, RFC 2119, anti-patterns, self-review additions, template usage, and topic index.

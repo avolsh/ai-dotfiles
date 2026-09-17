@@ -15,6 +15,7 @@
 
 | User says | Load prompt |
 |---|---|
+| "explore", "think through", "compare options" | `<system>/prompts/explore.prompt.md` |
 | "create CR", "new feature", "specify" | `<system>/prompts/create-spec.prompt.md` |
 | "create IMP", "improve", "refactor" | `<system>/prompts/create-spec.prompt.md` |
 | "visualize", "architecture" | `<system>/prompts/visualize-spec.prompt.md` |

@@ -1,6 +1,6 @@
 # Spec Workflow — How We Work
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-17*
 
 Every change — feature, bug fix, or improvement — follows the same
 four-status lifecycle. Each status transition ends with a **human gate**:
@@ -370,6 +370,7 @@ Identical to [Getting Started](../README.md#3-start-working).
 
 | What you want | What to say | What happens |
 |---|---|---|
+| Think an idea through | `explore`, `think through`, `compare options` | AI reads and asks, writes nothing → hands off settled answers to create-spec |
 | Build a feature | `create CR`, `new feature`, `specify` | AI asks questions → writes spec → waits for approval |
 | Improve / refactor | `create IMP`, `improve`, `refactor` | AI writes improvement spec → waits for approval |
 | Fix a bug | `bug`, `triage`, `investigate issue` | AI investigates → writes bug spec → waits for approval |
