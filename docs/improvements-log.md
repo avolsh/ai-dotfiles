@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-17*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -434,3 +434,12 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** Ten framework files cite `<system>/docs/agent-protocol.md`, but profile wiring never linked `docs/`, and `ai-doctor` checked the same short list, so the dead prefix went unreported; every cold agent first looked in `framework/docs/`. Step 5 of `resume-spec.prompt.md` left empty Bottom Line fields and early-committed later-task files to guesswork. The first fix ("any empty field reads `none on record`") collided with the canonical `none` — found only by a second cold run.
 - **What was changed:** `profile-links.sh` links `$AI_DOTFILES/docs` as `<tool>/docs`; `ai-doctor` checks it; regression tests in both suites; Path prefixes table lists it; real profiles patched. Step 5 names the two fields that read `none on record` and routes a later task's file to Divergences.
 - **Suggested follow-up:** Re-run `ai work` / `ai-profile-init work` — the `work` profile fails 18 doctor checks unrelated to this fix. A cold sub-agent run is cheap (~30 s) and caught what the implementing session could not; consider making it the default evidence for prompt ACs.
+
+### 2026-09-17 — Parity against a clean corpus proved nothing; the self-tests left 26 finding ids unexercised
+
+- **Spec / task:** RES-20260914-declarative-lifecycle-schema / T1–T6 and closure (outcome `confirmed`)
+- **Category:** tooling
+- **Closed:** 2026-09-17
+- **What was found:** The hypothesis asked for finding parity "on both corpora", but they yield 0 and 3 findings, so an engine that reports nothing nearly passes. The validator's own `validate-specs.test.sh` never triggers 26 of its 64 finding ids — all of `naming_pattern`, `filename_id_parity`, `freshness_*`, `trivial_eligibility_*`, `agent_*` — the checks most likely to be rewritten. Seven rules read differently in prose and code: `## Closure Evidence` is read by two checks but is in no template; "RES MUST NOT elect `risk: trivial`" is unenforced; the Tasks-table status check is not fence-aware while section readers are; two `Last updated` grammars; Rule #10 silent on `done`; RES has no `plan`, so its Tasks table can only land in the same edit as the `in-progress` flip; `code-location` stricter than stated. The schema's line saving (−33 %) is a density effect — it is +29 % in characters — and it is data only for front-matter, statuses, lanes and sections; traceability, link and overlap rules become programs in YAML.
+- **What was changed:** Nothing in `scripts/` or `framework/`. The sandbox (`research/RES-20260914-declarative-lifecycle-schema/` at the workspace root) carries a shim that runs the validator's self-tests unchanged against a second implementation, mutation fixtures for the 26 ids, and the full measurement record.
+- **Suggested follow-up:** A sibling IMP productionising the vocabulary only (types, statuses, lanes, required sections with a date cut-off, front-matter schema) for `IMP-20260914-spec-next-instructions` to read, keeping algorithmic checks in Python. Separately: add self-tests for the 26 ids; enforce the RES trivial rule; add `## Closure Evidence` to the CR / IMP / BUG templates. For any future rewrite of a checker, require parity against violating fixtures, never only a clean corpus.
