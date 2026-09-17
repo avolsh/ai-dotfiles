@@ -2,7 +2,8 @@
 id: IMP-20260917-remove-trivial-lane
 type: IMP
 date: 2026-09-17
-status: in-progress
+status: done
+closed: 2026-09-17
 owner: alexvolsh
 risk: medium
 affected-repos:
@@ -46,7 +47,7 @@ baseline-impact: none — ai-dotfiles has no docs/domain/ baselines; the change 
 
 > Created by `IMP-20260914-explore-mode-and-lane-review` T4 to carry the owner's `remove` decision. Specify question
 > round ran 2026-09-17 (Q1 scope, Q2 partial application, FR-2 date gate, Q5 rollback); requirements approved
-> 2026-09-17.
+> 2026-09-17; closure approved 2026-09-17.
 
 ## Summary
 
@@ -166,7 +167,7 @@ itself. T2–T5 do not fire (one repo, one context, no external blocker); T6 doe
 | T3 | Canonical rules: tombstone `§ Trivial lane`, Direct lane falls back to the standard track, review-after names `low` only; `spec-types.md` section removed; `boundaries.md § Never do #2/#4` and `rule-canonical-map.md` (FR-5; D5) | `framework/spec-workflows/spec-lifecycle.md`, `framework/spec-workflows/spec-types.md`, `framework/boundaries.md`, `docs/rule-canonical-map.md` | `scripts/lint-rules.py` | T2 | writing-specs | default | ☑ done |
 | T4 | Prompts and RES surfaces: drop the trivial scaffold note, RES ban and candidate-risk value; RES template comment and `res-questions.md` note (FR-5) | `framework/prompts/create-spec.prompt.md`, `framework/prompts/research-spec.prompt.md`, `framework/prompts/explore.prompt.md`, `framework/spec-workflows/templates/RES-TEMPLATE.md`, `framework/spec-workflows/questions/res-questions.md` | — | T3 | writing-specs | default | ☑ done |
 | T5 | Templates and guides: trivial comments in CR/IMP/BUG templates; `spec-workflow-guide.md` Trivial section and cross-refs, `spec-format.md`, `ai-agent-framework.md`, `writing-specs.md` (FR-5) | `framework/spec-workflows/templates/CR-TEMPLATE.md`, `framework/spec-workflows/templates/IMP-TEMPLATE.md`, `framework/spec-workflows/templates/BUG-TEMPLATE.md`, `docs/spec-workflow-guide.md`, `docs/spec-format.md`, `docs/ai-agent-framework.md`, `docs/writing-specs.md` | — | T4 | writing-specs | fast | ☑ done |
-| T6 | Verify and close: AC-3 grep with line count, AC-4 `make check` + `make tests`, AC-1 on both corpora; record Closure Evidence; one commit (NFR-1) | `docs/specs/active/IMP-20260917-remove-trivial-lane.md` | — | T5 | writing-specs | default | ◐ awaiting approval |
+| T6 | Verify and close: AC-3 grep with line count, AC-4 `make check` + `make tests`, AC-1 on both corpora; record Closure Evidence; one commit (NFR-1) | `docs/specs/active/IMP-20260917-remove-trivial-lane.md` | — | T5 | writing-specs | default | ☑ done |
 
 ## Closure Evidence
 
