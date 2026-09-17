@@ -1,6 +1,6 @@
 # Spec Templates Guide
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-17*
 
 Companion to the slimmed spec templates at
 [`framework/spec-workflows/templates/`](../framework/spec-workflows/templates/).
@@ -328,6 +328,26 @@ replace the placeholder with the approved task table per
 [`spec-lifecycle.md`](../framework/spec-workflows/spec-lifecycle.md)
 § Rule 2. For BUG specs, Task 1 is always
 `Reproduce & write failing test`.
+
+---
+
+## `## Closure Evidence` — the closure table <a id="closure-evidence"></a>
+
+Every template carries the section with the placeholder `Pending — closure only.`
+At the `in-progress → done` flip, replace it with a table whose first cell is
+the criterion it evidences:
+
+```markdown
+| AC | Evidence |
+|---|---|
+| AC-1 | `make tests` — `scripts/test/foo.test.sh` passes (run 2026-09-17) |
+| AC-2 – AC-3 | before/after diff in `archived/artifacts/<spec-id>-diff.md` |
+```
+
+`validate-specs` reads the first cell: `traceability_ac_no_evidence` fires for
+an AC with no row, and a high-tier spec's `### Review` sub-section lives under
+this heading. Older archived specs used `## Closure`, `## Evidence` or a
+checklist heading; they are history and are not renamed.
 
 ---
 

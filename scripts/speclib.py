@@ -182,8 +182,9 @@ def discover_specs(root: Path) -> tuple[list[Spec], list[Finding]]:
 _TABLE_SEP_RE = re.compile(r"^\s*\|(?:\s*:?-+:?\s*\|)+\s*$")
 
 
-# Pattern: `*Last updated: YYYY-MM-DD*` anywhere in the body.
-_LAST_UPDATED_RE = re.compile(r"\*Last updated:\s*(\d{4}-\d{2}-\d{2})\*")
+# Pattern: `*Last updated: YYYY-MM-DD*` (or the `_…_` italic) anywhere in the body — the one stamp
+# grammar; lifecycle.yaml `last_updated_re` states the same pattern for the declarative rules.
+_LAST_UPDATED_RE = re.compile(r"[*_]Last updated:\s*(\d{4}-\d{2}-\d{2})[*_]")
 
 
 def _h2_section_lines(spec: Spec, titles: set[str]) -> list[tuple[int, str]]:

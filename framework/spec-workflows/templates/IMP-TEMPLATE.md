@@ -84,6 +84,9 @@ See docs/spec-templates-guide.md § Baseline Deltas.
 <Fill during Specify. See docs/spec-templates-guide.md § Split Decision.>
 ## Tasks
 Pending — Plan stage only.
+## Closure Evidence
+<!-- Filled at the in-progress → done flip: one row per AC, first cell the AC ID. A `### Review` sub-section records the reviewer run or waiver. See docs/spec-templates-guide.md § Closure Evidence. -->
+Pending — closure only.
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 ## Docs updates required

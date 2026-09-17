@@ -88,6 +88,9 @@ usually wrong. See docs/spec-templates-guide.md § Split Decision.>
 Pending — Plan stage only. Tasks for RES specs are typically light
 ("set up sandbox", "run experiment N", "record findings"); the heavy
 lifting is in the loop itself, not the task list.
+## Closure Evidence
+<!-- Filled at the in-progress → done flip: one row per finding the Outcome rests on. A `### Review` sub-section records the reviewer run or waiver. See docs/spec-templates-guide.md § Closure Evidence. -->
+Pending — closure only.
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`. RES specs additionally
 honor the `## Iteration Log` mandate from

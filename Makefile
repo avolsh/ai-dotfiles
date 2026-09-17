@@ -58,6 +58,7 @@ tests:
 	./scripts/test/pre-commit.test.sh
 	./scripts/test/spec-metrics.test.sh
 	./scripts/test/validate-specs.test.sh
+	./scripts/test/lifecycle-mutations.test.sh
 	./scripts/test/baseline-merge.test.sh
 	./scripts/test/spec-status.test.sh
 	./scripts/test/validate-quality-gates.test.sh

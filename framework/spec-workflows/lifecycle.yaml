@@ -1,0 +1,365 @@
+# lifecycle.yaml — the spec lifecycle's mechanical rules, declared once.
+# Enforced by scripts/validate-specs.py through scripts/lifecycle_engine.py; the prose they
+# enforce is framework/spec-workflows/spec-lifecycle.md unless a rule says otherwise.
+# Introduced by IMP-20260917-lifecycle-schema-engine (from RES-20260914-declarative-lifecycle-schema).
+#
+# A rule: optional `corpus` (specs | agents) and `lane` filters, `where` (document filter),
+# `with` (per-document values), `each` (nested iteration), `let` (per-binding values), `when`
+# (the violation), `line` and a `message` (str.format over the bound names). Expressions are
+# single-key maps `{op: args}`; `$name` is a variable, `$fm.<key>` front matter, `$doc.<attr>`
+# the document. Checks that read structure in Python are `plugins:`, named with the ids they own.
+
+consts:
+  enums:
+    type: [CR, BUG, IMP, RES]
+    status: [specify, plan, in-progress, done]
+    model-suggestion: [fast, default, deep]
+    risk: [low, medium, high, trivial]
+    severity: [low, medium, high, critical, trivial]
+  required_fields: [id, type, date, status, owner, affected-repos, affected-docs, affected-code, skills, model-suggestion]
+  conditional_fields: {CR: risk, IMP: risk, BUG: severity}
+  list_fields: [affected-repos, affected-docs, affected-code, skills, siblings, depends-on, domain-refs]
+  date_fields: [date, closed]
+  date_re: '^\d{4}-\d{2}-\d{2}$'
+  naming_re: '^(CR|BUG|IMP|RES)-\d{8}-[a-z0-9-]+\.md$'
+  closure_cutoff: '2026-09-16'   # IMP-20260914-baseline-verification-freshness closure
+  trivial_fix: Drop `trivial` and re-run Specify on the standard track.
+  trivial_forbidden_markers:
+    - framework/boundaries.md                     # rule 7 — system boundaries
+    - .github/copilot-instructions.md             # rule 7 — project boundaries
+    - framework/prompts/                          # rule 6 — system AI prompts
+    - .github/copilot/prompts/                    # rule 6 — project AI prompts
+    - framework/spec-workflows/spec-lifecycle.md  # rule 4 — front-matter schema
+    - docs/requirements/                          # rule 4 — baselines
+  kill_criteria_shapes:
+    time-box: '(?i)\b(hour|hr|day|min|minute|week|by\s+\d{4}-\d{2}-\d{2})'
+    token-budget: '(?i)\btoken'
+    iteration-count: '(?i)\b(backflip|iteration|round|loop)'
+  res_outcomes: [confirmed, refuted, inconclusive]
+  agent_required_fields: [name, description, model-suggestion, tools-allowed]
+  table_sep_re: '^\s*\|(?:\s*:?-+:?\s*\|)+\s*$'
+  last_updated_re: '[*_]Last updated:\s*(\d{4}-\d{2}-\d{2})[*_]'   # = speclib._LAST_UPDATED_RE; both italics
+  freshness_max_days: 60
+  link_re: '\[(?:[^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)'
+  external_prefixes: ['http://', 'https://', 'mailto:', 'ftp://', 'tel:']
+  inventory_fields: [affected-code, affected-docs]
+  traceability_types: [CR, IMP, BUG]
+  traceability_cutoff: '2026-09-15'   # IMP-20260914-spec-traceability-checks closure
+  criteria_sections: [acceptance criteria, fix criteria]
+  fr_cite_re: '\bFR-(\d+)(?:\s*[–—-]\s*FR-(\d+))?\b'
+  fr_def_re: '^\s*(?:[-*]\s+|#{3,6}\s+|\|\s*)\**FR-(\d+)\b'
+  tasks_statuses: [plan, in-progress, done]
+
+macros:
+  # spec-status-guard.sh's reading of one inventory entry
+  guard_path: {rstrip: [{sub: [{sub: [{strip: $it}, ' \(.*$', '']}, '/\.\.\.$', '']}, /]}
+  # a spec's inventory: normalized entries, placeholders dropped
+  inventory:
+    unique:
+      filter:
+        - map: [{filter: [{concat: [{list: {get: [$it, affected-code]}}, {list: {get: [$it, affected-docs]}}]}, {is_str: $it}]}, {call: [guard_path, $it]}]
+        - {all: [{not: {eq: [$it, '']}}, {not: {startswith: [$it, <]}}]}
+  relations: {map: [{filter: [{concat: [{list: {get: [$it, siblings]}}, {list: {get: [$it, depends-on]}}]}, {is_str: $it}]}, {strip: $it}]}
+  traceability_judged: {all: [{in: [{get: [$it, type]}, $traceability_types]}, {ge: [{date: {get: [$it, date]}}, {date: $traceability_cutoff}]}]}
+
+lanes:
+  trivial: {any: [{eq: [$fm.risk, trivial]}, {eq: [$fm.severity, trivial]}]}
+  research: {eq: [$fm.type, RES]}
+
+rules:
+  # ---- naming and identity -------------------------------------------------
+  - id: naming_pattern
+    line: 1
+    when: {not: {matches: [$doc.name, $naming_re]}}
+    message: filename does not match (CR|BUG|IMP|RES)-YYYYMMDD-<kebab>.md
+
+  - id: filename_id_parity
+    let: {id: $fm.id, stem: $doc.stem}
+    when: {all: [{is_str: $id}, {not: {eq: [$id, $stem]}}]}
+    message: "id={id!r} does not match filename stem {stem!r}"
+
+  # ---- front-matter schema -------------------------------------------------
+  - id: schema_missing_field
+    each: {field: $required_fields}
+    when: {not: {has: $field}}
+    message: "required field '{field}' missing"
+
+  - id: schema_enum
+    each: {field: [type, status, model-suggestion, risk, severity]}
+    let: {value: {get: [$fm, $field]}, allowed: {sorted: {get: [$enums, $field]}}}
+    when: {all: [{has: $field}, {not: {in: [$value, $allowed]}}]}
+    message: "{field}={value!r} not in {allowed}"
+
+  - id: schema_date_format
+    each: {field: $date_fields}
+    let: {value: {get: [$fm, $field]}}
+    when: {all: [{has: $field}, {not: {matches: [$value, $date_re]}}]}
+    message: "{field}={value!r} does not match YYYY-MM-DD"
+
+  - id: schema_closed_missing
+    when:
+      all:
+        - {eq: [$fm.status, done]}
+        - {not: {has: closed}}
+        - {matches: [$fm.date, $date_re]}
+        - {ge: [{date: $fm.date}, {date: $closure_cutoff}]}
+    message: "status=done requires 'closed: YYYY-MM-DD' for specs dated on or after {closure_cutoff}"
+
+  - id: schema_conditional
+    let: {type: $fm.type, field: {get: [$conditional_fields, $fm.type]}}
+    when: {all: [{is_str: $field}, {not: {has: $field}}]}
+    message: "type={type} requires '{field}' field"
+
+  - id: schema_type
+    each: {field: $list_fields}
+    let: {got: {typename: {get: [$fm, $field]}}}
+    when: {all: [{has: $field}, {not: {is_list: {get: [$fm, $field]}}}]}
+    message: "field '{field}' must be a list, got {got}"
+
+  # ---- freshness -------------------------------------------------------------
+  - id: freshness_missing_stamp
+    where: {eq: [$doc.dir, active]}
+    when: {eq: [{search: [$doc.body, $last_updated_re, 1]}, null]}
+    message: no `*Last updated: YYYY-MM-DD*` line found
+
+  - id: freshness_bad_date
+    where: {eq: [$doc.dir, active]}
+    let: {stamp: {search: [$doc.body, $last_updated_re, 1]}}
+    when: {all: [{is_str: $stamp}, {eq: [{date: $stamp}, null]}]}
+    message: "unparseable Last updated date: {stamp!r}"
+
+  - id: freshness_stale
+    where: {eq: [$doc.dir, active]}
+    let: {stamp: {search: [$doc.body, $last_updated_re, 1]}, age: {days: [{today: null}, {date: {search: [$doc.body, $last_updated_re, 1]}}]}}
+    when: {gt: [$age, $freshness_max_days]}
+    message: "Last updated {stamp} is {age} days old (>{freshness_max_days} days)"
+  # ---- Body links and inventory ---------------------------------------------
+  - id: link_broken
+    each: {ln: {body_lines: null}, url: {finditer: [$ln.text, $link_re, 1]}}
+    let: {target: {sub: [$url, '[#?].*$', '']}}
+    line: {add: [$doc.body_offset, $ln.n]}
+    when:
+      all:
+        - {not: {startswith: [$url, '#']}}
+        - {not: {startswith: [$url, $external_prefixes]}}
+        - {not: {eq: [$target, '']}}
+        - {not: {exists: [$doc.folder, $target]}}
+    message: "link target does not exist: {url!r}"
+
+  - id: inventory_path_unresolvable
+    where: {eq: [$doc.dir, active]}
+    each: {field: $inventory_fields, raw: {list: {get: [$fm, $field]}}}
+    let: {entry: {call: [guard_path, $raw]}}
+    when:
+      all:
+        - {is_str: $raw}
+        - {not: {eq: [$entry, '']}}
+        - {not: {startswith: [$entry, <]}}
+        - {not: {exists: [$doc.root, {get: [{split: [$entry, /]}, 0]}]}}
+    message: "{field} entry {raw!r} does not resolve from the project root {doc[root_name]!r}; spec-status-guard.sh matches paths in that form, so this leases nothing"
+
+  - id: active_spec_overlap
+    where: {eq: [$doc.dir, active]}
+    with: {mine: {call: [inventory, $fm]}, sid: $doc.sid, related: {call: [relations, $fm]}}
+    each: {other: {later_docs: active}}
+    let:
+      shared: {intersect: [$mine, {call: [inventory, $other.fm]}]}
+      other_id: $other.sid
+      noun: {if: [{eq: [{len: $shared}, 1]}, path, paths]}
+      joined: {join: [$shared, ', ']}
+    when:
+      all:
+        - {gt: [{len: $mine}, 0]}
+        - {not: {in: [$other_id, $related]}}
+        - {not: {in: [$sid, {call: [relations, $other.fm]}]}}
+        - {gt: [{len: $shared}, 0]}
+    message: "active spec {other_id!r} claims the same {noun}: {joined}; name one spec in the other's siblings: or depends-on:, or merge them"
+
+  # ---- Traceability (IMP-20260914-spec-traceability-checks) ----------------
+  - id: traceability_fr_dangling
+    where: {call: [traceability_judged, $fm]}
+    with: {defined: {first_lines: [{section_lines: [requirements]}, $fr_def_re]}}
+    each: {ln: {section_lines: $criteria_sections}, fr: {minus: [{citations: [$fr_cite_re, $ln.text]}, {keys: $defined}]}}
+    line: $ln.n
+    when: {gt: [{len: {keys: $defined}}, 0]}
+    message: "cites FR-{fr}, which `## Requirements` does not define"
+
+  - id: traceability_fr_uncited
+    where: {call: [traceability_judged, $fm]}
+    with:
+      cited: {flatmap: [{section_lines: $criteria_sections}, {citations: [$fr_cite_re, $it.text]}]}
+    each: {d: {items: {first_lines: [{section_lines: [requirements]}, $fr_def_re]}}}
+    line: $d.1
+    let: {fr: $d.0}
+    when: {not: {in: [$fr, $cited]}}
+    message: FR-{fr} is cited by no acceptance block (`FR-n` or a `FR-a – FR-b` range)
+
+  - id: traceability_fr_no_task
+    where: {all: [{in: [$fm.status, $tasks_statuses]}, {call: [traceability_judged, $fm]}]}
+    with:
+      cited:
+        flatmap:
+          - filter: [{section_lines: [tasks]}, {all: [{matches: [$it.text, '^\s*\|']}, {not: {matches: [$it.text, $table_sep_re]}}]}]
+          - {citations: [$fr_cite_re, $it.text]}
+    each: {d: {items: {first_lines: [{section_lines: [requirements]}, $fr_def_re]}}}
+    line: $d.1
+    let: {fr: $d.0}
+    when: {not: {in: [$fr, $cited]}}
+    message: "FR-{fr} is cited by no `## Tasks` row (a direct `FR-n` citation is required)"
+  # ---- Trivial lane (spec-lifecycle.md § Trivial lane) ---------------------
+  - id: trivial_eligibility_files
+    lane: trivial
+    let: {code: {len: {list: $fm.affected-code}}, docs: {len: {list: $fm.affected-docs}}, total: {add: [$code, $docs]}}
+    when: {gt: [$total, 2]}
+    message: "trivial spec touches {total} files ({code} affected-code + {docs} affected-docs); ≤2 required. {trivial_fix}"
+
+  - id: trivial_eligibility_repos
+    lane: trivial
+    let: {n: {len: {list: $fm.affected-repos}}}
+    when: {gt: [$n, 1]}
+    message: "trivial spec lists {n} affected-repos; exactly 1 required. {trivial_fix}"
+
+  - id: trivial_eligibility_depends_on
+    lane: trivial
+    let: {deps: $fm.depends-on}
+    when: {gt: [{len: {list: $deps}}, 0]}
+    message: "trivial spec has depends-on: {deps!r}; the lane requires autonomous specs. {trivial_fix}"
+
+  - id: trivial_eligibility_forbidden_path
+    lane: trivial
+    each: {path: {concat: [{list: $fm.affected-code}, {list: $fm.affected-docs}]}}
+    let: {marker: {first: [$trivial_forbidden_markers, {in: [$it, $path]}]}}
+    when: {all: [{is_str: $path}, {not: {eq: [$marker, null]}}]}
+    message: "trivial spec touches {path!r} which contains {marker!r} — boundaries / prompts / schema / baselines changes are excluded from the lane. {trivial_fix}"
+
+  # ---- Research lane (spec-lifecycle.md § RES exception) --------------------
+  - id: res_hypothesis_empty
+    lane: research
+    when: {blank: $fm.hypothesis}
+    message: RES spec has empty or missing `hypothesis:` field
+
+  - id: res_kill_criteria_missing
+    lane: research
+    when: {blank: $fm.kill-criteria}
+    message: RES spec missing `kill-criteria:` field
+
+  - id: res_kill_criteria_unknown_shape
+    lane: research
+    let: {kc: $fm.kill-criteria, matched: {matching: [$fm.kill-criteria, $kill_criteria_shapes]}}
+    when: {all: [{not: {blank: $kc}}, {eq: [{len: $matched}, 0]}]}
+    message: "kill-criteria={kc!r} does not match any known shape (time-box, token-budget, iteration-count)"
+
+  - id: res_kill_criteria_mixed_shape
+    lane: research
+    let: {kc: $fm.kill-criteria, matched: {matching: [$fm.kill-criteria, $kill_criteria_shapes]}}
+    when: {all: [{not: {blank: $kc}}, {gt: [{len: $matched}, 1]}]}
+    message: "kill-criteria={kc!r} matches multiple shapes {matched}; pick one shape — mixed criteria are unenforceable"
+
+  - id: res_trivial_lane
+    lane: research
+    let: {field: {if: [{eq: [$fm.risk, trivial]}, risk, severity]}}
+    when: {any: [{eq: [$fm.risk, trivial]}, {eq: [$fm.severity, trivial]}]}
+    message: "RES spec elects `{field}: trivial`; RES MUST NOT enter the Trivial lane (spec-lifecycle.md § RES exception, Rules #3)"
+
+  - id: res_code_location_missing
+    lane: research
+    when: {blank: $fm.code-location}
+    message: RES spec missing `code-location:` field
+
+  - id: res_code_location_in_src
+    lane: research
+    let: {cl: $fm.code-location}
+    when: {all: [{not: {blank: $cl}}, {matches: [{strip: [$cl, /]}, '^(?:[^/]+/)?src(?:/|$)']}]}
+    message: "code-location={cl!r} is inside a top-level src/ (`src/…` or `<repo>/src/…`); RES sandboxes MUST live outside every repo's src/"
+
+  - id: res_outcome_missing_at_done
+    lane: research
+    when: {all: [{eq: [$fm.status, done]}, {blank: $fm.outcome}]}
+    message: RES spec at status=done has empty or missing `outcome:` field
+
+  - id: res_outcome_dangling_promotion
+    lane: research
+    let: {outcome: {strip: $fm.outcome}, target: {group: [{strip: $fm.outcome}, '^promoted-to-(.+)$', 1]}}
+    when:
+      all:
+        - {eq: [$fm.status, done]}
+        - {not: {blank: $outcome}}
+        - {not: {in: [$outcome, $res_outcomes]}}
+        - {not: {eq: [$target, null]}}
+        - {not: {in: [$target, {ids: specs}]}}
+    message: "outcome={outcome!r} references unknown spec id: {target!r}"
+
+  - id: res_outcome_invalid
+    lane: research
+    let: {outcome: {strip: $fm.outcome}, target: {group: [{strip: $fm.outcome}, '^promoted-to-(.+)$', 1]}}
+    when:
+      all:
+        - {eq: [$fm.status, done]}
+        - {not: {blank: $outcome}}
+        - {not: {in: [$outcome, $res_outcomes]}}
+        - {eq: [$target, null]}
+    message: "outcome={outcome!r} not in {{confirmed, refuted, inconclusive, promoted-to-<spec-id>}}"
+
+  # ---- Agents (framework/agents/README.md) ---------------------------------
+  - id: agent_schema_missing_field
+    corpus: agents
+    each: {field: $agent_required_fields}
+    when: {not: {has: $field}}
+    message: "required field '{field}' missing"
+
+  - id: agent_filename_name_parity
+    corpus: agents
+    let: {name: $fm.name, stem: $doc.stem}
+    when: {all: [{has: name}, {not: {eq: [$name, $stem]}}]}
+    message: "name={name!r} does not match filename stem {stem!r}"
+
+  - id: agent_schema_enum
+    corpus: agents
+    let: {value: $fm.model-suggestion, allowed: {sorted: {get: [$enums, model-suggestion]}}}
+    when: {all: [{has: model-suggestion}, {not: {in: [$value, $allowed]}}]}
+    message: "model-suggestion={value!r} not in {allowed}"
+
+  - id: agent_schema_type
+    corpus: agents
+    let: {got: {typename: $fm.tools-allowed}}
+    when: {all: [{has: tools-allowed}, {not: {is_list: $fm.tools-allowed}}]}
+    message: "tools-allowed must be a list, got {got}"
+
+  - id: agent_schema_empty
+    corpus: agents
+    when: {all: [{has: tools-allowed}, {is_list: $fm.tools-allowed}, {eq: [{len: {list: $fm.tools-allowed}}, 0]}]}
+    message: tools-allowed must be non-empty
+
+# ---- Plug-ins: checks kept as code in validate-specs.py, with the ids they own ----
+plugins:
+  - {fn: check_dependency_graph, args: [specs], ids: [deps_dangling, deps_cycle, deps_rule_10]}
+  - {fn: check_status_invariants, args: [specs], ids: [status_tasks_table, status_location]}
+  - {fn: check_ac_closure_coverage, args: [specs], ids: [traceability_ac_no_evidence]}
+  - {fn: check_domain_req_ids, args: [root], ids: [domain_req_id_duplicate]}
+  - {fn: check_english_only, args: [specs], ids: [english_only]}
+  - {fn: check_figma_frame_id, args: [specs], ids: [figma_frame_id]}
+  - {fn: check_review_disposition, args: [specs], ids: ['review_*']}
+  - {fn: check_baseline_freshness, args: [root, specs], ids: [baseline_stale, baseline_verified_missing]}
+  - {fn: check_log_closed, args: [root], ids: [log_closed_missing]}
+  - {fn: check_baseline_deltas, args: [root, specs], ids: ['baseline_delta_*', 'baseline_impact_*']}
+
+# ---- Advisory: required sections, from the four templates + lifecycle gates --
+# Advisory: validate-specs.py does not enforce these; `spec-next` and `lifecycle_engine.py --advisory` read them.
+# `from` is the first status at which the section must exist.
+required_sections:
+  CR:  {specify: [Summary, Problem Statement, Requirements, Acceptance Criteria, Out of Scope], plan: [Design, Split Decision], in-progress: [Tasks], done: [Closure Evidence]}
+  IMP: {specify: [Summary, Current State, Proposed Improvement, Requirements, Acceptance Criteria, Out of Scope], plan: [Design, Split Decision], in-progress: [Tasks], done: [Closure Evidence]}
+  BUG: {specify: [Summary, Bug Description, Steps to Reproduce, Expected Behavior, Actual Behavior, Environment, Fix Criteria, Out of Scope], plan: [Root Cause, Design, Split Decision], in-progress: [Tasks], done: [Closure Evidence]}
+  RES: {specify: [Summary, Hypothesis, Kill Criteria, Iteration Log, Design, Split Decision], in-progress: [Tasks], done: [Decision, Outcome]}
+
+advisory:
+  - id: section_missing
+    with: {floors: {get: [$required_sections, $fm.type]}}
+    each: {floor: {keys: {if: [$floors, $floors, {}]}}, section: {get: [$floors, $floor]}}
+    when: {all: [{status_at_least: [$fm.status, $floor]}, {not: {has_section: $section}}]}
+    message: "type={fm[type]} at status={fm[status]} has no `## {section}` (required from {floor})"
+
+  - id: tasks_table_missing
+    when: {all: [{status_at_least: [$fm.status, in-progress]}, {has_section: Tasks}, {not: {any: [{eq: [$fm.risk, trivial]}]}},
+                 {eq: [{len: {filter: [{section_lines: [tasks]}, {matches: [$it.text, $table_sep_re]}]}}, 0]}]}
+    message: "status={fm[status]} but `## Tasks` has no table (spec-lifecycle.md § Plan gate)"

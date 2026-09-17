@@ -22,6 +22,7 @@ skills:
 model-suggestion: default
 depends-on:
   - RES-20260914-declarative-lifecycle-schema
+  - IMP-20260917-lifecycle-schema-engine
 siblings:
   - IMP-20260914-baseline-deltas-and-merge
   - IMP-20260914-baseline-verification-freshness
@@ -33,14 +34,14 @@ siblings:
 
 # IMP-20260914-spec-next-instructions
 
-*Last updated: 2026-09-14*
+*Last updated: 2026-09-17*
 
 ## Summary
 
 - **Goal:** Give an agent exactly the rules, questions and template text that apply to one spec's next step, so it
   stops reading the whole canonical corpus to find the part that applies.
-- **Scope:** A read-only `spec-next <spec>` command with text and JSON output, driven by the lifecycle source the RES
-  settles; the create and plan prompts call it first.
+- **Scope:** A read-only `spec-next <spec>` command with text and JSON output, driven by
+  `framework/spec-workflows/lifecycle.yaml`; the create and plan prompts call it first.
 - **Out of scope:** Removing or shortening canonical docs.
 
 ## Current State
@@ -49,7 +50,9 @@ At a spec stage `agent-protocol.md` has the agent load its own 472 lines, `spec-
 `boundaries.md` (140) and `authoring-steps.md` (96) — about 1 100 lines — whether the spec is a one-FR Trivial-lane
 change or a high-risk CR. The one-hop convention ("link, don't restate") keeps those docs consistent and makes the
 reader follow links to assemble the rules for one case. OpenSpec's `openspec instructions` prints the template and
-instruction for the next artifact only.
+instruction for the next artifact only. `RES-20260914-declarative-lifecycle-schema` closed `confirmed` (2026-09-17);
+`IMP-20260917-lifecycle-schema-engine` moves its `lifecycle.yaml` — lanes, statuses, required sections per type and
+status — into `framework/spec-workflows/`. The schema holds no question lists, gate text or one-line rule summaries.
 
 ## Proposed Improvement
 
@@ -62,8 +65,8 @@ Trivial case.
 - FR-1: `spec-next <spec>` MUST print the spec's next step, its required sections still empty or placeholder, the
   question list for the step, the gate to request, and the applicable rules as anchor links with one line each.
 - FR-2: The output MUST contain nothing specific to another type, lane or status.
-- FR-3: The rule content MUST come from the lifecycle source chosen by
-  `RES-20260914-declarative-lifecycle-schema` — the schema if confirmed, otherwise an anchor map checked by
+- FR-3: Step, required sections and lane rules MUST come from `framework/spec-workflows/lifecycle.yaml`; question
+  lists, gate text and rule summaries MUST be read from canonical-doc anchors the schema names, checked by
   `validate-anchors.py` — never from a hand-maintained second copy.
 - FR-4: `--json` MUST emit the same content structured by field.
 - FR-5: `create-spec.prompt.md` and `plan-spec.prompt.md` MUST run `spec-next` first and load only its output plus
@@ -122,5 +125,5 @@ Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`. Changes fram
 
 ## Rollout / migration notes
 
-- `## Current State` MUST be re-verified when the RES closes (`spec-lifecycle.md § Rules #10`); FR-3 depends on its
-  outcome.
+- `## Current State` re-verified 2026-09-17 after the RES closed `confirmed` (`spec-lifecycle.md § Rules #10`); Plan
+  waits for `IMP-20260917-lifecycle-schema-engine` to reach `done`.

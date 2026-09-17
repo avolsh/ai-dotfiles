@@ -1,9 +1,11 @@
 # Spec Lifecycle
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-17*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Design Decisions / Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
+The mechanical subset — front-matter schema, lanes, naming, freshness, links, inventory, traceability — is declared in
+[`lifecycle.yaml`](lifecycle.yaml) and enforced by `validate-specs.py`; a rule changed here changes there in the same edit.
 
 <!-- Anchors in this file (per `docs/rule-canonical-map.md`): R2 `never-tasks-table-at-specify` · R3 `never-flip-without-gate`, `observation-shaped-evidence` · R6 `split-check-mandatory` · R7 `depends-on-blocks-plan`, `inventory-overlap-restales` · R8 `visualize-not-a-status` · R10 `visualize-triggers` (anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). -->
 
@@ -116,6 +118,8 @@ for the full rule set and Iteration Log mandate.
    affected spec. Order: Split → [Design Decisions](#design-decisions-triggers)
    → Visualize → requirements gate.
 10. <a id="depends-on-blocks-plan"></a>A spec with unmet `depends-on:` MUST stay at `specify` (never flip to `plan`) until all listed siblings reach `done`.
+    `validate-specs.py` enforces this at `plan` and `in-progress` only: a `done` spec already passed the gate and is
+    not re-judged when a dependency is later reopened or renamed.
 
     Waiting is not the only obligation the field carries. A spec written
     against a dependency goes stale the moment that dependency closes —
@@ -283,9 +287,14 @@ being `done`.
    (documented in [`spec-types.md § Trivial lane`](spec-types.md)).
 4. `code-location:` MUST be outside every repo's `src/`. The default
    `research/<spec-id>/` lives in the workspace `research/` directory.
+   The validator rejects a top-level `src/…` or `<repo>/src/…` path; a
+   folder named `src` inside the sandbox is allowed.
 5. At `done`, `outcome:` MUST be filled with a valid value. Promotion
    targets (`promoted-to-<id>`) MUST resolve to an existing spec in
    `docs/specs/active/` or `docs/specs/archived/`.
+6. RES has no `plan` status, and [Rule #2](#never-tasks-table-at-specify)
+   forbids a Tasks table at `specify`, so the `## Tasks` table lands in
+   the same edit as the `specify → in-progress` flip.
 
 ## Trivial lane <a id="trivial-lane"></a>
 

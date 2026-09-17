@@ -1247,6 +1247,73 @@ mv "$p/docs/specs/active/IMP-20260801-merged.md" "$p/docs/specs/archived/"
 run "$p"
 assert_silent "FR-10 an archived spec's merged delta is not re-checked" "$out" "baseline_delta_"
 
+# ---------- IMP-20260917-lifecycle-schema-engine D4: prose and code agree ----------
+res_fm() { # RES front matter without risk:, extra lines from stdin
+  sed -e '/^risk: low$/d' -e 's/^type: IMP$/type: RES/' -e 's/^model-suggestion: default$/model-suggestion: deep/'
+}
+mkres() { # $1 root, $2 filename, [extra front matter on stdin]
+  local extra; extra="$(cat)"
+  mkspec "$1" "$2" <<EOF
+hypothesis: it works
+kill-criteria: ≤8 hours
+$extra
+EOF
+  local f="$1/docs/specs/active/$2"
+  res_fm < "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+}
+
+# D4 #2 — a RES MUST NOT elect the Trivial lane (spec-lifecycle.md § RES exception, Rules #3).
+p="$(newproj restrivial)"
+mkres "$p" "RES-20260826-trivial.md" <<'EOF'
+code-location: research/x/
+risk: trivial
+EOF
+mkres "$p" "RES-20260826-trivialbug.md" <<'EOF'
+code-location: research/y/
+severity: trivial
+EOF
+mkres "$p" "RES-20260826-plain.md" <<'EOF'
+code-location: research/z/
+EOF
+run "$p"
+assert_reports "D4-2 a RES with risk: trivial is reported" "$out" "RES-20260826-trivial.md:.*res_trivial_lane:"
+assert_reports "D4-2 a RES with severity: trivial is reported" "$out" "RES-20260826-trivialbug.md:.*res_trivial_lane:"
+assert_silent "D4-2 a RES without a trivial election is not" "$out" "RES-20260826-plain.md:.*res_trivial_lane:"
+
+# D4 #3 — a table shown inside a fence under `## Tasks` is an example, not a Tasks table.
+p="$(newproj fencedtasks)"
+mkspec "$p" "IMP-20260826-fenced.md" < /dev/null
+printf '\n## Tasks\n\nPending — Plan stage only. The table will look like:\n\n```\n| # | Description |\n|---|---|\n```\n' >> "$p/docs/specs/active/IMP-20260826-fenced.md"
+mkspec "$p" "IMP-20260826-real.md" < /dev/null
+printf '\n## Tasks\n\n| # | Description |\n|---|---|\n| T1 | x |\n' >> "$p/docs/specs/active/IMP-20260826-real.md"
+run "$p"
+assert_silent "D4-3 a fenced example table at specify is not flagged" "$out" "IMP-20260826-fenced.md:.*status_tasks_table"
+assert_reports "D4-3 a real Tasks table at specify still is" "$out" "IMP-20260826-real.md:.*status_tasks_table"
+
+# D4 #4 — one `Last updated` grammar: specs accept the underscore italic baselines already accept.
+p="$(newproj underscorestamp)"
+mkspec "$p" "IMP-20260826-underscore.md" < /dev/null
+sed -i.bak 's/^\*Last updated: 2026-08-26\*$/_Last updated: 2026-08-26_/' "$p/docs/specs/active/IMP-20260826-underscore.md"
+rm -f "$p/docs/specs/active/IMP-20260826-underscore.md.bak"
+run "$p"
+assert_silent "D4-4 an underscore-italic stamp is a stamp" "$out" "freshness_missing_stamp"
+
+# D4 #7 — code-location is rejected inside a repo's top-level src/, not in a sandbox folder named src.
+p="$(newproj srclocation)"
+mkres "$p" "RES-20260826-top.md" <<'EOF'
+code-location: src/github.com/org/repo/spike/
+EOF
+mkres "$p" "RES-20260826-repo.md" <<'EOF'
+code-location: repo/src/spike/
+EOF
+mkres "$p" "RES-20260826-sandbox.md" <<'EOF'
+code-location: research/RES-20260826-sandbox/src/spike/
+EOF
+run "$p"
+assert_reports "D4-7 a workspace src/ path is rejected" "$out" "RES-20260826-top.md:.*res_code_location_in_src"
+assert_reports "D4-7 a repo's src/ path is rejected" "$out" "RES-20260826-repo.md:.*res_code_location_in_src"
+assert_silent "D4-7 a src folder inside the sandbox is allowed" "$out" "RES-20260826-sandbox.md:.*res_code_location_in_src"
+
 if [ "$fails" -eq 0 ]; then
   echo "scripts/validate-specs.py self-tests passed ✓"
 else
