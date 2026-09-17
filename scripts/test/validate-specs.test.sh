@@ -1262,7 +1262,7 @@ EOF
   res_fm < "$f" > "$f.tmp" && mv "$f.tmp" "$f"
 }
 
-# D4 #2 — a RES MUST NOT elect the Trivial lane (spec-lifecycle.md § RES exception, Rules #3).
+# D4 #2 — a RES MUST NOT elect `trivial`, whatever its date (IMP-20260917-remove-trivial-lane D2).
 p="$(newproj restrivial)"
 mkres "$p" "RES-20260826-trivial.md" <<'EOF'
 code-location: research/x/
@@ -1276,9 +1276,33 @@ mkres "$p" "RES-20260826-plain.md" <<'EOF'
 code-location: research/z/
 EOF
 run "$p"
-assert_reports "D4-2 a RES with risk: trivial is reported" "$out" "RES-20260826-trivial.md:.*res_trivial_lane:"
-assert_reports "D4-2 a RES with severity: trivial is reported" "$out" "RES-20260826-trivialbug.md:.*res_trivial_lane:"
-assert_silent "D4-2 a RES without a trivial election is not" "$out" "RES-20260826-plain.md:.*res_trivial_lane:"
+assert_reports "D4-2 a RES with risk: trivial is reported" "$out" "RES-20260826-trivial.md:.*trivial_lane_removed:"
+assert_reports "D4-2 a RES with severity: trivial is reported" "$out" "RES-20260826-trivialbug.md:.*trivial_lane_removed:"
+assert_silent "D4-2 a RES without a trivial election is not" "$out" "RES-20260826-plain.md:.*trivial_lane_removed:"
+
+# IMP-20260917-remove-trivial-lane AC-1/AC-2 — `trivial` dated before the removal is history; on or after it, refused.
+retag() { # $1 root, $2 filename, $3 date, [sed expressions on the rest of the args]
+  local f="$1/docs/specs/active/$2" d="$3"; shift 3
+  sed -e "s/^date: 2026-08-26$/date: $d/" "$@" "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+}
+p="$(newproj trivialremoved)"
+mkspec "$p" "IMP-20260916-old.md" < /dev/null
+retag "$p" "IMP-20260916-old.md" 2026-09-16 -e 's/^risk: low$/risk: trivial/' \
+  -e 's/^affected-code: \[\]$/affected-code:\n  - a.py\n  - b.py\n  - c.py/'
+mkspec "$p" "IMP-20260917-new.md" < /dev/null
+retag "$p" "IMP-20260917-new.md" 2026-09-17 -e 's/^risk: low$/risk: trivial/'
+mkspec "$p" "BUG-20260917-new.md" < /dev/null
+retag "$p" "BUG-20260917-new.md" 2026-09-17 -e 's/^type: IMP$/type: BUG/' -e 's/^risk: low$/severity: trivial/'
+mkspec "$p" "IMP-20260917-low.md" < /dev/null
+retag "$p" "IMP-20260917-low.md" 2026-09-17
+touch "$p/a.py" "$p/b.py" "$p/c.py"
+run "$p"
+assert_silent "AC-1 a trivial spec dated before the removal (over the old 2-file cap) gains no finding" "$out" "IMP-20260916-old.md:"
+assert_reports "AC-2 risk: trivial on the removal date is reported" "$out" "IMP-20260917-new.md:.*trivial_lane_removed:"
+assert_reports "AC-2 severity: trivial on the removal date is reported" "$out" "BUG-20260917-new.md:.*trivial_lane_removed:"
+assert_reports "AC-2 the finding names the Direct lane" "$out" "IMP-20260917-new.md:.*Direct lane"
+assert_reports "AC-2 the finding names the standard track" "$out" "IMP-20260917-new.md:.*standard track"
+assert_silent "AC-2 a low-risk spec is not reported" "$out" "IMP-20260917-low.md:.*trivial_lane_removed:"
 
 # D4 #3 — a table shown inside a fence under `## Tasks` is an example, not a Tasks table.
 p="$(newproj fencedtasks)"

@@ -34,7 +34,7 @@ lost between the conversation and the spec. For a claim that needs **running cod
 - **Q1 Scope:** in — <modules, files, workflows>; out — <what is explicitly not touched>
 - **Q2 Separability:** <clusters that ship and verify alone, or "one cluster — <why>">
 - **Candidate type:** <CR | IMP | BUG | RES> — <why>
-- **Candidate risk:** <trivial | low | medium | high> — <why>
+- **Candidate risk:** <low | medium | high> — <why>
 - **Candidate splits:** <kebab slugs with one-line scope each, or "none">
 - **Settled:** <each decision taken, with the option rejected and why>
 - **Open:** <questions still for the question round, or "none">

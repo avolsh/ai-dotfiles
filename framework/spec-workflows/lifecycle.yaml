@@ -10,7 +10,7 @@
 # the document. Checks that read structure in Python are `plugins:`, named with the ids they own.
 #
 # `question_lists:` and `stages:` drive `scripts/spec-next.py` (IMP-20260914-spec-next-instructions). A stage is
-# `stages.<status>.<lane>` (lane: standard | trivial | research), an ordered list of steps; the next step is the
+# `stages.<status>.<lane>` (lane: standard | research), an ordered list of steps; the next step is the
 # first whose `until` is not met — `required` (the type's required_sections up to this status, filled), a list of
 # section titles (filled; `required` may appear in it), or `tasks_done` (no task row left unticked). A step names a `questions` list, a
 # `procedure` and `refs` as `path#anchor` into the canonical docs, and the last step of a status its `gate`.
@@ -30,14 +30,7 @@ consts:
   date_re: '^\d{4}-\d{2}-\d{2}$'
   naming_re: '^(CR|BUG|IMP|RES)-\d{8}-[a-z0-9-]+\.md$'
   closure_cutoff: '2026-09-16'   # IMP-20260914-baseline-verification-freshness closure
-  trivial_fix: Drop `trivial` and re-run Specify on the standard track.
-  trivial_forbidden_markers:
-    - framework/boundaries.md                     # rule 7 — system boundaries
-    - .github/copilot-instructions.md             # rule 7 — project boundaries
-    - framework/prompts/                          # rule 6 — system AI prompts
-    - .github/copilot/prompts/                    # rule 6 — project AI prompts
-    - framework/spec-workflows/spec-lifecycle.md  # rule 4 — front-matter schema
-    - docs/requirements/                          # rule 4 — baselines
+  trivial_removed: '2026-09-17'  # IMP-20260917-remove-trivial-lane; `trivial` stays in the enums for older specs
   kill_criteria_shapes:
     time-box: '(?i)\b(hour|hr|day|min|minute|week|by\s+\d{4}-\d{2}-\d{2})'
     token-budget: '(?i)\btoken'
@@ -70,7 +63,6 @@ macros:
   traceability_judged: {all: [{in: [{get: [$it, type]}, $traceability_types]}, {ge: [{date: {get: [$it, date]}}, {date: $traceability_cutoff}]}]}
 
 lanes:
-  trivial: {any: [{eq: [$fm.risk, trivial]}, {eq: [$fm.severity, trivial]}]}
   research: {eq: [$fm.type, RES]}
 
 rules:
@@ -213,31 +205,16 @@ rules:
     let: {fr: $d.0}
     when: {not: {in: [$fr, $cited]}}
     message: "FR-{fr} is cited by no `## Tasks` row (a direct `FR-n` citation is required)"
-  # ---- Trivial lane (spec-lifecycle.md § Trivial lane) ---------------------
-  - id: trivial_eligibility_files
-    lane: trivial
-    let: {code: {len: {list: $fm.affected-code}}, docs: {len: {list: $fm.affected-docs}}, total: {add: [$code, $docs]}}
-    when: {gt: [$total, 2]}
-    message: "trivial spec touches {total} files ({code} affected-code + {docs} affected-docs); ≤2 required. {trivial_fix}"
-
-  - id: trivial_eligibility_repos
-    lane: trivial
-    let: {n: {len: {list: $fm.affected-repos}}}
-    when: {gt: [$n, 1]}
-    message: "trivial spec lists {n} affected-repos; exactly 1 required. {trivial_fix}"
-
-  - id: trivial_eligibility_depends_on
-    lane: trivial
-    let: {deps: $fm.depends-on}
-    when: {gt: [{len: {list: $deps}}, 0]}
-    message: "trivial spec has depends-on: {deps!r}; the lane requires autonomous specs. {trivial_fix}"
-
-  - id: trivial_eligibility_forbidden_path
-    lane: trivial
-    each: {path: {concat: [{list: $fm.affected-code}, {list: $fm.affected-docs}]}}
-    let: {marker: {first: [$trivial_forbidden_markers, {in: [$it, $path]}]}}
-    when: {all: [{is_str: $path}, {not: {eq: [$marker, null]}}]}
-    message: "trivial spec touches {path!r} which contains {marker!r} — boundaries / prompts / schema / baselines changes are excluded from the lane. {trivial_fix}"
+  # ---- Removed Trivial lane (spec-lifecycle.md § Trivial lane) -----------
+  - id: trivial_lane_removed
+    let: {field: {if: [{eq: [$fm.risk, trivial]}, risk, severity]}}
+    when:
+      all:
+        - {any: [{eq: [$fm.risk, trivial]}, {eq: [$fm.severity, trivial]}]}
+        - any:
+            - {eq: [$fm.type, RES]}
+            - {all: [{matches: [$fm.date, $date_re]}, {ge: [{date: $fm.date}, {date: $trivial_removed}]}]}
+    message: "`{field}: trivial` elects the Trivial lane, removed {trivial_removed} (IMP-20260917-remove-trivial-lane); use the Direct lane (spec-lifecycle.md § Direct lane) or the standard track with a low/medium/high value"
 
   # ---- Research lane (spec-lifecycle.md § RES exception) --------------------
   - id: res_hypothesis_empty
@@ -261,12 +238,6 @@ rules:
     let: {kc: $fm.kill-criteria, matched: {matching: [$fm.kill-criteria, $kill_criteria_shapes]}}
     when: {all: [{not: {blank: $kc}}, {gt: [{len: $matched}, 1]}]}
     message: "kill-criteria={kc!r} matches multiple shapes {matched}; pick one shape — mixed criteria are unenforceable"
-
-  - id: res_trivial_lane
-    lane: research
-    let: {field: {if: [{eq: [$fm.risk, trivial]}, risk, severity]}}
-    when: {any: [{eq: [$fm.risk, trivial]}, {eq: [$fm.severity, trivial]}]}
-    message: "RES spec elects `{field}: trivial`; RES MUST NOT enter the Trivial lane (spec-lifecycle.md § RES exception, Rules #3)"
 
   - id: res_code_location_missing
     lane: research
@@ -356,7 +327,6 @@ question_lists:
   IMP: {ref: framework/spec-workflows/questions/imp-questions.md#standard-questions-ask-10-per-round, limit: '≤10', mandatory: [1, 2]}
   BUG: {ref: framework/spec-workflows/questions/bug-questions.md#standard-questions-ask-10-per-round, limit: '≤10', mandatory: [2]}
   RES: {ref: framework/spec-workflows/questions/res-questions.md#standard-questions-ask-all-5-single-round-re-ask-on-backflip-per--how-to-use, limit: exactly 5, mandatory: [1, 2, 3, 4, 5]}
-  trivial: {ref: framework/spec-workflows/questions/trivial-questions.md#standard-questions-ask-all-3-single-round, limit: exactly 3, mandatory: [1, 2, 3]}
   design: {ref: framework/spec-workflows/questions/design-questions.md#questions-ask-5, limit: '≤5', mandatory: []}
 
 stages:
@@ -383,17 +353,6 @@ stages:
         label: Requirements gate
         gate: Post the per-spec summary and wait for explicit approval of the requirements
         refs: [framework/spec-workflows/spec-lifecycle.md#never-flip-without-gate, framework/spec-workflows/spec-lifecycle.md#depends-on-blocks-plan, framework/spec-workflows/spec-lifecycle.md#inventory-overlap-restales]
-    trivial:
-      - id: author
-        label: Three questions, then the combined-gate body with its one Tasks row
-        until: [required, Design, Split Decision, Tasks]
-        questions: trivial
-        procedure: framework/spec-workflows/spec-lifecycle.md#combined-gate-format
-        refs: [framework/spec-workflows/spec-lifecycle.md#eligibility-validator-enforced, framework/spec-workflows/spec-lifecycle.md#rules-for-the-lane-1, framework/spec-workflows/spec-lifecycle.md#observation-shaped-evidence]
-      - id: gate
-        label: Combined specify+plan gate
-        gate: Post requirements and the one-row Tasks table together and wait for explicit approval
-        refs: [framework/spec-workflows/spec-lifecycle.md#status-sequence, framework/spec-workflows/spec-lifecycle.md#never-flip-without-gate]
     research:
       - id: author
         label: Five questions, then the RES body
@@ -424,7 +383,7 @@ stages:
         refs: [framework/boundaries.md#task-row-status-in-place, framework/boundaries.md#stop-what-you-started, framework/boundaries.md#last-updated-stamp]
       - id: closure
         label: Closure gate
-        gate: Record Closure Evidence per AC, post the closure summary and wait for approval (low/trivial may close review-after)
+        gate: Record Closure Evidence per AC, post the closure summary and wait for approval (low may close review-after)
         refs: [framework/spec-workflows/spec-lifecycle.md#observation-shaped-evidence, framework/spec-workflows/spec-lifecycle.md#reviewer-substep, framework/spec-workflows/spec-lifecycle.md#review-after-closure, framework/spec-workflows/spec-lifecycle.md#stop-processes-at-closure, framework/spec-workflows/spec-lifecycle.md#consolidation-substep]
 
 # ---- Advisory: required sections, from the four templates + lifecycle gates --
@@ -444,6 +403,6 @@ advisory:
     message: "type={fm[type]} at status={fm[status]} has no `## {section}` (required from {floor})"
 
   - id: tasks_table_missing
-    when: {all: [{status_at_least: [$fm.status, in-progress]}, {has_section: Tasks}, {not: {any: [{eq: [$fm.risk, trivial]}]}},
+    when: {all: [{status_at_least: [$fm.status, in-progress]}, {has_section: Tasks},
                  {eq: [{len: {filter: [{section_lines: [tasks]}, {matches: [$it.text, $table_sep_re]}]}}, 0]}]}
     message: "status={fm[status]} but `## Tasks` has no table (spec-lifecycle.md § Plan gate)"

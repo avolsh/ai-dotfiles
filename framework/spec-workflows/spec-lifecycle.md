@@ -22,8 +22,8 @@ date: YYYY-MM-DD                        # creation date
 status: specify                         # specify | plan | in-progress | done
 closed: YYYY-MM-DD                      # set when status flips to done; required for specs dated on or after 2026-09-16
 owner: <github-handle>                  # accountable human
-risk: low | medium | high | trivial      # CR / IMP only; BUG uses severity. `trivial` opts into the short-circuited Trivial lane (see § Trivial lane).
-severity: low | medium | high | critical | trivial  # BUG only; `trivial` opts into the Trivial lane.
+risk: low | medium | high               # CR / IMP only; BUG uses severity. `trivial` is history only (see § Trivial lane).
+severity: low | medium | high | critical  # BUG only
 affected-repos: # repos that will change
   - <project-name>
 affected-docs: # docs that will change (planning inventory)
@@ -63,7 +63,7 @@ stateDiagram-v2
 | `[start]` → `specify`  | Human asked for a new spec                                                                                       | Copy template, fill front-matter, write title — status `specify` from birth |
 | `specify` → `plan`     | Human approved requirements (and design if Design Decisions or Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                               |
 | `plan` → `in-progress` | Human approved the plan, first task begins                                                                       | Flip status **before** the first file edit of Task 1                        |
-| `in-progress` → `done` | Every AC has evidence that could have failed for it — an observation-shaped criterion needs evidence reaching its surface (see [§ Rules #5](#observation-shaped-evidence)); tests pass, docs updated. **High tier** (`risk: high`, or `severity: high \| critical`) also needs a recorded `### Review` — a run or a waiver (see [§ Reviewer sub-step](#reviewer-substep)). Closure approval is synchronous for `medium`/`high` risk; `low`/`trivial` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
+| `in-progress` → `done` | Every AC has evidence that could have failed for it — an observation-shaped criterion needs evidence reaching its surface (see [§ Rules #5](#observation-shaped-evidence)); tests pass, docs updated. **High tier** (`risk: high`, or `severity: high \| critical`) also needs a recorded `### Review` — a run or a waiver (see [§ Reviewer sub-step](#reviewer-substep)). Closure approval is synchronous for `medium`/`high` risk; `low` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
 | `done` → `archived/`   | Immediately after closure; every process the work started is already stopped ([§ Rules #14](#stop-processes-at-closure))                                                                                        | Move file from `docs/specs/active/` to `docs/specs/archived/`               |
 
 **No status is skipped. No status is revisited in place** — if the plan
@@ -286,9 +286,9 @@ being `done`.
 2. Each backflip MUST land a row in `## Iteration Log` with date + cause
     + decision. The validator flags backflips without a corresponding log
       entry.
-3. RES specs MUST NOT elect `risk: trivial` or `severity: trivial`. The
-   Trivial lane is one-shot and incompatible with the RES loop
-   (documented in [`spec-types.md § Trivial lane`](spec-types.md)).
+3. RES specs MUST NOT carry `risk: trivial` or `severity: trivial` at any
+   date — the validator reports `trivial_lane_removed`
+   ([§ Trivial lane](#trivial-lane)).
 4. `code-location:` MUST be outside every repo's `src/`. The default
    `research/<spec-id>/` lives in the workspace `research/` directory.
    The validator rejects a top-level `src/…` or `<repo>/src/…` path; a
@@ -302,69 +302,10 @@ being `done`.
 
 ## Trivial lane <a id="trivial-lane"></a>
 
-**Lane review 2026-09-17 — remove.** One use in 160 archived specs at the highest footprint per use (328 lines); the
-Direct lane covers the small end and the standard track the rest. The lane stays in force until the follow-up
-[`IMP-20260917-remove-trivial-lane`](../../docs/specs/active/IMP-20260917-remove-trivial-lane.md) closes; specs dated
-before that change keep validating with `risk: trivial` / `severity: trivial`.
-
-The Trivial lane is a parallel short-circuit of the standard lifecycle for changes too small to warrant the full
-Specify → Plan → in-progress gate sequence. It elects in via `risk: trivial` (CR/IMP) or `severity: trivial` (BUG). The
-Closure evidence requirement is **unchanged** — every AC still needs evidence; the closure approval may run
-review-after per [§ Review-after closure](#review-after-closure).
-
-### Status sequence
-
-```
-specify+plan → in-progress → done
-```
-
-Two gates instead of three. The `specify+plan` gate is a single combined approval: requirements and the (one-row) Tasks
-table land together. `## Tasks` may carry exactly one row at this combined gate — this is the only exception to [
-`Rule #2`](#never-tasks-table-at-specify).
-
-### Eligibility (validator-enforced)
-
-A spec MUST satisfy all of these to elect `trivial`:
-
-- `affected-code` + `affected-docs` total ≤ 2 files
-- Exactly one entry in `affected-repos` (no cross-repo)
-- No `depends-on:` (autonomous by construction)
-- No schema change (front-matter, baseline, type system, API contract)
-- No new bounded context
-- No change to AI prompts under `framework/prompts/` or the project's prompt catalog (`<project>/.github/copilot/prompts/`)
-- No change to `framework/boundaries.md` or any `<project>/_canonical.md` § Boundaries section (including its rendered agent files)
-
-A spec that fails any check MUST drop `trivial` and re-run Specify on the standard track. `validate-specs.py` enforces
-these mechanically; the human elects the lane, the framework verifies.
-
-### Combined gate format
-
-A trivial spec body has the same H2 sections as a standard spec but with reduced content:
-
-| Section                  | Trivial-lane content                                                   |
-|--------------------------|------------------------------------------------------------------------|
-| `## Summary`             | One-line Goal. No Scope / Out of scope paragraphs.                     |
-| `## Problem Statement`   | One paragraph; no separate Current State / Proposed Improvement split. |
-| `## Requirements`        | ≤3 FRs (typically 1).                                                  |
-| `## Acceptance Criteria` | Exactly 1 AC.                                                          |
-| `## Out of Scope`        | One line, OR `—` if Goal is self-bounding.                             |
-| `## Design`              | Always `Skipped — trivial lane`.                                       |
-| `## Split Decision`      | Always `Kept as one — trivial lane (E4 by elective)`.                  |
-| `## Tasks`               | Exactly one row at the combined gate.                                  |
-
-The Specify question round shrinks to ≤3 questions from a dedicated `questions/trivial-questions.md` list (introduced in
-IMP-20260514-trivial-lane Task T2).
-
-### Rules for the lane
-
-1. `risk: trivial` / `severity: trivial` is elected by the spec author; the validator verifies eligibility. It is never
-   auto-assigned.
-2. The combined `specify+plan` gate requires explicit human approval before status flips to `in-progress` — same
-   approval discipline as the standard track, just merged.
-3. A trivial spec MUST NOT be elevated mid-flight. If complexity grows past the eligibility criteria, the spec is closed
-   as `done` with `outcome: scope-grew` (one-line note) and the work re-opens as a standard-track spec.
-4. **No retroactive reclassification.** Archived specs (`docs/specs/archived/`) MUST NOT have `risk:` or `severity:`
-   flipped to `trivial`. The lane applies only to specs created after this rule lands.
+**Removed 2026-09-17** by `IMP-20260917-remove-trivial-lane` after the lane review (one use in 160 specs). Small
+changes take the [Direct lane](#direct-lane) or the standard track with `risk: low`. Specs dated before the removal keep
+`risk: trivial` / `severity: trivial` as history; on a later spec, or any RES, `make validate-specs` reports
+`trivial_lane_removed`.
 
 ## Direct lane <a id="direct-lane"></a>
 
@@ -397,14 +338,13 @@ now with a canonical home (IMP-20260610-mechanize-framework-guardrails FR-4).
    `log_closed_missing` on Direct-lane entries dated on or after 2026-09-16
    without one ([`improvements-log-format.md`](../../docs/improvements-log-format.md)).
 
-Anything beyond the threshold falls back to the Trivial lane (if eligible)
-or the standard track. The Direct lane is **not** a skip of judgment — it is
+Anything beyond the threshold falls back to the standard track. The Direct lane is **not** a skip of judgment — it is
 the codification of the smallest unit of owner-approved work; when in doubt,
 write a spec.
 
 ## Review-after closure <a id="review-after-closure"></a>
 
-For specs with `risk: low` or `risk: trivial` (BUG: `severity: low`/`trivial`),
+For specs with `risk: low` (BUG: `severity: low`),
 the closure approval MAY run **review-after** (IMP-20260610-mechanize-framework-guardrails FR-5):
 
 - The agent flips `in-progress → done` and archives **immediately** once

@@ -90,13 +90,7 @@ p=$(newproj frbad);   echo "STAMP=*Last updated: 2026-13-45*" | mkspec "$p" acti
 p=$(newproj frmiss);  echo "STAMP=" | mkspec "$p" active "IMP-20260901-x.md";                        expect_id "$p" freshness_missing_stamp
 p=$(newproj frstale); echo "STAMP=*Last updated: 2026-01-01*" | mkspec "$p" active "IMP-20260901-x.md"; expect_id "$p" freshness_stale
 
-p=$(newproj trivfiles); printf 'risk: trivial\naffected-code: [a.py, b.py]\naffected-docs: [c.md]\n' | mkspec "$p" active "IMP-20260901-x.md"; expect_id "$p" trivial_eligibility_files
-p=$(newproj trivrepos); printf 'risk: trivial\naffected-repos: [one, two]\n' | mkspec "$p" active "IMP-20260901-x.md"; expect_id "$p" trivial_eligibility_repos
-p=$(newproj trivdeps)
-printf 'type: BUG\n-risk\nseverity: trivial\ndepends-on: [IMP-20260901-y]\n' | mkspec "$p" active "BUG-20260901-x.md"
-printf '' | mkspec "$p" active "IMP-20260901-y.md"
-expect_id "$p" trivial_eligibility_depends_on
-p=$(newproj trivpath); printf 'risk: trivial\naffected-docs: [framework/prompts/create.md, docs/requirements/x.md]\n' | mkspec "$p" active "IMP-20260901-x.md"; expect_id "$p" trivial_eligibility_forbidden_path
+p=$(newproj trivremoved); printf 'risk: trivial\ndate: 2026-09-17\n' | mkspec "$p" active "IMP-20260917-x.md"; expect_id "$p" trivial_lane_removed
 
 res() { printf -- '-risk\ntype: RES\nmodel-suggestion: deep\nhypothesis: it works\nkill-criteria: ≤8 hours\ncode-location: research/x/\n'; }
 p=$(newproj ressrc);   { res; echo "code-location: repo/src/spike"; } | mkspec "$p" active "RES-20260901-x.md";        expect_id "$p" res_code_location_in_src
@@ -189,8 +183,8 @@ broken_schema "unknown op" \
   's = s.replace("when: {not: {matches: [$doc.name, $naming_re]}}", "when: {not: {matchez: [$doc.name, $naming_re]}}")' \
   "naming_pattern: unknown op 'matchez'"
 broken_schema "unknown lane" \
-  's = s.replace("  - id: trivial_eligibility_repos\n    lane: trivial", "  - id: trivial_eligibility_repos\n    lane: trivia")' \
-  "trivial_eligibility_repos: unknown lane 'trivia'"
+  's = s.replace("  - id: res_hypothesis_empty\n    lane: research", "  - id: res_hypothesis_empty\n    lane: researc")' \
+  "res_hypothesis_empty: unknown lane 'researc'"
 broken_schema "plug-in without implementation" \
   's = s.replace("fn: check_log_closed,", "fn: check_log_closure,")' \
   "'check_log_closure' has no implementation"

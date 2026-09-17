@@ -17,8 +17,6 @@ kill-criteria: <time-box e.g. "≤8 hours" OR token-budget e.g. "≤200k tokens"
 code-location: research/<spec-id>/
 outcome:                                  # filled at `status: done`; one of: confirmed | refuted | inconclusive | promoted-to-<spec-id>
 # Optional fields (domain-refs, siblings) — see docs/spec-templates-guide.md § Front-matter optional fields.
-# RES specs MUST NOT elect `risk: trivial` — the Trivial lane is one-shot,
-# incompatible with the iterative loop. See spec-types.md § Trivial lane.
 ---
 <!--
 RES type — iterative research / spike / POC / vibe-coding lane.

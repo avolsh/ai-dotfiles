@@ -26,7 +26,8 @@ json() { # $1 desc, $2 json, $3 python expression over `j`
 newproj() { local d="$TMP/$1"; mkdir -p "$d/docs/specs/active" "$d/docs/specs/archived"; printf '%s' "$d"; }
 count() { printf '%s\n' "$1" | grep -c -- "$2" || true; }
 
-# ---------- AC-1 case 1: a Trivial CR at specify, body not yet written ----------
+# ---------- AC-1 case 1: a CR electing the removed Trivial lane gets the standard track ----------
+# (IMP-20260917-remove-trivial-lane AC-2 / FR-4)
 p="$(newproj trivial)"
 cat > "$p/docs/specs/active/CR-20260917-tiny.md" <<'SPEC'
 ---
@@ -59,22 +60,14 @@ model-suggestion: fast
 Pending — Plan stage only.
 SPEC
 out="$(python3 "$SPEC_NEXT" "$p/docs/specs/active/CR-20260917-tiny.md")"
-has "AC-1 trivial: lane named" "$out" "trivial lane"
-has "AC-1 trivial: combined gate" "$out" "Combined specify+plan gate"
-[ "$(count "$out" '^  Q[0-9]')" -eq 3 ] || { echo "FAIL: AC-1 trivial: exactly 3 questions" >&2; fails=$((fails + 1)); }
-has "AC-1 trivial: questions are mandatory" "$out" "Q3 "
-has "AC-1 trivial: missing sections listed" "$out" "Problem Statement"
-lacks "AC-1 trivial: no Split check" "$out" "split check"
-lacks "AC-1 trivial: no splitting rules" "$out" "splitting-rules"
-lacks "AC-1 trivial: no Visualize" "$out" "visualize"
-lacks "AC-1 trivial: no standard question list" "$out" "cr-questions.md"
-has "AC-1 trivial: a rule line is read from the doc" "$out" "eligibility-validator-enforced — "
+has "AC-2 trivial: standard lane named" "$out" "standard lane"
+lacks "AC-2 trivial: no trivial lane" "$out" "trivial lane"
+lacks "AC-2 trivial: no combined gate" "$out" "Combined specify+plan gate"
+lacks "AC-2 trivial: no trivial question list" "$out" "trivial-questions.md"
+has "AC-2 trivial: the standard CR question list" "$out" "cr-questions.md"
 js="$(python3 "$SPEC_NEXT" --json "$p/docs/specs/active/CR-20260917-tiny.md")"
-json "AC-1 trivial json: lane" "$js" "j['lane'] == 'trivial' and j['status'] == 'specify'"
-json "AC-1 trivial json: 3 mandatory questions" "$js" "len(j['questions']['items']) == 3 and all(q['mandatory'] for q in j['questions']['items'])"
-json "AC-1 trivial json: gate" "$js" "j['gate']['label'] == 'Combined specify+plan gate'"
-json "AC-1 trivial json: rules carry lines" "$js" "all(r['line'] for r in j['rules'])"
-json "AC-1 trivial json: missing sections" "$js" "'Problem Statement' in j['missing_sections'] and 'Summary' not in j['missing_sections']"
+json "AC-2 trivial json: lane" "$js" "j['lane'] == 'standard' and j['status'] == 'specify'"
+json "AC-2 trivial json: rules carry lines" "$js" "all(r['line'] for r in j['rules'])"
 
 # ---------- AC-1 case 2: a high-risk IMP at plan, no Tasks table yet ----------
 p="$(newproj plan)"
@@ -121,7 +114,7 @@ json "AC-1 plan json: step" "$js" "j['step']['id'] == 'decompose' and j['lane'] 
 json "AC-1 plan json: no questions" "$js" "j['questions'] is None"
 json "AC-1 plan json: Tasks missing" "$js" "j['missing_sections'] == ['Tasks']"
 json "AC-1 plan json: procedure section to load" "$js" "j['sections'][0]['path'].endswith('authoring-steps.md') and j['sections'][0]['end'] > j['sections'][0]['start'] and j['files'] == []"
-json "AC-1 trivial json: template to load" "$(python3 "$SPEC_NEXT" --json "$TMP/trivial/docs/specs/active/CR-20260917-tiny.md")" "j['files'][0].endswith('CR-TEMPLATE.md')"
+json "AC-2 trivial json: template to load" "$(python3 "$SPEC_NEXT" --json "$TMP/trivial/docs/specs/active/CR-20260917-tiny.md")" "j['files'][0].endswith('CR-TEMPLATE.md')"
 
 # ---------- An IMP at specify with the body written moves to the Split check ----------
 p="$(newproj split)"

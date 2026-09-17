@@ -253,8 +253,8 @@ def tasks(spec: Spec) -> list[dict]:
 def _lane(spec: Spec, schema: dict, root: Path) -> str:
     ctx = lifecycle_engine.Ctx(spec, {}, {"root": root, "corpora": {}, "macros": {}, "ids": {}, "by_id": {}})
     lanes = schema.get("lanes") or {}
-    for name in ("trivial", "research"):
-        if name in lanes and ctx.ev(lanes[name]):
+    for name, expr in lanes.items():
+        if ctx.ev(expr):
             return name
     return "standard"
 

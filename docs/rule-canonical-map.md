@@ -1,6 +1,6 @@
 # Rule Canonical Map
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-17*
 
 > **Machine-read by `scripts/lint-rules.py` — not human-maintained prose.**
 > Parser contract: a rule section starts with `### R<N> —`; it must contain a
@@ -22,8 +22,7 @@
 | **Canonical location** | `framework/boundaries.md § Never do #2` |
 
 Verbatim phrases observed:
-- boundaries (post-IMP-20260514-trivial-lane T3): *"Never skip the Specify stage — even a trivial bug needs confirmed understanding via the question round. The Trivial lane"*
-- boundaries (pre-IMP-20260514-trivial-lane T3 — kept tracked to catch reverts): *"Never skip the Specify stage — even a trivial bug needs confirmed understanding via the question round."*
+- boundaries (current; also the pre-IMP-20260514-trivial-lane wording, restored by IMP-20260917-remove-trivial-lane): *"Never skip the Specify stage — even a trivial bug needs confirmed understanding via the question round."*
 - spec-lifecycle (pre-D3): *"Never skip the Specify stage — even for a one-line bug. Confirm understanding with the ≤10 questions from the relevant question list."*
 - create-spec.prompt (pre-D3): *"Never skip the question round — even trivial CRs get one."*
 

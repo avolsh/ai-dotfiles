@@ -1,6 +1,6 @@
 # RES Standard Questions
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-09-17*
 
 During the Specify stage of a RES (Research / Spike / POC) spec, the
 agent asks exactly **5 questions** from this list. All 5 are mandatory
@@ -67,8 +67,5 @@ The full RES lifecycle and the `## Iteration Log` mandate live at
   Specify-time.
 - **Do not** treat RES as a way to dodge a CR. If you know what you want
   to build, write a CR. RES is for "I don't know yet."
-- **Do not** elect `risk: trivial` — the lanes are incompatible. Trivial
-  is one-shot, RES is iterative. See
-  [`spec-types.md § Trivial lane`](../spec-types.md).
 - **Do not** skip the `## Iteration Log` row on a backflip. The validator
   flags backflips without a corresponding entry as drift.

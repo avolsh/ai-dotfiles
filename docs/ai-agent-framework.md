@@ -187,10 +187,10 @@ The four statuses are tracked in the spec front-matter; `archived/` is a
 [Spec Workflow Guide](spec-workflow-guide.md) for the full walkthrough
 with diagrams.
 
-Three lanes scale the ceremony to the risk, smallest first: **Direct**
-(≤2 files / ≤30 lines, no spec — Bottom Line + improvements-log entry),
-**Trivial** (one combined gate), **Standard** (full gate sequence).
-`low`/`trivial`-risk closures may run review-after (batch-reviewed) — see
+Two lanes scale the ceremony to the risk, smallest first: **Direct**
+(≤2 files / ≤30 lines, no spec — Bottom Line + improvements-log entry) and
+**Standard** (full gate sequence).
+`low`-risk closures may run review-after (batch-reviewed) — see
 [`spec-lifecycle.md`](../framework/spec-workflows/spec-lifecycle.md#direct-lane).
 
 ### Spec types

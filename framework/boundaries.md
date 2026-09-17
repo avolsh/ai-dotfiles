@@ -1,6 +1,6 @@
 # Boundaries
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-17*
 
 <!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R11; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
@@ -88,16 +88,14 @@
 
 1. **Never** commit `.env`, `.env.local`, `.dev.vars`, or hardcoded secrets of any kind.
 2. <a id="never-skip-specify"></a>**Never** skip the Specify stage — even a trivial bug needs confirmed understanding
-   via the question round. The Trivial lane ([
-   `spec-lifecycle.md § Trivial lane`](spec-workflows/spec-lifecycle.md#trivial-lane)) is NOT a skip: Specify still
-   runs, just combined with Plan into a single gate (≤3 questions instead of ≤10). The only spec-less path is the
-   Direct lane ([`spec-lifecycle.md § Direct lane`](spec-workflows/spec-lifecycle.md#direct-lane)) — ≤2 files,
-   ≤30 lines, owner-approved in advance, Bottom Line + improvements-log entry mandatory.
+   via the question round. The only spec-less path is the Direct lane ([
+   `spec-lifecycle.md § Direct lane`](spec-workflows/spec-lifecycle.md#direct-lane)) — ≤2 files, ≤30 lines,
+   owner-approved in advance, Bottom Line + improvements-log entry mandatory.
 3. **Never** populate `## Tasks` before Plan — canonical rule at [
    `spec-lifecycle.md § Rules #2`](spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify).
 4. **Never** flip a spec's status without the preceding human gate — three specific cases at [
    `spec-lifecycle.md § Rules #3-#5`](spec-workflows/spec-lifecycle.md#never-flip-without-gate). The closure gate
-   for `low`/`trivial` risk may run asynchronously per [
+   for `low` risk may run asynchronously per [
    `spec-lifecycle.md § Review-after closure`](spec-workflows/spec-lifecycle.md#review-after-closure); requirements
    and plan gates are blocking in every lane.
 5. **Never** mix refactoring and feature work in the same task — extract into a separate task (or IMP spec) if scope is

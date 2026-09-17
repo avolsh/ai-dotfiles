@@ -24,5 +24,4 @@ Specify stage for RES — iterative research/spike/POC/vibe-coding lane. Hard ga
 - No `## Tasks` table here — see [`spec-lifecycle.md § Rules #2`](../spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify).
 - No skipping any of the 5 questions — see [`res-questions.md § How to use`](../spec-workflows/questions/res-questions.md).
 - `code-location:` MUST NOT be inside `src/` of any repo. The validator enforces this.
-- No `risk: trivial` on RES specs — the lanes are incompatible (Trivial is one-shot, RES is iterative). See [`spec-types.md`](../spec-workflows/spec-types.md).
 - Every `in-progress → specify` backflip MUST add a row to `## Iteration Log` — see [`spec-lifecycle.md § RES exception`](../spec-workflows/spec-lifecycle.md#res-exception).

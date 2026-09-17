@@ -1,6 +1,6 @@
 # Writing Specs
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-17*
 
 Consolidated guidance for spec-driven work: lifecycle pointer, stage walk-throughs (Specify, Plan), writing-style rules, RFC 2119 keywords, the self-review additions, template usage, and anti-patterns. Topic-specific deep dives live in the linked docs.
 
@@ -50,7 +50,7 @@ Apply to all spec text during Specify and Plan.
 
 - **Standard-track spec body ≤120 physical lines** — counted from the first line after the front-matter close (`---`) to EOF, **including** blank lines, the H1, and the `*Last updated:*` line. **Exclude** lines inside fenced diagram blocks (```` ```mermaid ````, Figma embeds) under `## Design`, and the entire `## Closure` section.
 - Per-section soft caps: Summary ≤6; Current State / Problem Statement ≤12; Proposed Improvement ≤12; one line per FR; one Given/When/Then block (≤6 lines) per FR / Fix-Criteria cluster; one line per Out-of-Scope item.
-- Exceeding any cap is allowed only with a **one-line justification at the top of that section**. Trivial / RES lanes inherit these caps where the section exists.
+- Exceeding any cap is allowed only with a **one-line justification at the top of that section**. The RES lane inherits these caps where the section exists.
 
 ### Forbidden
 
