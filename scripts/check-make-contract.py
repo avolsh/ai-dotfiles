@@ -50,7 +50,11 @@ MAKE_WORDS = ("make", "$(MAKE)", "${MAKE}")
 DEV_SCRIPT_RE = re.compile(r"^(?:\./)?(?:[^\s'\";()]*/)?_dev/[^\s'\";()]+\.sh$")
 # A script is run when it is the command word, or the operand of one of these.
 SCRIPT_RUNNERS = ("sh", "bash", "zsh", "source", ".", "exec", "chmod")
-COMMAND_SPLIT_RE = re.compile(r"&&|\|\||[;|&]")
+# Shell tokens that end one command and start the next, and words that only introduce the real command.
+COMMAND_SEPARATORS = {";", "&&", "||", "|", "&", "(", ")", ";;", "|&"}
+COMMAND_PREFIXES = {"if", "then", "else", "elif", "do", "while", "until", "!", "{", "}", "time", "exec"}
+REDIRECTIONS = {">", ">>", "<", "<<", ">&", "<&", ">|", "<>"}
+MAKE_VAR_RE = re.compile(r"\$[({]([A-Za-z_][A-Za-z0-9_]*)[)}]")
 VAR_REF_RE = re.compile(r"\$[({]([A-Za-z_][A-Za-z0-9_]*)[)}]")
 
 
@@ -153,19 +157,93 @@ def expand(text: str, variables: dict[str, str]) -> str:
     return text
 
 
+SHELL_OPERATORS = ("&&", "||", ";;", "|&", ">>", "<<", ">&", "<&", ">|", "<>", "&", ";", "|", "(", ")", "<", ">")
+
+
+def split_operators(token: str) -> list[str]:
+    """shlex groups adjacent punctuation (`);`, `)&&`); split such a token into shell operators, longest first."""
+    if not token or any(c not in "();<>|&" for c in token):
+        return [token]
+    ops = []
+    while token:
+        op = next(o for o in SHELL_OPERATORS if token.startswith(o))
+        ops.append(op)
+        token = token[len(op):]
+    return ops
+
+
 def command_words(recipe_line: str) -> list[list[str]]:
-    """The words of each shell command in a recipe line, split on ; && || | &, without make's @+- prefix."""
+    """The words of each shell command in a recipe line, quote-aware.
+
+    Commands are split on ; && || | & and parentheses outside quotes; a leading make prefix (@+-), shell
+    keywords such as `if` / `then` / `do`, and VAR=value assignments are dropped, so the first word is
+    the command that actually runs. Make variable references stay single words (`$(MAKE)`).
+    """
+    line = recipe_line.strip().lstrip("@+-")
+    # Keep $(VAR) / ${VAR} whole: the tokenizer would split their parentheses as punctuation.
+    refs: list[str] = []
+    def hide(m: re.Match) -> str:
+        refs.append(m.group(0))
+        return f"__MAKEVAR{len(refs) - 1}__"
+    line = MAKE_VAR_RE.sub(hide, line)
+    lexer = shlex.shlex(line, posix=True, punctuation_chars=True)
+    lexer.whitespace_split = True
+    try:
+        tokens = list(lexer)
+    except ValueError:
+        tokens = line.split()
+    tokens = [op for token in tokens for op in split_operators(token)]
+    unhide = lambda t: re.sub(r"__MAKEVAR(\d+)__", lambda m: refs[int(m.group(1))], t)
+    commands, words = [], []
+    for token in tokens:
+        if token in COMMAND_SEPARATORS:
+            if words:
+                commands.append(words)
+            words = []
+            if token in ("(", ")"):
+                commands.append([token])  # subshell boundary: make_calls scopes `cd` to it
+            continue
+        if not words and (token in COMMAND_PREFIXES or re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", token)):
+            continue
+        words.append(unhide(token))
+    if words:
+        commands.append(words)
+    return commands
+
+
+def logical_lines(recipe: list[str]) -> list[str]:
+    """Recipe lines with backslash continuations joined, as the shell receives them."""
+    lines, buf = [], ""
+    for line in recipe:
+        if line.rstrip().endswith("\\"):
+            buf += line.rstrip()[:-1] + " "
+        else:
+            lines.append(buf + line)
+            buf = ""
+    if buf:
+        lines.append(buf)
+    return lines
+
+
+def walk(recipe_line: str) -> list[tuple[str | None, list[str]]]:
+    """Each command of a recipe line with the directory it runs in (None: the Makefile's own).
+
+    A `cd <dir>` moves the following commands of the line into <dir>; a subshell `( … )` restores the
+    directory it started in.
+    """
     commands = []
-    for command in COMMAND_SPLIT_RE.split(recipe_line):
-        command = command.strip().lstrip("@+-").strip()
-        try:
-            words = shlex.split(command)
-        except ValueError:
-            words = command.split()
-        while words and re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", words[0]):
-            words = words[1:]  # leading VAR=value assignments
-        if words:
-            commands.append(words)
+    cwd: str | None = None
+    saved: list[str | None] = []
+    for words in command_words(recipe_line):
+        if words == ["("]:
+            saved.append(cwd)
+        elif words == [")"]:
+            cwd = saved.pop() if saved else None
+        elif words[0] == "cd":
+            target = words[1] if len(words) > 1 else None
+            cwd = target if cwd is None or target is None or target.startswith("/") else f"{cwd}/{target}"
+        else:
+            commands.append((cwd, words))
     return commands
 
 
@@ -176,11 +254,7 @@ def make_calls(recipe_line: str) -> list[tuple[str | None, list[str]]]:
     earlier in the same line, or `-C <dir>`, makes it a call into that directory.
     """
     calls = []
-    cwd = None
-    for words in command_words(recipe_line):
-        if words[0] == "cd":
-            cwd = words[1] if len(words) > 1 else None
-            continue
+    for cwd, words in walk(recipe_line):
         if words[0] not in MAKE_WORDS:
             continue
         directory, goals, i = cwd, [], 1
@@ -191,8 +265,14 @@ def make_calls(recipe_line: str) -> list[tuple[str | None, list[str]]]:
                     directory = words[i + 1] if directory is None else f"{directory}/{words[i + 1]}"
                 i += 2
                 continue
+            if word in REDIRECTIONS:
+                i += 2
+                continue
+            if word.isdigit() and i + 1 < len(words) and words[i + 1] in REDIRECTIONS:
+                i += 1  # the file descriptor of a numbered redirect, e.g. the 2 of 2>/dev/null
+                continue
             if word.startswith("-C") and len(word) > 2:
-                directory = word[2:]
+                directory = word[2:] if directory is None else f"{directory}/{word[2:]}"
             elif not word.startswith("-") and "=" not in word:
                 goals.append(word)
             i += 1
@@ -200,16 +280,17 @@ def make_calls(recipe_line: str) -> list[tuple[str | None, list[str]]]:
     return calls
 
 
-def run_scripts(recipe_line: str) -> list[str]:
-    """`_dev/*.sh` paths a recipe line runs (as the command, or via sh/bash/source/chmod), not ones it mentions."""
+def run_scripts(recipe_line: str) -> list[tuple[str | None, str]]:
+    """(directory, path) of each `_dev/*.sh` a recipe line runs (as the command, or via sh/bash/source/chmod),
+    not ones it only mentions."""
     scripts = []
-    for words in command_words(recipe_line):
+    for cwd, words in walk(recipe_line):
         if words[0] in SCRIPT_RUNNERS:
             operands = [w for w in words[1:] if not w.startswith("-") and "+" not in w]
             candidates = operands[-1:] if words[0] == "chmod" else operands[:1]
         else:
             candidates = words[:1]
-        scripts.extend(c for c in candidates if DEV_SCRIPT_RE.match(c))
+        scripts.extend((cwd, c) for c in candidates if DEV_SCRIPT_RE.match(c))
     return scripts
 
 
@@ -237,9 +318,17 @@ def gitattributes_lf(root: Path) -> list[str]:
     return [p for p in LF_PATTERNS if p not in lf]
 
 
-def check(directory: Path, repo_root: Path, db: Database) -> tuple[list[Finding], list[Path], str]:
+@dataclass(frozen=True)
+class CrossCall:
+    """A recipe's call into another directory, checked against that directory's Makefile."""
+    caller: str
+    directory: Path
+    goals: tuple[str, ...]
+
+
+def check(directory: Path, repo_root: Path, db: Database) -> tuple[list[Finding], list[CrossCall], str]:
     findings: list[Finding] = []
-    components: list[Path] = []
+    calls: list[CrossCall] = []
     tiers = " ".join(db.variables.get("MAKE_CONTRACT_TIERS", "").split())
     if tiers not in VALID_TIER_SETS:
         findings.append(Finding("declarations", "MAKE_CONTRACT_TIERS",
@@ -257,33 +346,42 @@ def check(directory: Path, repo_root: Path, db: Database) -> tuple[list[Finding]
             why = "retired by MAKE_CONTRACT_RETIRED" if name in retired else "second name for a tier action"
             findings.append(Finding("rule-3", name, f"is defined; it is a {why}"))
     for target, recipe in sorted(db.targets.items()):
-        for line in recipe:
+        for line in logical_lines(recipe):
             line = expand(line, db.variables)
             for sub_dir, goals in make_calls(line):
                 if sub_dir is not None:
-                    if "$" not in sub_dir:
-                        path = (directory / sub_dir).resolve()
-                        if path != directory.resolve() and path not in components:
-                            components.append(path)
-                    continue
+                    if "$" in sub_dir:
+                        continue  # a directory only the shell knows, e.g. a loop variable
+                    path = (directory / sub_dir).resolve()
+                    if path != directory.resolve():
+                        calls.append(CrossCall(target, path, tuple(g for g in goals if "$" not in g)))
+                        continue
                 for goal in goals:
                     if "$" not in goal and not db.defines(goal):
                         findings.append(Finding("rule-4", target, f"recipe calls undefined target '{goal}'"))
-            for script in run_scripts(line):
-                if "$" in script:
+            for cwd, script in run_scripts(line):
+                if "$" in script or (cwd and "$" in cwd):
                     continue
-                path = directory / script
-                prefix = script.split("_dev/", 1)[0].rstrip("/")
+                base = directory / cwd if cwd else directory
+                shown = f"{cwd}/{script}" if cwd else script
+                path = base / script
+                prefix = shown.split("_dev/", 1)[0].rstrip("/")
                 if prefix and prefix != "." and not (directory / prefix).is_dir() and git_ignored(directory, prefix):
                     continue  # inside a consumed library that deps-install has not fetched yet
                 if not path.is_file():
-                    findings.append(Finding("rule-5", target, f"recipe runs missing script '{script}'"))
+                    findings.append(Finding("rule-5", target, f"recipe runs missing script '{shown}'"))
     if db.variables.get("SHELL") != "/bin/sh":
         findings.append(Finding("rule-6", "SHELL", f"is {db.variables.get('SHELL', 'unset')!r}; set SHELL := /bin/sh"))
     if directory.resolve() == repo_root.resolve():
         for pattern in gitattributes_lf(repo_root):
             findings.append(Finding("rule-6", ".gitattributes", f"does not set eol=lf for {pattern}"))
-    return findings, components, tiers
+    return findings, calls, tiers
+
+
+def label(directory: Path, root: Path) -> str:
+    if directory == root:
+        return ""
+    return str(directory.relative_to(root)) if directory.is_relative_to(root) else str(directory)
 
 
 def main(argv: list[str]) -> int:
@@ -291,23 +389,38 @@ def main(argv: list[str]) -> int:
     if not (root / "Makefile").is_file():
         print(f"make-contract: declarations Makefile — no Makefile in {root}")
         return 1
-    queue, seen, failed = [root], set(), False
+    # Read and check every Makefile first, so calls into a component are checked against its database.
+    results: dict[Path, tuple[Database, list[Finding], str]] = {}
+    pending: list[tuple[Path, CrossCall]] = []
+    queue = [root]
     while queue:
         directory = queue.pop(0)
-        if directory in seen:
+        if directory in results or not (directory / "Makefile").is_file():
             continue
-        seen.add(directory)
-        component = "" if directory == root else str(directory.relative_to(root)) if directory.is_relative_to(
-            root) else str(directory)
-        if not (directory / "Makefile").is_file():
-            continue  # a -C directory without its own Makefile delegates nothing to check
         try:
             db = read_database(directory)
         except MakeUnavailable as exc:
             print(f"make-contract: make cannot run in {directory}: {exc}", file=sys.stderr)
             return 2
-        findings, components, tiers = check(directory, root, db)
-        queue.extend(components)
+        findings, calls, tiers = check(directory, root, db)
+        results[directory] = (db, findings, tiers)
+        for call in calls:
+            pending.append((directory, call))
+            queue.append(call.directory)
+    for caller_dir, call in pending:
+        findings = results[caller_dir][1]
+        where = label(call.directory, root) or "."
+        if call.directory in results:
+            target_db = results[call.directory][0]
+            for goal in call.goals:
+                if not target_db.defines(goal):
+                    findings.append(Finding("rule-4", call.caller, f"recipe calls undefined target '{goal}' in {where}"))
+        elif call.directory.is_dir() or not git_ignored(caller_dir, str(call.directory)):
+            # A missing, git-ignored directory is a consumed library deps-install has not fetched yet.
+            findings.append(Finding("rule-4", call.caller, f"recipe calls into {where}, which has no Makefile"))
+    failed = False
+    for directory, (db, findings, tiers) in results.items():
+        component = label(directory, root)
         for finding in findings:
             print(finding.render(component))
         if findings:

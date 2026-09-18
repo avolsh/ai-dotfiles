@@ -37,11 +37,9 @@ build: ## Verification sequence: docs-check, then the code-tier steps
 	$(BUILD_CODE_STEPS)
 
 docs-check: quality-gates-check sync-agents-check ## Every documentation drift check, plus make-contract conformance
-	@test -d "$(AI_DOTFILES)/scripts" \
+	@test -f "$(AI_DOTFILES)/scripts/check-make-contract.py" \
 	  || { echo "docs-check: framework not found at $(AI_DOTFILES); set AI_DOTFILES"; exit 1; }
-	@if test -f "$(AI_DOTFILES)/scripts/check-make-contract.py"; then \
-	  python3 "$(AI_DOTFILES)/scripts/check-make-contract.py" .; \
-	else echo "docs-check: make-contract check not shipped yet, skipped"; fi
+	python3 "$(AI_DOTFILES)/scripts/check-make-contract.py" .
 	@echo "docs-check: all checks passed"
 
 quality-gates-check: ## The Build and Run table against the Kind / Mode contract

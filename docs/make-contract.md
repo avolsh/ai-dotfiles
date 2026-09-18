@@ -174,21 +174,34 @@ contract that script meets.*
 - **Invocation:** `python3 "$(AI_DOTFILES)/scripts/check-make-contract.py" .` as a recipe line of
   `docs-check`, guarded like `quality-gates-check`: if the framework is missing, it prints a message naming
   `AI_DOTFILES` and exits 1. It is not a separate target, so the tiers stay as listed.
+- **Recipe reading:** recipes are read as the shell gets them: continuation lines joined, quotes respected, and
+  only the command word of each command (after `if` / `then` / `do`, `(`, `cd <dir> &&`) counts as a
+  call. A `make` inside an `echo` is text, not a call. A `cd <dir>` moves the rest of the line into
+  `<dir>` until its subshell closes; `-C <dir>` does the same for one call. Directories named through a
+  shell variable (`$$d` in a loop) are not followed.
 - **Target discovery:** from `make -pRrq -f Makefile : 2>/dev/null`, the database make itself builds, so
   targets defined through includes or pattern rules count. It never parses the Makefile text. With
-  components, it repeats this for each component Makefile named in the root's `$(MAKE) -C` recipes.
+  components, it repeats this for each directory a recipe calls into (`$(MAKE) -C <dir>` or
+  `cd <dir> && $(MAKE)`), from the root and from each component in turn, and checks every Makefile it
+  reaches.
 - **Declarations:** it reads `MAKE_CONTRACT_TIERS`, `MAKE_CONTRACT_REQUIRED` and `MAKE_CONTRACT_RETIRED`
   from that database. A missing tiers value, or one other than `core` or `core code`, fails.
 - **Fails (exit 1) when:**
   1. a target of a declared tier is missing;
   2. a name in `MAKE_CONTRACT_REQUIRED` is not defined;
   3. a name from naming rule 3's alias list, or from `MAKE_CONTRACT_RETIRED`, is defined;
-  4. a recipe calls `make <target>` or `$(MAKE) <target>` for a target the Makefile does not define;
+  4. a recipe calls `make <target>` or `$(MAKE) <target>` for a target that the Makefile of the directory
+     it runs in does not define: its own Makefile, or the called directory's for a call into another
+     directory. A call into a directory with no Makefile fails too, unless the directory is missing and
+     git ignores it (a consumed library, as in rule 5);
   5. a recipe runs a `_dev/*.sh` path that does not exist. Paths inside a consumed library that only exists
-     after `deps-install` are exempt;
+     after `deps-install` are exempt: a directory that is missing and that git ignores (`git check-ignore`).
+     A missing directory git does not ignore is a finding, so a typo is not mistaken for a library;
   6. `SHELL` is not `/bin/sh`, or `.gitattributes` does not set `eol=lf` for `Makefile`, `*.mk` and `*.sh`.
 - **Output:** one line per finding, `make-contract: <rule> <target> — <detail>`. On success it prints
-  `make-contract: <tiers>, <n> targets, conforms`. Exit 2 when `make` itself cannot run.
+  `make-contract: <tiers>, <n> targets, conforms`, per Makefile. A component's lines carry its path
+  (`make-contract: <rule> [<path>] <target> — …`, `make-contract: [<path>] <tiers>, …`). Exit 2 when `make`
+  itself cannot run.
 - **Tests:** `scripts/test/check-make-contract.test.sh` (run by `make tests`) builds its fixtures: one Makefile
   per failure rule, one conforming Makefile per tier set, and one multi-component tree.
 
