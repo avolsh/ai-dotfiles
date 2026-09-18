@@ -167,8 +167,8 @@ build) satisfies the contract at its root:
 
 ## Conformance check
 
-*Specified here. The first project to adopt the contract implements it. Until then, this section is the
-contract that script must meet.*
+*Implemented by [`scripts/check-make-contract.py`](../scripts/check-make-contract.py); this section is the
+contract that script meets.*
 
 - **Location:** `$(AI_DOTFILES)/scripts/check-make-contract.py`. One shared script that no repo copies.
 - **Invocation:** `python3 "$(AI_DOTFILES)/scripts/check-make-contract.py" .` as a recipe line of
@@ -189,8 +189,8 @@ contract that script must meet.*
   6. `SHELL` is not `/bin/sh`, or `.gitattributes` does not set `eol=lf` for `Makefile`, `*.mk` and `*.sh`.
 - **Output:** one line per finding, `make-contract: <rule> <target> — <detail>`. On success it prints
   `make-contract: <tiers>, <n> targets, conforms`. Exit 2 when `make` itself cannot run.
-- **Tests:** fixtures under `scripts/tests/`: one Makefile per failure rule, one conforming Makefile per tier
-  set, and one multi-component tree.
+- **Tests:** `scripts/test/check-make-contract.test.sh` (run by `make tests`) builds its fixtures: one Makefile
+  per failure rule, one conforming Makefile per tier set, and one multi-component tree.
 
 ## Adopting the contract
 

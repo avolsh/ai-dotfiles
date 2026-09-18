@@ -64,6 +64,7 @@ tests:
 	./scripts/test/baseline-merge.test.sh
 	./scripts/test/spec-status.test.sh
 	./scripts/test/validate-quality-gates.test.sh
+	./scripts/test/check-make-contract.test.sh
 	./scripts/test/consolidation-due.test.sh
 	./scripts/test/report-duplication.test.sh
 	./scripts/test/profile-links.test.sh
