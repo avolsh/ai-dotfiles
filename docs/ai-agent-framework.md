@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-18*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -47,6 +47,9 @@ ai-dotfiles/
 ├── Makefile                       ← Entry-point wrapper; run `make help`
 ├── docs/
 │   ├── ai-agent-framework.md      ← This document
+│   ├── make-contract.md           ← Stack-agnostic make targets (core / code tiers)
+│   ├── styles/                    ← Architecture styles, language-neutral (ddd-layered)
+│   ├── stacks/                    ← Stack bindings: folders, checks, make commands (nextjs)
 │   └── spec-workflow-guide.md     ← Four-status lifecycle walkthrough
 └── README.md                      ← Getting Started + setup guide
 
@@ -204,6 +207,22 @@ Two lanes scale the ceremony to the risk, smallest first: **Direct**
 
 Templates, per-type questions, and per-stage context lists live in
 [`framework/spec-workflows/spec-types.md`](../framework/spec-workflows/spec-types.md).
+
+## Project conventions
+
+A project is described along three independent axes and composes them per component in its
+`docs/architecture/profile.md` § Components:
+
+- [`make-contract.md`](make-contract.md) says **how the project is driven**. It is stack-agnostic, with a
+  core tier for every repository and a code tier for repositories with source, plus declarations, target
+  families, a naming rule and the conformance check `docs-check` runs. The project template's `Makefile`
+  carries both tiers as stubs.
+- [`styles/`](styles/ddd-layered.md) says **how the code is organised**, independent of language.
+  `ddd-layered` defines bounded contexts, layers and dependency rules L1–L7.
+- [`stacks/`](stacks/nextjs.md) says **what implements it**. `nextjs` maps each style concept to folders,
+  each rule to its enforcing check, and each make target to a command.
+
+A new stack adds one binding and a new style adds one style document. Neither changes the contract.
 
 ## Process improvements
 

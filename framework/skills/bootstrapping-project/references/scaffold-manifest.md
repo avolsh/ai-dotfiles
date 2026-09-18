@@ -1,6 +1,6 @@
 # Scaffold Manifest
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-18*
 
 Manifest of artifacts the `bootstrapping-project` skill scaffolds. Walkthroughs, rationale, and rules live in [`docs/bootstrapping-project.md`](../../../../docs/bootstrapping-project.md). Placeholders use `<angle-brackets>` — replace every one before writing.
 
@@ -23,7 +23,8 @@ All scaffolded by `ai-project`, which copies templates from `<system>/templates/
 | 3 | `CLAUDE.md` | `CLAUDE.md` (not-a-template marker) | **Rendered mechanically** from `_canonical.md`, byte-identical to the other two. No hand edits. |
 | 4 | `.github/copilot-instructions.md` | `.github/copilot-instructions.md` (not-a-template marker) | **Rendered mechanically** from `_canonical.md`, byte-identical to the other two. No hand edits. |
 | 5 | `.github/scripts/sync-agents.sh` | `.github/scripts/sync-agents.sh` | Verbatim copy of canonical script. `chmod +x`. Renders all three agent files from `_canonical.md`. Supports `--check` for drift gates. |
-| 6 | `Makefile` | `Makefile` | Must expose `sync-agents` (calls the script) and `sync-agents-check` (`--check`). Required because the generated `AGENTS.md` banner says "Regenerate with: make sync-agents". |
+| 6 | `Makefile` | `Makefile` | Carries the [make contract](../../../../docs/make-contract.md) tiers: **core** (`help`, `clean`, `build`, `docs-check`, `quality-gates-check`, `sync-agents`, `sync-agents-check`) and, in a marked block deleted for repositories without source code, **code**. Stubs fail until filled from the component's [stack binding](../../../../docs/stacks/). `sync-agents` is required because the generated `AGENTS.md` banner says "Regenerate with: make sync-agents". |
+| 6a | `.gitattributes` | `.gitattributes` | Keeps `Makefile`, `*.mk` and `*.sh` at `eol=lf`, so a Windows checkout (Git Bash, WSL) runs the recipes. Required by the [make contract](../../../../docs/make-contract.md#platform-requirements). |
 | 7 | `docs/README.md` | `docs/README.md` | Human entry point. Quick links to module map, active/archived specs, improvements log, architecture docs. |
 | 8 | `docs/specs/active/README.md` | `docs/specs/active/README.md` | Index for `specify` / `plan` / `in-progress` specs. |
 | 9 | `docs/specs/archived/README.md` | `docs/specs/archived/README.md` | Index for `done` specs. |

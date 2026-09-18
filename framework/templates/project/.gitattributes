@@ -1,0 +1,5 @@
+# Make contract § Platform requirements: Makefiles and shell scripts keep LF on every OS, so recipes and
+# `_dev/*.sh` run under Git Bash and WSL on Windows (CRLF breaks them with `/bin/sh^M: bad interpreter`).
+Makefile   text eol=lf
+*.mk       text eol=lf
+*.sh       text eol=lf
