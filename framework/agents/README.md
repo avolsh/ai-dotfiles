@@ -1,6 +1,6 @@
 # Framework Sub-agents
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-18*
 
 System-scope sub-agent definitions. Each agent is a single markdown file
 with YAML front-matter (the contract) and a system-prompt body (the
@@ -129,7 +129,11 @@ RESULT: <N> findings
 
 The agent pastes no diff and no reasoning of its own into the prompt: the
 reviewer reads the change itself, which is what makes the read cold. The
-reply transcribes into the spec's `### Review` findings table row for row.
+main agent posts the reply to the owner verbatim with a proposed
+disposition per finding and applies nothing until the owner decides
+([`spec-lifecycle.md § Reviewer sub-step`](../spec-workflows/spec-lifecycle.md#reviewer-substep)).
+The reply then transcribes into the spec's `### Review` findings table row
+for row.
 
 ## Validator + lint integration
 

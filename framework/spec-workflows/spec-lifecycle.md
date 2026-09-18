@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-18*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Design Decisions / Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -453,8 +453,25 @@ Run during `in-progress`, before requesting the closure gate.
   `RESULT:` line reading `PASS` or `<N> findings`, and N numbered
   `file:line → violated clause` findings, per the
   [`reviewing-changes`](../skills/reviewing-changes/SKILL.md) checklist.
-- **You are the arbiter.** Decide which findings to apply, apply them, and
-  re-run for **at most 1–2 cycles** — not an unbounded loop.
+- **The owner is the arbiter; the agent proposes.** After every run, at
+  any tier, the agent:
+  1. posts the reviewer's reply to the owner verbatim (header, `RESULT:`
+     line, numbered findings) before editing any file a finding names;
+  2. proposes a disposition per finding — `apply` with the intended fix,
+     `apply alternative` with the alternative, or `reject` with a one-line
+     reason — and marks every finding whose fix would change an approved
+     Requirement, Acceptance Criterion, Design decision or an `accepted` ADR;
+  3. waits. **The agent never edits a file to resolve a finding before the
+     owner has decided it.** One owner reply may decide several findings
+     ("apply all", "apply 1–5, reject 6");
+  4. applies only what the owner decided. A marked finding is not a fix
+     inside the task: it is a requirements change, taken back through the
+     Specify gate like any other ([§ Status transitions](#status-transitions) —
+     no status is revisited in place).
+
+  A re-run after the fixes follows the same steps, for **at most 1–2
+  cycles** — not an unbounded loop. The failure this prevents: findings
+  applied before the owner saw them, some of them changing approved scope.
 - This is **not a status and not a gate.** It does not replace the human
   `in-progress → done` closure gate; it informs it.
 - Harness without an `Agent` tool: run the reviewer as a separate

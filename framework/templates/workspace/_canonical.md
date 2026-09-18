@@ -3,6 +3,7 @@
 *Last updated: YYYY-MM-DD*
 
 ## Projects
+<!-- Routing only. Each project's stack and style live in its own `docs/architecture/profile.md` § Components. -->
 | Project | Path | Purpose |
 |---|---|---|
 | <project-name> | `<path/to/project/>` | <one-line purpose> |

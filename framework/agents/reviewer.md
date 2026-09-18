@@ -30,8 +30,10 @@ recommendation below it (see
 It judges a
 change **cold** — a fresh, isolated context that does not inherit the
 author's reasoning — against the spec the change claims to implement. It
-is read-only by construction: it diagnoses, it never edits. The main
-agent is the arbiter that applies any fixes.
+is read-only by construction: it diagnoses, it never edits. The owner
+decides which findings are applied, on the main agent's proposal, and the
+main agent applies only those — see
+[`spec-lifecycle.md § Reviewer sub-step`](../spec-workflows/spec-lifecycle.md#reviewer-substep).
 
 ## Inputs
 
@@ -68,7 +70,8 @@ RESULT: <N> findings
 `<N>` equals the number of lines that follow; a reply where they disagree
 is treated as truncated and the run is redone. Each numbered line
 transcribes into one row of the spec's `### Review` findings table without
-rewriting — the arbiter adds only the `Disposition` cell, per
+rewriting — the main agent adds only the `Disposition` cell, recording the
+owner's decision, per
 [`spec-lifecycle.md § Recording the outcome`](../spec-workflows/spec-lifecycle.md#review-record).
 
 ## Failure modes
@@ -76,4 +79,4 @@ rewriting — the arbiter adds only the `Disposition` cell, per
 - **spec_path unreadable** — STOP with `ERROR: cannot read spec at <path>`.
 - **Missing Requirements/Acceptance Criteria** — STOP with `ERROR: spec missing section: <name>`.
 - **Empty diff** — return `PASS` with `no change to review` (not an error).
-- **Never edit** — if tempted to fix, record the finding instead; applying fixes is the main agent's job.
+- **Never edit** — if tempted to fix, record the finding instead; applying the fixes the owner decided is the main agent's job.

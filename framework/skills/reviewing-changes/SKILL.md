@@ -5,7 +5,7 @@ description: "Spec-conformance review checklist for a code change (diff). Use wh
 
 # Reviewing Changes
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-09-18*
 
 The shared review language for the framework. Both the read-only
 [`reviewer`](../../agents/reviewer.md) sub-agent (Claude) and a separate
@@ -107,12 +107,15 @@ RESULT: <N> findings
 1. <path>:<line> → <FR/AC id> violated: <one-line what + which dimension>
 ```
 
-Diagnose only — never edit. The main agent is the arbiter: it decides
-which findings to apply, applies them, and re-runs the review for **at
+Diagnose only — never edit. The owner is the arbiter: the main agent posts
+this reply verbatim, proposes a disposition per finding, waits for the
+owner's decision, applies only what was decided
+([`spec-lifecycle.md § Reviewer sub-step`](../../spec-workflows/spec-lifecycle.md#reviewer-substep)),
+and re-runs the review for **at
 most 1–2 cycles**. The reviewer is not a gate and does not replace the
 human closure gate.
 
-**Where the output lands.** At a high-tier closure the arbiter transcribes
+**Where the output lands.** At a high-tier closure the main agent transcribes
 this reply into the spec's `### Review` sub-section under
 `## Closure Evidence`, one findings row per numbered line, adding only the
 `Disposition` cell — see

@@ -1,6 +1,6 @@
 # Rule Canonical Map
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-18*
 
 > **Machine-read by `scripts/lint-rules.py` — not human-maintained prose.**
 > Parser contract: a rule section starts with `### R<N> —`; it must contain a
@@ -316,3 +316,13 @@ Verbatim phrases observed:
 Verbatim phrases observed:
 - spec-lifecycle #13 (baseline deltas): *"**A spec that changes a baseline carries `## Baseline Deltas`; a spec that changes none sets `baseline-impact: none — <reason>`.**"*
 - spec-lifecycle #13 (hand-edit boundary): *"**A closure edits a baseline by hand only where no delta can address it — an un-numbered entry or a duplicated ID — and cites that edit in `## Closure Evidence`.**"*
+
+### R31 — The owner decides reviewer findings before any fix
+
+| | |
+|---|---|
+| **Canonical location** | `framework/spec-workflows/spec-lifecycle.md § Reviewer sub-step` |
+
+Verbatim phrases observed:
+- spec-lifecycle (arbiter): *"The owner is the arbiter; the agent proposes."*
+- spec-lifecycle (no fix before decision): *"The agent never edits a file to resolve a finding before the"*

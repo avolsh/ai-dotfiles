@@ -9,7 +9,22 @@ it links a proposed ADR. Rules:
 
 ---
 
+## Components
+
+<!-- One row per component: a directory with its own build. Most repositories have one row with Path `.`.
+     Style and Stack name framework documents: `$AI_DOTFILES/docs/styles/<style>.md` and
+     `$AI_DOTFILES/docs/stacks/<stack>.md`. This table is the single source of what each component uses. -->
+
+| Path | Stack | Style | Purpose |
+|---|---|---|---|
+| `.` | <stack, e.g. nextjs> | <style, e.g. ddd-layered> | <one line> |
+
 ## Profile
+
+<!-- Compose this table per component: copy the rows the named style settles (its § Architecture Profile
+     rows), then the rows the stack binding settles, then fill the remaining rows and every `<…>` placeholder
+     from project facts. With several components, prefix a row's Stated style with the component path
+     where they differ. -->
 
 <!-- One row per item; never delete a row. Fill at bootstrap from
      `<system>/spec-workflows/questions/design-questions.md` § Project.
