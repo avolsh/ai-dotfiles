@@ -83,6 +83,9 @@ ai_links_wire_tool() { # $1 dotfiles root, $2 profile_dir, $3 tool
   iname="$(_ai_links_instruction_name "$tool")" || return 1
   _ai_links_place "$df/framework/templates/system/$tool/$iname" "$tdir/$iname"
   _ai_links_place "$df/framework/boundaries.md" "$tdir/boundaries.md"
+  # Operating-protocol docs live at the repo root, not framework/; framework
+  # files cite them as `<system>/docs/…`.
+  _ai_links_place "$df/docs" "$tdir/docs"
   while IFS= read -r ref; do
     [ -n "$ref" ] || continue
     _ai_links_place "$df/framework/$ref" "$tdir/$ref"

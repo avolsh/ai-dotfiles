@@ -108,11 +108,19 @@ assert_silent "AC-4 a filled BUG template reports no missing affected-docs" "$ou
 # IMP-20260829 AC-5 — the same template, judged against the whole schema
 # rather than one field: a BUG written from it must not be born invalid.
 assert_silent "AC-5 a filled BUG template is missing no required field" "$out" "schema_missing_field"
+# IMP-20260914-baseline-deltas-and-merge T7 — the template's Baseline Deltas guidance is not a malformed delta.
+assert_silent "T7 a filled BUG template carries no malformed delta" "$out" "baseline_delta_"
 
 # ---------- FR-8: REQ-ID collisions inside one domain baseline ----------
-mkbaseline() { # $1 root, $2 filename, [body on stdin]
+mkbaseline() { # $1 root, $2 filename, [$3 Last src verified date, or "none"], [body on stdin]
   mkdir -p "$1/docs/domain"
-  { echo "# ${2%.md}"; echo "*Last updated: 2026-08-26*"; echo; cat; } > "$1/docs/domain/$2"
+  {
+    echo "# ${2%.md}"
+    echo "*Last updated: 2026-08-26*"
+    echo
+    [ "${3:-2026-08-26}" = none ] || echo "| Last src verified | ${3:-2026-08-26} (demo re-read) |"
+    cat
+  } > "$1/docs/domain/$2"
 }
 
 p="$(newproj reqids)"
@@ -462,6 +470,873 @@ EOF
 mv "$p/docs/specs/active/IMP-20260820-archived-frame-id.md" "$p/docs/specs/archived/"
 run "$p"
 assert_silent "FR-7 an archived spec's one-part ID is never reported" "$out" "figma_frame_id"
+
+# IMP-20260914 FR-14 — a breakpoint suffix and a behaviour ID are both two-part
+# frame references; neither is mistaken for a superseded one-part ID.
+p="$(newproj frameidresponsive)"
+mkspec "$p" "IMP-20260914-responsive-frame-id.md" </dev/null
+cat >> "$p/docs/specs/active/IMP-20260914-responsive-frame-id.md" <<EOF
+
+## Design
+
+[![[W-03.02] Places — List · Map view · lg]($FIGMA_ASSET)]($FIGMA_NODE)
+
+[![[B-01.03] Header search · Step 3 — Filter open · base]($FIGMA_ASSET)]($FIGMA_NODE)
+EOF
+run "$p"
+assert_silent "FR-14 a breakpoint-suffixed and a behaviour frame ID report nothing" "$out" "figma_frame_id"
+expect "FR-14 the responsive spec validates cleanly" 0 "$rc"
+
+# ---------- IMP-20260914-spec-traceability-checks ----------
+# Dated after the cut-off so the checks judge it; the body comes from stdin.
+mktrace() { # $1 root, $2 filename, $3 type, $4 status, [$5 date]
+  local f="$1/docs/specs/active/$2"
+  {
+    echo "---"
+    echo "id: ${2%.md}"
+    echo "type: $3"
+    echo "date: ${5:-2027-01-01}"
+    echo "status: $4"
+    echo "owner: alex"
+    echo "risk: low"
+    echo "affected-repos:"
+    echo "  - demo"
+    echo "affected-docs: []"
+    echo "affected-code: []"
+    echo "skills:"
+    echo "  - writing-specs"
+    echo "model-suggestion: default"
+    echo "---"
+    echo "# ${2%.md}"
+    echo "*Last updated: 2026-09-15*"
+    cat
+  } > "$f"
+}
+requirements_1_3() {
+  cat <<'EOF'
+
+## Requirements
+
+- FR-1: The system MUST do one.
+- FR-2: The system MUST do two.
+- FR-3: The system MUST do three.
+
+## Acceptance Criteria
+EOF
+}
+
+# FR-1 / AC-1 — an FR no AC cites is named at the line it is defined on.
+p="$(newproj traceuncited)"
+{ requirements_1_3; cat <<'EOF'
+
+### AC-1: One (FR-1)
+
+Evidence: test
+
+### AC-2: Two (`FR-2`)
+
+Evidence: test
+EOF
+} | mktrace "$p" "CR-20270101-uncited.md" CR specify
+run "$p"
+fr3_line="$(grep -n '^- FR-3:' "$p/docs/specs/active/CR-20270101-uncited.md" | cut -d: -f1)"
+assert_reports "AC-1 an FR no AC cites is named at its line" "$out" "CR-20270101-uncited.md:$fr3_line:traceability_fr_uncited:.*FR-3"
+[ "$(printf '%s\n' "$out" | grep -c traceability_)" -eq 1 ] || {
+  echo "FAIL: AC-1 exactly one traceability finding (got: $out)" >&2; fails=$((fails + 1)); }
+
+p="$(newproj tracerange)"
+{ requirements_1_3; printf '\n### AC-1: All (FR-1 – FR-3)\n\nEvidence: test\n'; } \
+  | mktrace "$p" "CR-20270101-range.md" CR specify
+run "$p"
+assert_silent "AC-1 a range citation covers every FR in it" "$out" "traceability_"
+
+p="$(newproj traceres)"
+{ requirements_1_3; printf '\n### AC-1: One (FR-1)\n'; } \
+  | mktrace "$p" "RES-20270101-exempt.md" RES specify
+run "$p"
+assert_silent "AC-1 a RES spec is exempt" "$out" "traceability_"
+
+# FR-2 / AC-2 — a citation of an undefined FR is named at the AC's line.
+p="$(newproj tracedangling)"
+{ requirements_1_3; printf '\n### AC-1: All (FR-1 – FR-3)\n\n### AC-2: Ghost (FR-9)\n\nEvidence: test\n'; } \
+  | mktrace "$p" "CR-20270101-dangling.md" CR specify
+run "$p"
+ac2_line="$(grep -n '^### AC-2' "$p/docs/specs/active/CR-20270101-dangling.md" | cut -d: -f1)"
+assert_reports "AC-2 a dangling FR citation is named at the AC's line" "$out" "CR-20270101-dangling.md:$ac2_line:traceability_fr_dangling:.*FR-9"
+
+# FR-5 — a spec dated before the cut-off is not judged.
+p="$(newproj tracehistory)"
+{ requirements_1_3; printf '\n### AC-1: One (FR-1)\n\n### AC-2: Ghost (FR-9)\n'; } \
+  | mktrace "$p" "CR-20260801-history.md" CR specify 2026-08-01
+run "$p"
+assert_silent "FR-5 a spec dated before the cut-off is not judged" "$out" "traceability_"
+
+# FR-3 / AC-3 — from `plan` on, every FR is cited by a task row directly; a
+# row citing only AC-2 (which cites FR-2) does not cover FR-2.
+tasks_omit_fr2() {
+  requirements_1_3
+  cat <<'EOF'
+
+### AC-1: One and three (FR-1, FR-3)
+
+### AC-2: Two (FR-2)
+
+## Tasks
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| T1 | Build one and three (FR-1, FR-3; AC-1) | `a.py` | — | — | tdd | fast | ☐ pending |
+| T2 | Build two (AC-2) | `b.py` | — | T1 | tdd | fast | ☐ pending |
+EOF
+}
+p="$(newproj tracetasks)"
+tasks_omit_fr2 | mktrace "$p" "CR-20270101-tasks.md" CR plan
+run "$p"
+fr2_line="$(grep -n '^- FR-2:' "$p/docs/specs/active/CR-20270101-tasks.md" | cut -d: -f1)"
+assert_reports "AC-3 at plan, an FR no task cites directly is named" "$out" "CR-20270101-tasks.md:$fr2_line:traceability_fr_no_task:.*FR-2"
+[ "$(printf '%s\n' "$out" | grep -c traceability_)" -eq 1 ] || {
+  echo "FAIL: AC-3 exactly one traceability finding at plan (got: $out)" >&2; fails=$((fails + 1)); }
+
+p="$(newproj tracetasksspecify)"
+tasks_omit_fr2 | mktrace "$p" "CR-20270101-tasks.md" CR specify
+run "$p"
+assert_silent "AC-3 the same body at specify reports no task coverage" "$out" "traceability_"
+
+# FR-4 / AC-3 — at `done`, every AC has a Closure Evidence row.
+closure_omits_ac2() {
+  requirements_1_3
+  cat <<'EOF'
+
+### AC-1: One and three (FR-1, FR-3)
+
+### AC-2: Two (FR-2)
+
+## Tasks
+
+| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
+|---|---|---|---|---|---|---|---|
+| T1 | Build everything (FR-1 – FR-3; AC-1, AC-2) | `a.py` | — | — | tdd | fast | ☑ done |
+
+## Closure Evidence
+
+| AC | Evidence |
+|---|---|
+| AC-1 | `a.test.py` green. |
+| Review | Not required — risk low. |
+EOF
+}
+p="$(newproj traceclosure)"
+closure_omits_ac2 | mktrace "$p" "CR-20270101-closure.md" CR done
+mv "$p/docs/specs/active/CR-20270101-closure.md" "$p/docs/specs/archived/"
+run "$p"
+ac2_def_line="$(grep -n '^### AC-2' "$p/docs/specs/archived/CR-20270101-closure.md" | cut -d: -f1)"
+assert_reports "AC-3 at done, an AC with no Closure Evidence row is named" "$out" "CR-20270101-closure.md:$ac2_def_line:traceability_ac_no_evidence:.*AC-2"
+[ "$(printf '%s\n' "$out" | grep -c traceability_)" -eq 1 ] || {
+  echo "FAIL: AC-3 exactly one traceability finding at done (got: $out)" >&2; fails=$((fails + 1)); }
+
+for st in specify in-progress; do
+  p="$(newproj "traceclosure$st")"
+  closure_omits_ac2 | mktrace "$p" "CR-20270101-closure.md" CR "$st"
+  run "$p"
+  assert_silent "AC-3 the same body at $st reports no closure coverage" "$out" "traceability_ac_no_evidence"
+done
+
+# ---------- IMP-20260914-mandatory-review-for-high-risk ----------
+# A high-tier spec at `done`, dated on the cut-off so the check judges it.
+# $3 is the risk tier; the Closure Evidence body comes from stdin.
+mkreview() { # $1 root, $2 filename, $3 risk, [$4 date]
+  local f="$1/docs/specs/active/$2"
+  {
+    echo "---"
+    echo "id: ${2%.md}"
+    echo "type: CR"
+    echo "date: ${4:-2026-09-16}"
+    echo "status: done"
+    echo "owner: alex"
+    echo "risk: $3"
+    echo "affected-repos:"
+    echo "  - demo"
+    echo "affected-docs: []"
+    echo "affected-code: []"
+    echo "skills:"
+    echo "  - writing-specs"
+    echo "model-suggestion: default"
+    echo "---"
+    echo "# ${2%.md}"
+    echo "*Last updated: 2026-09-16*"
+    echo ""
+    echo "## Requirements"
+    echo ""
+    echo "- FR-1: The system MUST do one."
+    echo ""
+    echo "## Acceptance Criteria"
+    echo ""
+    echo "### AC-1: One (FR-1)"
+    echo ""
+    echo "Evidence: test"
+    echo ""
+    echo "## Tasks"
+    echo ""
+    echo "| # | Description | Status |"
+    echo "|---|---|---|"
+    echo "| T1 | One (FR-1; AC-1) | done |"
+    echo ""
+    echo "## Closure Evidence"
+    echo ""
+    echo "| AC | Evidence |"
+    echo "|---|---|"
+    echo "| AC-1 | test |"
+    cat
+  } > "$f"
+}
+
+review_ok() { # a complete three-finding review
+  cat <<'EOF'
+
+### Review
+
+RESULT: 3 findings / 2 applied / 1 rejected — run 2026-09-16 against `a1b2c3d^..e4f5a6b`, sub-agent.
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | `a.py:1` → FR-1 violated: one — contract | applied — `a.py:2` |
+| 2 | `b.py:3` → FR-1 violated: two — coverage | applied — `b.py:4` |
+| 3 | `c.py:5` → FR-1 violated: three — altitude | rejected — out of scope here |
+EOF
+}
+
+review_missing_disposition() { # row 2's Disposition cell is empty
+  cat <<'EOF'
+
+### Review
+
+RESULT: 3 findings / 2 applied / 1 rejected — run 2026-09-16 against `a1b2c3d^..e4f5a6b`, sub-agent.
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | `a.py:1` → FR-1 violated: one — contract | applied — `a.py:2` |
+| 2 | `b.py:3` → FR-1 violated: two — coverage |  |
+| 3 | `c.py:5` → FR-1 violated: three — altitude | rejected — out of scope here |
+EOF
+}
+
+review_waived() {
+  cat <<'EOF'
+
+### Review
+
+RESULT: WAIVED — by alexvolsh 2026-09-16: shipping ahead of the release freeze. No reviewer run.
+EOF
+}
+
+review_waived_no_reason() {
+  cat <<'EOF'
+
+### Review
+
+RESULT: WAIVED — by alexvolsh 2026-09-16. No reviewer run.
+EOF
+}
+
+# AC-1 — a high-tier spec at `done` with no `### Review` at all.
+p="$(newproj reviewmissing)"
+printf '' | mkreview "$p" "CR-20270101-noreview.md" high
+run "$p"
+assert_reports "AC-1 a high-tier done spec with no ### Review is named" "$out" "CR-20270101-noreview.md:.*:review_missing:"
+[ "$(printf '%s\n' "$out" | grep -c 'review_')" -eq 1 ] || {
+  echo "FAIL: AC-1 exactly one review finding (got: $out)" >&2; fails=$((fails + 1)); }
+
+# AC-1 — the same body at medium risk is not judged.
+p="$(newproj reviewmedium)"
+printf '' | mkreview "$p" "CR-20270101-noreview.md" medium
+run "$p"
+assert_silent "AC-1 the same spec at risk: medium is silent" "$out" "review_"
+
+# AC-1 — severity, not risk, can put a spec in the tier.
+p="$(newproj reviewseverity)"
+printf '' | mkreview "$p" "CR-20270101-sev.md" medium
+sed -i.bak 's/^risk: medium$/risk: medium\nseverity: critical/' "$p/docs/specs/active/CR-20270101-sev.md"
+rm -f "$p/docs/specs/active/CR-20270101-sev.md.bak"
+run "$p"
+assert_reports "AC-1 severity: critical puts a medium-risk spec in the tier" "$out" "CR-20270101-sev.md:.*:review_missing:"
+
+# FR-6 — a spec dated before the cut-off is not judged.
+p="$(newproj reviewcutoff)"
+printf '' | mkreview "$p" "CR-20260101-old.md" high 2026-09-15
+run "$p"
+assert_silent "FR-6 a spec dated before the cut-off is not judged" "$out" "review_"
+
+# FR-6 — earlier statuses are silent.
+for st in specify plan in-progress; do
+  p="$(newproj "reviewstatus$st")"
+  printf '' | mkreview "$p" "CR-20270101-noreview.md" high
+  sed -i.bak "s/^status: done$/status: $st/" "$p/docs/specs/active/CR-20270101-noreview.md"
+  rm -f "$p/docs/specs/active/CR-20270101-noreview.md.bak"
+  run "$p"
+  assert_silent "FR-6 a high-tier spec at $st is silent" "$out" "review_"
+done
+
+# AC-2 — a complete review is silent; one empty Disposition is named by row.
+p="$(newproj reviewcomplete)"
+review_ok | mkreview "$p" "CR-20270101-review.md" high
+run "$p"
+assert_silent "AC-2 a fully dispositioned review is silent" "$out" "review_"
+
+p="$(newproj reviewundisp)"
+review_missing_disposition | mkreview "$p" "CR-20270101-review.md" high
+run "$p"
+disp_line="$(grep -n 'two — coverage' "$p/docs/specs/active/CR-20270101-review.md" | cut -d: -f1)"
+assert_reports "AC-2 an empty Disposition cell is named at its row" "$out" "CR-20270101-review.md:$disp_line:review_no_disposition:.*2"
+[ "$(printf '%s\n' "$out" | grep -c 'review_')" -eq 1 ] || {
+  echo "FAIL: AC-2 exactly one review finding (got: $out)" >&2; fails=$((fails + 1)); }
+
+# FR-2 — the run header carries date, range and harness, or the result is flagged.
+p="$(newproj reviewheader)"
+{ cat <<'EOF'
+
+### Review
+
+RESULT: PASS — looks fine to me
+
+EOF
+} | mkreview "$p" "CR-20270101-header.md" high
+run "$p"
+assert_reports "FR-2 a PASS with no run header is named" "$out" "CR-20270101-header.md:.*:review_header_incomplete:"
+
+p="$(newproj reviewpassok)"
+{ cat <<'EOF'
+
+### Review
+
+RESULT: PASS — run 2026-09-16 against `a1b2c3d^..e4f5a6b`, empty-context session.
+
+EOF
+} | mkreview "$p" "CR-20270101-pass.md" high
+run "$p"
+assert_silent "FR-2 a complete PASS needs no findings table" "$out" "review_"
+
+# FR-9 — a declared count that disagrees with the table means a truncated reply.
+p="$(newproj reviewcount)"
+{ cat <<'EOF'
+
+### Review
+
+RESULT: 3 findings / 1 applied / 0 rejected — run 2026-09-16 against `a1b2c3d^..e4f5a6b`, sub-agent.
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | `a.py:1` → FR-1 violated: one — contract | applied — `a.py:2` |
+EOF
+} | mkreview "$p" "CR-20270101-count.md" high
+run "$p"
+assert_reports "FR-9 a declared count the table contradicts is named" "$out" "CR-20270101-count.md:.*:review_count_mismatch:.*3 finding"
+[ "$(printf '%s\n' "$out" | grep -c 'review_')" -eq 1 ] || {
+  echo "FAIL: FR-9 exactly one review finding for a count mismatch (got: $out)" >&2; fails=$((fails + 1)); }
+
+# AC-5 — a waiver naming a human and a reason is silent; without a reason it is not.
+p="$(newproj reviewwaived)"
+review_waived | mkreview "$p" "CR-20270101-waived.md" high
+run "$p"
+assert_silent "AC-5 a complete waiver is silent" "$out" "review_"
+
+p="$(newproj reviewwaivedbad)"
+review_waived_no_reason | mkreview "$p" "CR-20270101-waived.md" high
+run "$p"
+assert_reports "AC-5 a waiver with no reason is named" "$out" "CR-20270101-waived.md:.*:review_waiver_incomplete:"
+[ "$(printf '%s\n' "$out" | grep -c 'review_')" -eq 1 ] || {
+  echo "FAIL: AC-5 exactly one review finding for a bare waiver (got: $out)" >&2; fails=$((fails + 1)); }
+
+# Review cycle 1 findings — regressions the cold review caught.
+
+# F1 — an escaped pipe inside a Finding cell must not shift the columns.
+p="$(newproj reviewescapedpipe)"
+{ cat <<'EOF'
+
+### Review
+
+RESULT: 1 findings / 1 applied / 0 rejected — run 2026-09-16 against `a1b2c3d^..e4f5a6b`, sub-agent.
+
+| # | Finding | Disposition |
+|---|---|---|
+| 1 | `a.py:1` → FR-1 violated: `severity: high \| critical` is misread — bugs | applied — `a.py:2` |
+EOF
+} | mkreview "$p" "CR-20270101-pipe.md" high
+run "$p"
+assert_silent "F1 an escaped pipe in a Finding cell does not shift the Disposition" "$out" "review_"
+
+# F2 — `RESULT:` must be the first non-blank line of the sub-section.
+p="$(newproj reviewprosefirst)"
+{ cat <<'EOF'
+
+### Review
+
+The reviewer was happy with this one.
+
+RESULT: PASS — run 2026-09-16 against `a1b2c3d^..e4f5a6b`, sub-agent.
+EOF
+} | mkreview "$p" "CR-20270101-prose.md" high
+run "$p"
+assert_reports "F2 prose before the RESULT: line is named" "$out" "CR-20270101-prose.md:.*:review_no_result:"
+
+# F3 — the tier is set by risk and severity alone; no type is exempt.
+p="$(newproj reviewres)"
+printf '' | mkreview "$p" "RES-20270101-spike.md" high
+sed -i.bak 's/^type: CR$/type: RES/' "$p/docs/specs/active/RES-20270101-spike.md"
+rm -f "$p/docs/specs/active/RES-20270101-spike.md.bak"
+run "$p"
+assert_reports "F3 a high-risk RES spec is judged like any other type" "$out" "RES-20270101-spike.md:.*:review_missing:"
+
+# F5 — a worked example in `## Design` must not be read as the section itself.
+# Before the fix, `_h2_section_lines` matched the fenced `## Closure Evidence`
+# heading inside Design and never reached the real section, so a spec with no
+# `### Review` at all passed by borrowing the example's.
+p="$(newproj reviewfencedexample)"
+{ cat <<'EOF'
+EOF
+} | mkreview "$p" "CR-20270101-fenced.md" high
+python3 - "$p/docs/specs/active/CR-20270101-fenced.md" <<'PY'
+import sys, pathlib
+f = pathlib.Path(sys.argv[1]); s = f.read_text()
+example = """
+## Design
+
+The shape a closure record takes:
+
+```markdown
+## Closure Evidence
+
+| AC | Evidence |
+|---|---|
+| AC-1 | test |
+
+### Review
+
+RESULT: PASS — run 2026-09-16 against `a^..b`, sub-agent.
+```
+"""
+f.write_text(s.replace("\n## Closure Evidence", example + "\n## Closure Evidence", 1))
+PY
+run "$p"
+assert_reports "F5 a fenced Closure Evidence example is not read as the section" "$out" "CR-20270101-fenced.md:.*:review_missing:"
+
+# ---------- IMP-20260914-baseline-verification-freshness ----------
+# An archived `done` spec naming baselines. Closure evidence (front-matter
+# `closed:`, a `Closed` line, a `Last updated:` stamp) is supplied by the
+# caller, so each fallback in the resolution order can be planted alone.
+mkarchived() { # $1 root, $2 filename, $3 date, $4 space-separated baselines, [extra front-matter], [body on stdin]
+  local f="$1/docs/specs/archived/$2" b
+  {
+    echo "---"
+    echo "id: ${2%.md}"
+    echo "type: IMP"
+    echo "date: $3"
+    echo "status: done"
+    echo "owner: alex"
+    echo "risk: low"
+    echo "affected-repos:"
+    echo "  - demo"
+    echo "affected-docs:"
+    for b in $4; do echo "  - docs/domain/$b"; done
+    echo "affected-code: []"
+    echo "skills:"
+    echo "  - writing-specs"
+    echo "model-suggestion: default"
+    [ -n "${5:-}" ] && printf '%s\n' "$5"
+    echo "---"
+    echo "# ${2%.md}"
+    cat
+  } > "$f"
+}
+mkverified() { # $1 root, $2 baseline filename, $3 Last src verified date
+  mkbaseline "$1" "$2" "$3" </dev/null
+}
+
+# AC-1 — a stale baseline is reported with its cause; bumping the row clears it.
+p="$(newproj freshstale)"
+mkverified "$p" "demo.md" "2026-08-01"
+mkarchived "$p" "IMP-20260805-demo.md" "2026-08-05" "demo.md" "closed: 2026-08-10" <<'EOF'
+*Last updated: 2026-08-10*
+EOF
+run "$p"
+expect "AC-1 a stale baseline exits non-zero" 1 "$rc"
+assert_reports "AC-1 the finding names baseline, row date, spec and closure date" "$out" \
+  "docs/domain/demo.md:4:baseline_stale:.*2026-08-01.*IMP-20260805-demo.*2026-08-10"
+[ "$(printf '%s\n' "$out" | grep -c baseline_stale)" -eq 1 ] \
+  || { echo "FAIL: AC-1 exactly one baseline_stale finding" >&2; fails=$((fails + 1)); }
+mkverified "$p" "demo.md" "2026-08-10"
+run "$p"
+assert_silent "AC-1 a row dated on the closure date is not stale" "$out" "baseline_stale"
+
+# The newest closing spec wins; an older one alone would pass.
+p="$(newproj freshnewest)"
+mkverified "$p" "demo.md" "2026-08-05"
+mkarchived "$p" "IMP-20260801-old.md" "2026-08-01" "demo.md" "closed: 2026-08-02" </dev/null
+mkarchived "$p" "IMP-20260803-new.md" "2026-08-03" "demo.md" "closed: 2026-08-09" </dev/null
+run "$p"
+assert_reports "AC-1 the newest closure is the one compared" "$out" "baseline_stale:.*IMP-20260803-new.*2026-08-09"
+assert_silent "AC-1 an older closure is not reported" "$out" "IMP-20260801-old"
+
+# Active specs are not closures, whatever they name.
+p="$(newproj freshactive)"
+mkverified "$p" "demo.md" "2026-08-01"
+mkspec "$p" "IMP-20260826-open.md" </dev/null
+perl -0pi -e 's|^affected-docs: \[\]|affected-docs:\n  - docs/domain/demo.md|m' "$p/docs/specs/active/IMP-20260826-open.md"
+run "$p"
+assert_silent "AC-1 an active spec naming a baseline is not a closure" "$out" "baseline_stale"
+
+# AC-2 — closure date is read in declared order, and the source is named.
+p="$(newproj freshorder)"
+for b in b1 b2 b3 b4; do mkverified "$p" "$b.md" "2026-01-01"; done
+mkarchived "$p" "IMP-20260801-field.md" "2026-08-01" "b1.md" "closed: 2026-08-10" <<'EOF'
+*Closed 2026-08-20.*
+*Last updated: 2026-08-30*
+EOF
+mkarchived "$p" "IMP-20260801-line.md" "2026-08-01" "b2.md" <<'EOF'
+*Closed 2026-08-11 · all tasks done.*
+*Last updated: 2026-08-30*
+EOF
+mkverified "$p" "b5.md" "2026-01-01"
+mkarchived "$p" "IMP-20260801-underline.md" "2026-08-01" "b5.md" <<'EOF'
+_Closed 2026-08-13._
+_Last updated: 2026-08-30_
+EOF
+mkarchived "$p" "IMP-20260801-stamp.md" "2026-08-01" "b3.md" <<'EOF'
+_Last updated: 2026-08-12_
+EOF
+mkarchived "$p" "IMP-20260801-dated.md" "2026-08-01" "b4.md" </dev/null
+run "$p"
+assert_reports "AC-2 closed: wins over a Closed line and a stamp" "$out" "b1.md:.*baseline_stale:.*2026-08-10.*closed:"
+assert_reports "AC-2 a Closed line wins over a stamp" "$out" "b2.md:.*baseline_stale:.*2026-08-11.*Closed line"
+assert_reports "AC-2 an underscore-italic Last updated stamp is read" "$out" "b3.md:.*baseline_stale:.*2026-08-12.*Last updated"
+assert_reports "AC-2 front-matter date: is the last fallback" "$out" "b4.md:.*baseline_stale:.*2026-08-01.*date:"
+assert_reports "AC-2 an underscore-italic Closed line is read" "$out" "b5.md:.*baseline_stale:.*2026-08-13.*Closed line"
+
+# AC-3 — a baseline with no row is reported; README is not a baseline.
+p="$(newproj freshmissing)"
+mkspec "$p" "IMP-20260826-anchor.md" </dev/null
+mkbaseline "$p" "norow.md" none <<'EOF'
+| Field | Value |
+| ----- | ----- |
+| Owns  | demo  |
+EOF
+mkbaseline "$p" "README.md" </dev/null
+run "$p"
+assert_reports "AC-3 a baseline with no Last src verified row is reported" "$out" "docs/domain/norow.md:1:baseline_verified_missing:"
+[ "$(printf '%s\n' "$out" | grep -c baseline_verified_missing)" -eq 1 ] \
+  || { echo "FAIL: AC-3 exactly one baseline_verified_missing finding" >&2; fails=$((fails + 1)); }
+assert_silent "AC-3 README.md is not a baseline" "$out" "README.md:.*baseline_"
+
+# AC-3 — no docs/domain/, no findings.
+p="$(newproj freshnodomain)"
+mkarchived "$p" "IMP-20260801-nodomain.md" "2026-08-01" "demo.md" "closed: 2026-08-10" </dev/null
+run "$p"
+assert_silent "AC-3 a corpus without docs/domain is a no-op" "$out" "baseline_"
+
+# AC-2 (FR-1) — `closed:` is required at done from the cut-off on, and
+# well-formed wherever it appears.
+p="$(newproj closedfield)"
+mkarchived "$p" "IMP-20270101-noclosed.md" "2027-01-01" "" </dev/null
+mkarchived "$p" "IMP-20270101-withclosed.md" "2027-01-01" "" "closed: 2027-01-05" </dev/null
+mkarchived "$p" "IMP-20260801-history.md" "2026-08-01" "" </dev/null
+mkarchived "$p" "IMP-20260801-badclosed.md" "2026-08-01" "" "closed: soon" </dev/null
+mkspec "$p" "IMP-20270101-open.md" </dev/null
+sed -i.bak 's/^date: 2026-08-26/date: 2027-01-01/' "$p/docs/specs/active/IMP-20270101-open.md"
+rm -f "$p/docs/specs/active/IMP-20270101-open.md.bak"
+run "$p"
+assert_reports "AC-2 a post-cut-off done spec without closed: is reported" "$out" "IMP-20270101-noclosed.md:.*:schema_closed_missing:"
+assert_silent "AC-2 a post-cut-off done spec with closed: is silent" "$out" "IMP-20270101-withclosed.md:.*:schema_closed"
+assert_silent "AC-2 a pre-cut-off done spec without closed: is history" "$out" "IMP-20260801-history.md:.*:schema_closed"
+assert_silent "AC-2 a spec not yet done needs no closed:" "$out" "IMP-20270101-open.md:.*:schema_closed"
+assert_reports "AC-2 a malformed closed: is reported whatever the date" "$out" "IMP-20260801-badclosed.md:.*:schema_date_format:closed="
+
+# AC-5 (FR-8, FR-9) — Direct-lane log entries carry a closure date.
+p="$(newproj logclosed)"
+mkspec "$p" "IMP-20260826-anchor.md" </dev/null
+cat > "$p/docs/improvements-log.md" <<'EOF'
+# Improvements Log — demo
+
+### 2027-01-02 — direct change without Closed
+
+- **Spec / task:** Direct lane (owner-approved in chat)
+- **Category:** tooling
+- **What was changed:** a thing
+
+### 2027-01-03 — direct change with Closed
+
+- **Spec / task:** ad-hoc (Direct lane), follow-up to the entry above
+- **Closed:** 2027-01-03
+- **What was changed:** a thing
+
+### 2026-08-01 — direct change before the cut-off
+
+- **Spec / task:** Direct lane (owner-approved)
+- **What was changed:** a thing
+
+### 2027-01-04 — a finding, not a change
+
+- **Spec / task:** ad-hoc
+- **What was found:** a thing
+
+```markdown
+### 2027-01-05 — a fenced example is not an entry
+- **Spec / task:** Direct lane
+```
+EOF
+run "$p"
+assert_reports "AC-5 a post-cut-off Direct-lane entry without Closed is reported by heading" "$out" \
+  "docs/improvements-log.md:3:log_closed_missing:.*2027-01-02 — direct change without Closed"
+[ "$(printf '%s\n' "$out" | grep -c log_closed_missing)" -eq 1 ] \
+  || { echo "FAIL: AC-5 exactly one log_closed_missing finding" >&2; fails=$((fails + 1)); }
+perl -0pi -e 's/(- \*\*Spec \/ task:\*\* Direct lane \(owner-approved in chat\)\n)/$1- **Closed:** 2027-01-02\n/' "$p/docs/improvements-log.md"
+run "$p"
+assert_silent "AC-5 adding the Closed line clears the finding" "$out" "log_closed_missing"
+
+p="$(newproj lognofile)"
+mkspec "$p" "IMP-20260826-anchor.md" </dev/null
+run "$p"
+assert_silent "AC-5 a project without an improvements log is a no-op" "$out" "log_closed_missing"
+
+# ---------- IMP-20260914-machine-readable-spec-reports AC-1: output is data ----------
+# One finding each of two checks: a bare-string `domain-refs` (schema_type) and a
+# link to a file that does not exist (link_broken).
+p="$(newproj reports)"
+mkspec "$p" "IMP-20260826-two-findings.md" <<'EOF'
+domain-refs: REQ-PCE-001
+EOF
+printf '\nSee [gone](missing.md).\n' >> "$p/docs/specs/active/IMP-20260826-two-findings.md"
+runall() { # $1 root, then flags — sets $out (stdout), $err (stderr) and $rc
+  local root="$1"; shift
+  set +e
+  out="$(python3 "$VALIDATOR" "$@" "$root/docs/specs" 2>"$TMP/stderr")"; rc=$?
+  set -e
+  err="$(cat "$TMP/stderr")"
+}
+json_ok() { # $1 desc, $2 json, $3 python expression over `d` that must be True
+  if ! printf '%s' "$2" | python3 -c "import json,sys; d=json.load(sys.stdin); sys.exit(0 if ($3) else 1)" 2>/dev/null; then
+    echo "FAIL: $1 (JSON check failed: $3)" >&2
+    fails=$((fails + 1))
+  fi
+}
+
+runall "$p" --json
+expect "AC-1 --json keeps exit 1 on findings" 1 "$rc"
+json_ok "AC-1 --json carries both findings" "$out" \
+  "d['schemaVersion'] == 1 and len(d['findings']) == 2 and d['summary']['total'] == 2"
+json_ok "AC-1 --json counts one finding per check" "$out" \
+  "d['summary']['byCheck'] == {'schema_type': 1, 'link_broken': 1}"
+json_ok "AC-1 --json findings carry path, line, check and message" "$out" \
+  "all(set(f) == {'path', 'line', 'check', 'message'} for f in d['findings']) and d['findings'][0]['path'] == 'docs/specs/active/IMP-20260826-two-findings.md' and isinstance(d['findings'][0]['line'], int)"
+[ -z "$err" ] || { echo "FAIL: AC-1 --json leaves stderr empty (got: $err)" >&2; fails=$((fails + 1)); }
+
+runall "$p" --report findings
+expect "AC-1 --report findings keeps exit 1 on findings" 1 "$rc"
+[ "$(printf '%s\n' "$out" | wc -l | tr -d ' ')" -eq 3 ] \
+  || { echo "FAIL: AC-1 --report findings prints two findings plus one summary line (got: $out)" >&2; fails=$((fails + 1)); }
+assert_reports "AC-1 --report findings keeps the finding line format" "$out" \
+  "^docs/specs/active/IMP-20260826-two-findings.md:[0-9]*:link_broken:"
+assert_reports "AC-1 --report findings summary counts each check" "$out" \
+  "^validate-specs: 2 finding(s).*link_broken=1, schema_type=1$"
+[ -z "$err" ] || { echo "FAIL: AC-1 --report findings leaves stderr empty (got: $err)" >&2; fails=$((fails + 1)); }
+
+# The default output is what consuming Makefiles already read: unchanged.
+runall "$p"
+expect "AC-1 default output keeps exit 1" 1 "$rc"
+[ "$(printf '%s\n' "$out" | wc -l | tr -d ' ')" -eq 2 ] \
+  || { echo "FAIL: AC-1 default stdout is the two finding lines only (got: $out)" >&2; fails=$((fails + 1)); }
+assert_reports "AC-1 default summary stays on stderr" "$err" "^validate-specs: 2 finding(s) across 1 spec(s) + 0 agent(s)\.$"
+
+# Flags may precede or follow the path; a clean corpus reports zero and exits 0.
+p="$(newproj reportsclean)"
+mkspec "$p" "IMP-20260826-clean.md" </dev/null
+set +e
+out="$(python3 "$VALIDATOR" "$p/docs/specs" --json 2>/dev/null)"; rc=$?
+set -e
+expect "AC-1 --json on a clean corpus exits 0" 0 "$rc"
+json_ok "AC-1 --json on a clean corpus has no findings" "$out" \
+  "d['findings'] == [] and d['summary'] == {'total': 0, 'specs': 1, 'agents': 0, 'byCheck': {}}"
+runall "$p" --report findings
+expect "AC-1 --report findings on a clean corpus exits 0" 0 "$rc"
+assert_reports "AC-1 --report findings on a clean corpus prints its summary" "$out" "^validate-specs: 0 finding(s)"
+
+# ---------- IMP-20260914-baseline-deltas-and-merge T6: baseline impact + deltas (FR-3, FR-4, FR-6, FR-10) ----------
+# A spec from mkspec, re-dated and re-statused; the Baseline Deltas body comes from stdin.
+deltaspec() { # $1 root, $2 filename, $3 date, $4 status, $5 extra front-matter ("" for none)
+  mkspec "$1" "$2" <<EOF
+$5
+EOF
+  local f="$1/docs/specs/active/$2"
+  sed -i.bak -e "s/^date: 2026-08-26/date: $3/" -e "s/^status: specify/status: $4/" "$f" && rm "$f.bak"
+  cat >> "$f"
+}
+
+p="$(newproj impact)"
+mkbaseline "$p" "demo.md" <<'EOF'
+## Functional Requirements
+
+- **MUST** do one thing. *(REQ-X-001)*
+EOF
+deltaspec "$p" "IMP-20260920-neither.md" 2026-09-20 plan "" </dev/null
+deltaspec "$p" "IMP-20260920-marker.md" 2026-09-20 plan "baseline-impact: none — tooling only" </dev/null
+deltaspec "$p" "IMP-20260920-bare-marker.md" 2026-09-20 plan "baseline-impact: none" </dev/null
+deltaspec "$p" "IMP-20260920-drafting.md" 2026-09-20 specify "" </dev/null
+deltaspec "$p" "IMP-20260901-before.md" 2026-09-01 plan "" </dev/null
+deltaspec "$p" "IMP-20260916-cutoff-day.md" 2026-09-16 plan "" </dev/null
+deltaspec "$p" "IMP-20260920-no-scenario.md" 2026-09-20 plan "" <<'EOF'
+
+## Baseline Deltas
+
+### docs/domain/demo.md
+
+#### ADDED
+- Under `## Functional Requirements`:
+  - **MUST** do a second thing. *(REQ-X-002)*
+EOF
+deltaspec "$p" "IMP-20260920-verified.md" 2026-09-20 plan "siblings:
+  - IMP-20260920-no-scenario" <<'EOF'
+
+## Baseline Deltas
+
+### docs/domain/demo.md
+
+#### MODIFIED
+- REQ-X-001
+  - **MUST** do one thing well. *(REQ-X-001)*
+    - Verified by: `src/demo.test.ts`
+EOF
+deltaspec "$p" "IMP-20260801-stale-target.md" 2026-08-01 specify "" <<'EOF'
+
+## Baseline Deltas
+
+### docs/domain/demo.md
+
+#### REMOVED
+- REQ-X-009 — Reason: gone — Migration: none
+EOF
+run "$p"
+assert_reports "FR-3 a post-cut-off spec at plan with neither deltas nor marker is reported" "$out" "IMP-20260920-neither.md:[0-9]*:baseline_impact_missing:"
+assert_silent "FR-3 the marker with a reason satisfies the rule" "$out" "IMP-20260920-marker.md"
+assert_reports "FR-3 a marker with no reason is malformed" "$out" "IMP-20260920-bare-marker.md:[0-9]*:baseline_impact_malformed:"
+assert_silent "FR-3 a spec still at specify is not judged" "$out" "IMP-20260920-drafting.md"
+assert_silent "FR-10 a spec dated before the cut-off is not judged" "$out" "IMP-20260901-before.md"
+assert_silent "FR-10 a spec dated on the cut-off day is not judged" "$out" "IMP-20260916-cutoff-day.md:[0-9]*:baseline_impact"
+assert_reports "FR-4 an ADDED REQ with no scenario is reported" "$out" "IMP-20260920-no-scenario.md:[0-9]*:baseline_delta_scenario_missing:.*REQ-X-002"
+assert_silent "FR-4 a delta spec is not also missing its impact" "$out" "IMP-20260920-no-scenario.md:[0-9]*:baseline_impact_missing"
+assert_silent "FR-4 a Verified by pointer is a scenario" "$out" "IMP-20260920-verified.md"
+assert_reports "FR-6 the validator runs the delta check at any status and date" "$out" "IMP-20260801-stale-target.md:[0-9]*:baseline_delta_target_missing:.*REQ-X-009"
+
+# FR-10: an archived spec's deltas were merged; its targets are history, not errors.
+p="$(newproj archiveddeltas)"
+mkbaseline "$p" "demo.md" <<'EOF'
+## Functional Requirements
+
+- ~~REQ-X-001~~ deleted — Why: gone. Migration: none.
+EOF
+mkspec "$p" "IMP-20260801-merged.md" <<'EOF'
+closed: 2026-08-02
+EOF
+cat >> "$p/docs/specs/active/IMP-20260801-merged.md" <<'EOF'
+
+## Baseline Deltas
+
+### docs/domain/demo.md
+
+#### REMOVED
+- REQ-X-001 — Reason: gone — Migration: none
+EOF
+mv "$p/docs/specs/active/IMP-20260801-merged.md" "$p/docs/specs/archived/"
+run "$p"
+assert_silent "FR-10 an archived spec's merged delta is not re-checked" "$out" "baseline_delta_"
+
+# ---------- IMP-20260917-lifecycle-schema-engine D4: prose and code agree ----------
+res_fm() { # RES front matter without risk:, extra lines from stdin
+  sed -e '/^risk: low$/d' -e 's/^type: IMP$/type: RES/' -e 's/^model-suggestion: default$/model-suggestion: deep/'
+}
+mkres() { # $1 root, $2 filename, [extra front matter on stdin]
+  local extra; extra="$(cat)"
+  mkspec "$1" "$2" <<EOF
+hypothesis: it works
+kill-criteria: ≤8 hours
+$extra
+EOF
+  local f="$1/docs/specs/active/$2"
+  res_fm < "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+}
+
+# D4 #2 — a RES MUST NOT elect `trivial`, whatever its date (IMP-20260917-remove-trivial-lane D2).
+p="$(newproj restrivial)"
+mkres "$p" "RES-20260826-trivial.md" <<'EOF'
+code-location: research/x/
+risk: trivial
+EOF
+mkres "$p" "RES-20260826-trivialbug.md" <<'EOF'
+code-location: research/y/
+severity: trivial
+EOF
+mkres "$p" "RES-20260826-plain.md" <<'EOF'
+code-location: research/z/
+EOF
+run "$p"
+assert_reports "D4-2 a RES with risk: trivial is reported" "$out" "RES-20260826-trivial.md:.*trivial_lane_removed:"
+assert_reports "D4-2 a RES with severity: trivial is reported" "$out" "RES-20260826-trivialbug.md:.*trivial_lane_removed:"
+assert_silent "D4-2 a RES without a trivial election is not" "$out" "RES-20260826-plain.md:.*trivial_lane_removed:"
+
+# IMP-20260917-remove-trivial-lane AC-1/AC-2 — `trivial` dated before the removal is history; on or after it, refused.
+retag() { # $1 root, $2 filename, $3 date, [sed expressions on the rest of the args]
+  local f="$1/docs/specs/active/$2" d="$3"; shift 3
+  sed -e "s/^date: 2026-08-26$/date: $d/" "$@" "$f" > "$f.tmp" && mv "$f.tmp" "$f"
+}
+p="$(newproj trivialremoved)"
+mkspec "$p" "IMP-20260916-old.md" < /dev/null
+retag "$p" "IMP-20260916-old.md" 2026-09-16 -e 's/^risk: low$/risk: trivial/' \
+  -e 's/^affected-code: \[\]$/affected-code:\n  - a.py\n  - b.py\n  - c.py/'
+mkspec "$p" "IMP-20260917-new.md" < /dev/null
+retag "$p" "IMP-20260917-new.md" 2026-09-17 -e 's/^risk: low$/risk: trivial/'
+mkspec "$p" "BUG-20260917-new.md" < /dev/null
+retag "$p" "BUG-20260917-new.md" 2026-09-17 -e 's/^type: IMP$/type: BUG/' -e 's/^risk: low$/severity: trivial/'
+mkspec "$p" "IMP-20260917-low.md" < /dev/null
+retag "$p" "IMP-20260917-low.md" 2026-09-17
+touch "$p/a.py" "$p/b.py" "$p/c.py"
+run "$p"
+assert_silent "AC-1 a trivial spec dated before the removal (over the old 2-file cap) gains no finding" "$out" "IMP-20260916-old.md:"
+assert_reports "AC-2 risk: trivial on the removal date is reported" "$out" "IMP-20260917-new.md:.*trivial_lane_removed:"
+assert_reports "AC-2 severity: trivial on the removal date is reported" "$out" "BUG-20260917-new.md:.*trivial_lane_removed:"
+assert_reports "AC-2 the finding names the Direct lane" "$out" "IMP-20260917-new.md:.*Direct lane"
+assert_reports "AC-2 the finding names the standard track" "$out" "IMP-20260917-new.md:.*standard track"
+assert_silent "AC-2 a low-risk spec is not reported" "$out" "IMP-20260917-low.md:.*trivial_lane_removed:"
+
+# D4 #3 — a table shown inside a fence under `## Tasks` is an example, not a Tasks table.
+p="$(newproj fencedtasks)"
+mkspec "$p" "IMP-20260826-fenced.md" < /dev/null
+printf '\n## Tasks\n\nPending — Plan stage only. The table will look like:\n\n```\n| # | Description |\n|---|---|\n```\n' >> "$p/docs/specs/active/IMP-20260826-fenced.md"
+mkspec "$p" "IMP-20260826-real.md" < /dev/null
+printf '\n## Tasks\n\n| # | Description |\n|---|---|\n| T1 | x |\n' >> "$p/docs/specs/active/IMP-20260826-real.md"
+run "$p"
+assert_silent "D4-3 a fenced example table at specify is not flagged" "$out" "IMP-20260826-fenced.md:.*status_tasks_table"
+assert_reports "D4-3 a real Tasks table at specify still is" "$out" "IMP-20260826-real.md:.*status_tasks_table"
+
+# D4 #4 — one `Last updated` grammar: specs accept the underscore italic baselines already accept.
+p="$(newproj underscorestamp)"
+mkspec "$p" "IMP-20260826-underscore.md" < /dev/null
+sed -i.bak 's/^\*Last updated: 2026-08-26\*$/_Last updated: 2026-08-26_/' "$p/docs/specs/active/IMP-20260826-underscore.md"
+rm -f "$p/docs/specs/active/IMP-20260826-underscore.md.bak"
+run "$p"
+assert_silent "D4-4 an underscore-italic stamp is a stamp" "$out" "freshness_missing_stamp"
+
+# D4 #7 — code-location is rejected inside a repo's top-level src/, not in a sandbox folder named src.
+p="$(newproj srclocation)"
+mkres "$p" "RES-20260826-top.md" <<'EOF'
+code-location: src/github.com/org/repo/spike/
+EOF
+mkres "$p" "RES-20260826-repo.md" <<'EOF'
+code-location: repo/src/spike/
+EOF
+mkres "$p" "RES-20260826-sandbox.md" <<'EOF'
+code-location: research/RES-20260826-sandbox/src/spike/
+EOF
+run "$p"
+assert_reports "D4-7 a workspace src/ path is rejected" "$out" "RES-20260826-top.md:.*res_code_location_in_src"
+assert_reports "D4-7 a repo's src/ path is rejected" "$out" "RES-20260826-repo.md:.*res_code_location_in_src"
+assert_silent "D4-7 a src folder inside the sandbox is allowed" "$out" "RES-20260826-sandbox.md:.*res_code_location_in_src"
 
 if [ "$fails" -eq 0 ]; then
   echo "scripts/validate-specs.py self-tests passed ✓"

@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-08-13*
+*Last updated: 2026-09-17*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -28,7 +28,7 @@ ai-dotfiles/
 │   ├── boundaries.md              ← Rules: always do / ask first / never do
 │   ├── spec-workflows/            ← The spec lifecycle (stages, templates, questions)
 │   ├── skills/                    ← Reusable knowledge modules
-│   ├── prompts/                   ← Workflow triggers ("create CR", "plan", etc.)
+│   ├── prompts/                   ← Workflow triggers ("explore", "create CR", "plan", etc.)
 │   └── templates/                 ← Bootstrap templates
 │       ├── system/                ← Per-tool system templates (rendered by ai-profile-init)
 │       ├── workspace/             ← Workspace scaffold templates (used by ai-workspace)
@@ -126,11 +126,12 @@ and isolates context that belongs together. Spec authoring, the Split
 check, and task decomposition therefore run **inline in the main
 context** (see [`writing-specs/references/authoring-steps.md`](../framework/skills/writing-specs/references/authoring-steps.md)).
 
-The one bespoke sub-agent is the read-only **reviewer**:
+The one bespoke sub-agent is the read-only **reviewer**. Its run is a
+closure precondition for the high tier and a recommendation below it:
 
 | Agent | When | Model | Tools | Purpose |
 |---|---|---|---|---|
-| `reviewer` | in-progress (recommended sub-step) | deep | read-only | Judges a change cold against its spec; returns `PASS` or `file:line → violated clause`. |
+| `reviewer` | in-progress (required at high tier, recommended below) | deep | read-only | Judges a change cold against its spec; returns a `RESULT:` line — `PASS` or `<N> findings` — and N numbered `file:line → violated clause` findings. |
 
 Precedent search at task-start is the main agent's own `Grep`/`Glob` or
 the built-in read-only explore sub-agent — not a bespoke agent.
@@ -186,10 +187,10 @@ The four statuses are tracked in the spec front-matter; `archived/` is a
 [Spec Workflow Guide](spec-workflow-guide.md) for the full walkthrough
 with diagrams.
 
-Three lanes scale the ceremony to the risk, smallest first: **Direct**
-(≤2 files / ≤30 lines, no spec — Bottom Line + improvements-log entry),
-**Trivial** (one combined gate), **Standard** (full gate sequence).
-`low`/`trivial`-risk closures may run review-after (batch-reviewed) — see
+Two lanes scale the ceremony to the risk, smallest first: **Direct**
+(≤2 files / ≤30 lines, no spec — Bottom Line + improvements-log entry) and
+**Standard** (full gate sequence).
+`low`-risk closures may run review-after (batch-reviewed) — see
 [`spec-lifecycle.md`](../framework/spec-workflows/spec-lifecycle.md#direct-lane).
 
 ### Spec types
@@ -223,6 +224,9 @@ hidden debt.
 | Regenerate project `AGENTS.md` after editing `copilot-instructions.md` | `make sync-agents` (per project) |
 | Verify no drift (used by CI) | `make sync-agents-check` |
 | Validate spec corpus (front-matter, deps, naming, freshness, links, English-only, status invariants) | `make validate-specs` |
+| Validator findings as data — one JSON report, or finding lines plus a per-check summary on stdout | `python3 scripts/validate-specs.py [path] --json` / `--report findings` |
+| Active specs grouped by status, task progress, blocked ones flagged | `make specs-view` (`PROJECT=<path>` for another project) |
+| The same spec status as JSON for scripts and agents | `python3 scripts/spec-status.py [path] --json` |
 | Verify active-profile invariants (symlinks, manifest) | `make doctor` |
 | Install the git pre-commit backstop (secrets, stamps) | `make install-git-hooks` |
 | Run all script self-tests | `make tests` |

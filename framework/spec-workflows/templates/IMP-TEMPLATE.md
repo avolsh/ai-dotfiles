@@ -16,16 +16,8 @@ skills:
   - <project-skill>
 model-suggestion: default
 # Optional fields (domain-refs, siblings, depends-on) — see docs/spec-templates-guide.md § Front-matter optional fields.
+# baseline-impact: none — <reason>   (instead of ## Baseline Deltas, when no docs/domain/ baseline changes)
 ---
-<!--
-Trivial-lane shortcut: if this IMP touches ≤2 files, single repo, no schema/boundary/prompt change,
-no depends-on:, and verifies with one AC — you may elect `risk: trivial` to collapse Specify+Plan
-into one combined gate. Full eligibility, combined-gate body shape, and lane rules:
-  framework/spec-workflows/spec-lifecycle.md#trivial-lane
-Questions to ask (exactly 3, single round):
-  framework/spec-workflows/questions/trivial-questions.md
-If unsure — don't elect. Standard track is the safe default.
--->
 # IMP-YYYYMMDD-<title>
 *Last updated: YYYY-MM-DD*
 ## Summary
@@ -47,7 +39,35 @@ Given <precondition>
 When <action>
 Then <outcome>
 ## Design
-<Fill during Visualize when triggered, else `Skipped — <reason>`. See docs/spec-templates-guide.md § Design.>
+<!-- Design Decisions sub-step first (spec-lifecycle.md § Design Decisions sub-step), then Visualize.
+Both skipped? Replace this whole section body with one line: `Skipped — <reason>`. -->
+### Decisions
+<`Skipped — <reason>` when no Design Decisions trigger fires. Else one bullet per decision:
+D1: <chosen approach> — rejected: <alternative> (<why>); <alternative> (<why>). Departure from the profile → link the proposed ADR.>
+### Risks / Trade-offs
+- <risk> → <mitigation>
+### Open Questions
+<Only questions answerable later without changing requirements, approach or tasks. `None.` when empty.>
+<Visualize: Mermaid / Figma when triggered. See docs/spec-templates-guide.md § Design.>
+## Baseline Deltas
+<!-- How this spec changes `docs/domain/*.md`; `baseline-merge --apply` merges it at the closure gate.
+No baseline changes? Delete this section and set `baseline-impact: none — <reason>` in front-matter.
+One `###` per baseline file; keep only the blocks you use. REQ text states observable behaviour only.
+See docs/spec-templates-guide.md § Baseline Deltas.
+### docs/domain/<feature>.md
+#### ADDED
+- Under `### <baseline heading>`:
+  - **MUST** <externally observable behaviour>. *(REQ-<PREFIX>-NNN)*
+    - Scenario: Given <state> When <action> Then <observable result>
+#### MODIFIED
+- REQ-<PREFIX>-NNN — Why: <one line>
+  - **MUST** <full replacement text>. *(REQ-<PREFIX>-NNN)*
+    - Verified by: `<test path>`
+#### REMOVED
+- REQ-<PREFIX>-NNN — Reason: <why> — Migration: <what replaces it>
+#### RENAMED
+- FROM REQ-<PREFIX>-NNN TO REQ-<PREFIX>-NNN — Why: <one line>
+-->
 ## Out of Scope
 <!-- One line per item. -->
 - OS-1: <item> — <reason>
@@ -55,6 +75,9 @@ Then <outcome>
 <Fill during Specify. See docs/spec-templates-guide.md § Split Decision.>
 ## Tasks
 Pending — Plan stage only.
+## Closure Evidence
+<!-- Filled at the in-progress → done flip: one row per AC, first cell the AC ID. A `### Review` sub-section records the reviewer run or waiver. See docs/spec-templates-guide.md § Closure Evidence. -->
+Pending — closure only.
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 ## Docs updates required

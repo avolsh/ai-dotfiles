@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-09-02*
+*Last updated: 2026-09-17*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -349,3 +349,106 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was changed:** `framework/prompts/references/figma-file-organization.md` § 5 — "The section grid is page-level, and it is checked page-level" with a runnable grid check beside the existing containment/overlap snippet, plus the parent-relative coordinate trap; § 7 gains a checklist line requiring the grid be verified whole and corrected in the same run. The file itself was fixed: seven sections aligned to `x = 0` on a uniform 300px gutter, children travelling with them, node IDs untouched.
 - **Suggested follow-up:** The grid check is written as a snippet an agent is asked to remember to run, which is the same shape as the assertion it sits beside — and that one has been in place for weeks while a section sat 874px out. Worth folding both into a single "verify page" helper that a Visualize run calls once at the end, so the question becomes "did you run it" rather than "did you remember all four assertions". `GUTTER` should come from the project rather than the constant hardcoded here.
 
+
+### 2026-09-14 — Figma convention assumed one desktop, code-first project
+
+- **Spec / task:** IMP-20260914-responsive-behaviour-and-design-first-figma / T1–T6
+- **Category:** pattern
+- **What was found:** Applying `figma-file-organization.md` to `tobevisit-web` (responsive, design-first) left breakpoint frames failing `assertPlacement()` B/C, `80 Behaviour` and `[B-…]` undefined, variant axes drifting into four names for two concepts, logos with no home, no signal of which frames are built, no rebuild procedure, local fonts silently unwritable by `use_figma`, and no longest-locale check.
+- **What was changed:** Breakpoint suffix sharing an ID (layout + `assertPlacement()` keyed by state then breakpoint, `[OLD]` exempt); two-question placement rule and `[B-<flow>.<step>]` grammar with a flow-per-breakpoint row; declared variant axes, `Brand` section, font and locale rules; code-first / design-first mode with a `status/implementation` badge flipped at closure (`spec-lifecycle.md` Rules #15); rebuild-beside migration; `design-system.md` template sections; rules R21–R28; validator fixtures for `· lg` and `[B-01.03]` alt text (validator already accepted them — no code change).
+- **Suggested follow-up:** The `assertPlacement()` code blocks are only exercised by an ad-hoc node harness during this spec; a committed harness under `scripts/test/` would catch regressions when the routine is next edited.
+
+### 2026-09-15 — FR → AC → Task → Closure Evidence was a convention nothing checked
+
+- **Spec / task:** IMP-20260914-spec-traceability-checks / T1–T5 (review-after closure)
+- **Category:** tooling
+- **What was found:** 13 archived `tobevisit-content` specs define an FR no AC cites and 2 cite an FR they never define; closure tables read complete regardless. Run against history, the stricter checks also show that 20 of its specs cite FRs in Tasks only through ACs, and most closed specs record evidence as prose or bullets rather than a table.
+- **What was changed:** `validate-specs.py` gains `check_fr_ac_coverage`, `check_fr_task_coverage` (direct `FR-n` citation from `plan` on) and `check_ac_closure_coverage` (a `## Closure Evidence` table row per AC at `done`), with a reusable `_closure_evidence_rows` parser; RES and specs dated before `_TRACEABILITY_CUTOFF` (2026-09-15) are not judged. `writing-specs.md` self-review and `acceptance-criteria-patterns.md` range form updated.
+- **Suggested follow-up:** Templates still show no `## Closure Evidence` table, while the new check requires one at `done` — add the `| AC | Evidence |` skeleton to the CR / IMP / BUG templates before the first post-cut-off spec closes.
+
+### 2026-09-16 — The cold review was recommended, so its findings lived only in chat
+
+- **Spec / task:** IMP-20260914-mandatory-review-for-high-risk / T1–T5
+- **Category:** tooling
+- **What was found:** `spec-lifecycle.md` made the reviewer "recommended, non-blocking" for medium and high alike. In `tobevisit-content` the word *reviewer* appears in 7 of 25 archived high-risk/severity specs — an upper bound on runs, since a mention is not a run. When a run did happen, findings were applied or dropped in the conversation; nothing persisted said which were rejected and why, so the closure gate approved an absence of review exactly as it approved a clean one, and consolidation had nothing to read.
+- **What was changed:** The run is a closure precondition for the high tier (`risk: high`, or `severity: high | critical` at any risk) and stays recommended below it. `## Closure Evidence` gains a `### Review` sub-section with one `RESULT:` line — `PASS`, `<N> findings / <M> applied / <K> rejected`, or `WAIVED — by <who> <date>: <reason>` — and a findings table whose third column opens with `applied` (plus the fixing `path:line`) or `rejected` (plus a reason). The reviewed range is `<first task commit>^..<head>`, asked for when it is not unambiguously derivable. At the closure step the agent emits a ready-to-paste hand-off prompt carrying the spec path, the range, the checklist and the reply format — and no diff, since pasting one is what stops the read being cold. `validate-specs.py` gains `check_review_disposition` with a `### Review` reader; `_closure_evidence_rows` now stops at a `###` sub-heading. Rule R29 registered; `reviewer.md`, `reviewing-changes/SKILL.md`, `agents/README.md`, `agent-protocol.md` and `ai-agent-framework.md` updated.
+- **The review found the check reading the wrong section:** `_h2_section_lines` matched a `## Closure Evidence` heading inside a fenced block in the spec's own `## Design`, so the first self-application run validated the worked example instead of the record and reported success. The reader now skips fenced blocks. The lesson generalises past this check: every traceability check built on that helper — FR/AC coverage, task coverage, AC closure coverage — had the same blind spot since 2026-09-15, and it stays invisible until a spec documents the shape of a section it also fills in.
+- **Suggested follow-up:** Two gaps the spec left open by design. First, the waiver is the whole rule's escape hatch and the validator can only judge its **shape** — that it names a human and a reason — never whether the reason is a real one; only the human at the gate can do that, so a spec closed under a thin waiver looks identical to one closed under a good one. Second, `_REVIEW_CUTOFF` is 2026-09-16 and every active spec in both corpora predates it, so the check will not fire on a single existing spec — the first real exercise will be the first high-tier spec written after this closure, and there is currently none in flight. Worth revisiting after two or three such specs close to see whether the three-kind `RESULT:` grammar survives contact.
+
+
+### 2026-09-16 — `Last src verified` was an obligation nobody checked, and closure had no date field
+
+- **Spec / task:** IMP-20260914-baseline-verification-freshness / T1–T6
+- **Category:** tooling
+- **What was found:** Rule 13 required the `Last src verified` bump at closure, but only a row's existence was ever checked; 13 of 21 `tobevisit-content` baselines had drifted. Writing the comparison exposed a second gap: specs had no closure-date field, and the prototype over the live corpus found the fallbacks under-specified — 14 archived specs carry neither a `Closed` line nor a stamp, and some write `_Last updated: …_` rather than `*…*`, including one that names `admin-ui.md`. A checker keyed on the documented form would have skipped it silently.
+- **What was changed:** Front-matter gains `closed:` (required at `done` from `_CLOSURE_CUTOFF` = 2026-09-16). `validate-specs.py` gains `check_baseline_freshness` (`baseline_stale`, `baseline_verified_missing`; closure date from `closed:` → `Closed` line → `Last updated:` stamp → `date:`, source named in the finding) and `check_log_closed` (`log_closed_missing` on post-cut-off Direct-lane log entries). Rule 13 names the check; § Direct lane excludes baseline bodies and requires `Closed` on its log entry; `improvements-log-format.md`, `baseline-citations.md` (stale "Rule 11" pointer corrected) and `agent-protocol.md` updated. Replayed on `tobevisit-content` at `9c21b94`, before the BUG repair, the check reports exactly the 13 stale baselines; on HEAD, 0.
+- **Suggested follow-up:** `_TRIVIAL_FORBIDDEN_PATH_MARKERS` in `validate-specs.py` still lists `docs/requirements/` as the baselines marker, but baselines live in `docs/domain/` — a `risk: trivial` spec touching a baseline passes the Trivial-lane eligibility check. Fix as a BUG.
+
+### 2026-09-16 — The edit guard and the overlap check push a shared file into false `siblings:`
+
+- **Spec / task:** IMP-20260914-quality-gates-contract / T1
+- **Category:** tooling
+- **What was found:** Hooking a new self-test into `make tests` is one line in `Makefile`. `spec-status-guard.sh` blocks the edit unless the in-progress spec claims `Makefile` in `affected-code:`; once claimed, `check_active_spec_overlap` fails because four other active specs (all at `specify`) claim it too, and its only remedies are `siblings:` / `depends-on:` or a merge. None of those is true of the relationship — the specs share a file, not a scope.
+- **What was changed:** The four specs were listed in this spec's `siblings:` with the reason written under § Rollout, so both checks pass. No tooling change.
+- **Suggested follow-up:** Give the overlap check a way to record a shared *registry* file (e.g. `Makefile`, a test list) without asserting a sibling relation — a `shared-paths:` front-matter field, or an allowlist of append-only files — so `siblings:` keeps meaning "split from the same cluster".
+
+### 2026-09-16 — Spec state was only readable by opening every spec
+
+- **Spec / task:** IMP-20260914-machine-readable-spec-reports / T1–T5 (review-after closure)
+- **Category:** tooling
+- **What was found:** No command answered "what is active, at which status, how far along, blocked on what", and `validate-specs` findings could only be consumed by re-parsing text. Counting task progress across the corpus needs to accept six spellings of a Status cell (`☑ done`, `✅ done (date)`, `Done`, `☐ pending`, `⊘ descoped`, `☒ cancelled`, often with a trailing note) and an escaped pipe inside descriptions. The first run on this repository shows three of eight active specs blocked on unmet `depends-on:`.
+- **What was changed:** The corpus reader (`Spec`, `Finding`, front-matter parser, discovery, section reader, row splitter, stamp and table patterns) moved to `scripts/speclib.py`, with `validate-specs.py` output byte-identical before and after. `validate-specs.py` gains `--json` and `--report findings`; new `scripts/spec-status.py` (text, `--json`, `--view`, `--today`) and `make specs-view PROJECT= TODAY=`; both self-tested in `make tests`; cheat sheet in `docs/ai-agent-framework.md` updated.
+- **Suggested follow-up:** `scripts/spec-metrics.py` still carries its own front-matter parser; move it onto `speclib.py` so the corpus has one reader. `IMP-20260914-consolidation-checkpoint` can now leave `specify` on this dependency and should read archived closure data through `speclib.py`.
+
+
+### 2026-09-16 — Baselines were maintained by a rule, not a command
+
+- **Spec / task:** IMP-20260914-baseline-deltas-and-merge / T1–T11
+- **Category:** tooling
+- **What was found:** Rule 13 asked the closing agent to hand-edit `docs/domain/*.md`; nothing showed the human the resulting baseline at the requirements gate, a MODIFIED target that did not exist surfaced at closure, and two specs rewriting one REQ collided only if they shared a file path. The first `--check` against a copy of `tobevisit-content` refused a REMOVED of `REQ-PCE-004`: `place-catalog-enrichment.md` defines `REQ-PCE-004` and `REQ-PCE-017` twice (pre-existing `domain_req_id_duplicate`), so no delta can address either until they are renumbered. The merge's first draft replaced a modified requirement's whole annotation, dropping earlier citations and `amended by` notes — the trail the baseline format exists to keep.
+- **What was changed:** The REQ grammar moved to `scripts/speclib.py` (`index_baseline`, `parse_baseline_deltas`, `check_deltas`), with `validate-specs.py` output byte-identical on all three corpora. New `scripts/baseline-merge.py` (`--check`, `--diff`, `--apply`; `make baseline-check`) and `baseline-merge.test.sh` in `make tests`. The validator runs the delta check at every status and reports `baseline_impact_missing` / `baseline_impact_malformed` / `baseline_delta_scenario_missing` for specs at `plan` or later dated after 2026-09-16. CR / IMP / BUG templates carry `## Baseline Deltas`; Rule 13, `req-id-lifecycle.md`, `baseline-citations.md`, `spec-templates-guide.md`, `authoring-steps.md § A`, `writing-specs.md`, `create-spec.prompt.md` and the reviewer Contract item describe it. MODIFIED keeps the old annotation trail unless the replacement restates one.
+- **Suggested follow-up:** Renumber the duplicated `REQ-PCE-004` / `REQ-PCE-017` in `tobevisit-content` through a BUG spec. FR-9 first let the Direct lane hand-edit a baseline body, which `spec-lifecycle.md § Direct lane` forbids; resolved by the owner for the spec track — a closure hand-edits only what no delta can address.
+
+### 2026-09-16 — Baseline deltas closed through their pilot; the review waiver was offered, not given
+
+- **Spec / task:** IMP-20260914-baseline-deltas-and-merge / T12 and closure
+- **Category:** process
+- **Closed:** 2026-09-16
+- **What was found:** The pilot, `tobevisit-content` `BUG-20260916-seed-defaults-diverge-from-schema`, closed through `baseline-merge --apply` with an applied change byte-identical to the requirements-gate `--diff`. It surfaced one cost: `--apply` replaces a baseline's `Last src verified` parenthetical, dropping the note of what the previous verification checked. At this IMP's high-tier closure the agent's gate request listed "waive the review" as an option beside the cold run, and the owner took it — `spec-lifecycle.md § Reviewer sub-step` requires the agent to emit the hand-off prompt and never suggest the waiver. The range was also unclear because nothing was committed, which made the run look costlier than it is.
+- **What was changed:** Rule 13 now requires `--apply` for anything a delta can express, with hand edits at closure only for un-numbered entries and duplicated IDs (R30 tracks both sentences). The waiver is recorded as given, with the process breach stated beside it.
+- **Suggested follow-up:** Commit before a high-tier closure gate so the reviewed range is literal; when asking for the gate, emit the reviewer hand-off prompt and no waiver option. Decide whether `--apply` should preserve the previous `Last src verified` note.
+
+### 2026-09-16 — Task approval lived only in chat; project template missed the new workflow row
+
+- **Spec / task:** IMP-20260914-resume-spec-prompt / T1–T3 (review-after closure)
+- **Category:** process
+- **What was found:** A `☑ done` row was set before approval, so a resumed session could not tell an approved task from an unapproved one. The Workflows table exists twice — system and project `_canonical.md` — and a spec naming only the system copy leaves project agents unable to route the new trigger. The guide's command list is declared identical to `README.md` §3, a coupling no check enforces. The Visualize draft also claimed a validator rejects a `done` spec with unfinished rows; none does.
+- **What was changed:** `◐ awaiting approval` added (`boundaries.md § Always do #11`); `framework/prompts/resume-spec.prompt.md` with worked examples; the row added to the system template, guide and README.
+- **Suggested follow-up:** Add the `resume` row to `framework/templates/project/_canonical.md` and re-run `make sync-agents` per project; have `lint-rules` or `links-check` compare the two Workflows tables and the guide/README command lists. Re-run AC-1 in a cold session.
+
+### 2026-09-16 — Cold runs found a dead `<system>/docs/` prefix and two resume gaps
+
+- **Spec / task:** IMP-20260916-resume-bottom-line-gaps / T1; BUG-20260916-system-docs-prefix-unresolved / T1–T2 (review-after closures)
+- **Category:** tooling
+- **Closed:** 2026-09-16
+- **What was found:** Ten framework files cite `<system>/docs/agent-protocol.md`, but profile wiring never linked `docs/`, and `ai-doctor` checked the same short list, so the dead prefix went unreported; every cold agent first looked in `framework/docs/`. Step 5 of `resume-spec.prompt.md` left empty Bottom Line fields and early-committed later-task files to guesswork. The first fix ("any empty field reads `none on record`") collided with the canonical `none` — found only by a second cold run.
+- **What was changed:** `profile-links.sh` links `$AI_DOTFILES/docs` as `<tool>/docs`; `ai-doctor` checks it; regression tests in both suites; Path prefixes table lists it; real profiles patched. Step 5 names the two fields that read `none on record` and routes a later task's file to Divergences.
+- **Suggested follow-up:** Re-run `ai work` / `ai-profile-init work` — the `work` profile fails 18 doctor checks unrelated to this fix. A cold sub-agent run is cheap (~30 s) and caught what the implementing session could not; consider making it the default evidence for prompt ACs.
+
+### 2026-09-17 — Parity against a clean corpus proved nothing; the self-tests left 26 finding ids unexercised
+
+- **Spec / task:** RES-20260914-declarative-lifecycle-schema / T1–T6 and closure (outcome `confirmed`)
+- **Category:** tooling
+- **Closed:** 2026-09-17
+- **What was found:** The hypothesis asked for finding parity "on both corpora", but they yield 0 and 3 findings, so an engine that reports nothing nearly passes. The validator's own `validate-specs.test.sh` never triggers 26 of its 64 finding ids — all of `naming_pattern`, `filename_id_parity`, `freshness_*`, `trivial_eligibility_*`, `agent_*` — the checks most likely to be rewritten. Seven rules read differently in prose and code: `## Closure Evidence` is read by two checks but is in no template; "RES MUST NOT elect `risk: trivial`" is unenforced; the Tasks-table status check is not fence-aware while section readers are; two `Last updated` grammars; Rule #10 silent on `done`; RES has no `plan`, so its Tasks table can only land in the same edit as the `in-progress` flip; `code-location` stricter than stated. The schema's line saving (−33 %) is a density effect — it is +29 % in characters — and it is data only for front-matter, statuses, lanes and sections; traceability, link and overlap rules become programs in YAML.
+- **What was changed:** Nothing in `scripts/` or `framework/`. The sandbox (`research/RES-20260914-declarative-lifecycle-schema/` at the workspace root) carries a shim that runs the validator's self-tests unchanged against a second implementation, mutation fixtures for the 26 ids, and the full measurement record.
+- **Suggested follow-up:** A sibling IMP productionising the vocabulary only (types, statuses, lanes, required sections with a date cut-off, front-matter schema) for `IMP-20260914-spec-next-instructions` to read, keeping algorithmic checks in Python. Separately: add self-tests for the 26 ids; enforce the RES trivial rule; add `## Closure Evidence` to the CR / IMP / BUG templates. For any future rewrite of a checker, require parity against violating fixtures, never only a clean corpus.
+
+### 2026-09-17 — Lane review: RES and Direct kept, Trivial to be removed; explore prompt added
+
+- **Spec / task:** IMP-20260914-explore-mode-and-lane-review / T1–T4
+- **Category:** protocol
+- **Closed:** 2026-09-17
+- **What was found:** Over 160 archived specs the Trivial lane was used once at 328 lines of footprint, RES twice at 524 (one use was the spike behind `lifecycle.yaml`), Direct eight times at 122 — Direct use *is* visible, from improvements-log `Spec / task` lines, contrary to the spec's original Current State. The Workflows table lives in both the system and the project `_canonical.md`; the plan named only the system copy again, the same miss the 2026-09-16 resume entry recorded. `spec-next` treats a filled section as authored, so a seeded draft whose question round has not run is reported as ready for the Split check.
+- **What was changed:** `framework/prompts/explore.prompt.md` (writes nothing, ends in a hand-off block) routed from both Workflows tables, the guide and README; `create-spec.prompt.md` takes hand-off answers as given. Decisions recorded beside each lane in `spec-lifecycle.md` (keep / remove / keep) with the evidence in the spec's lane-review artifact; `IMP-20260917-remove-trivial-lane` drafted to carry the removal.
+- **Suggested follow-up:** Run the question round on `IMP-20260917-remove-trivial-lane`. Re-run `make sync-agents` in each project so its rendered agent files pick up the `explore` row. Give `spec-next` a way to see an unanswered question round (for example a draft marker the author removes at the gate) so a seeded spec is not reported past authoring.

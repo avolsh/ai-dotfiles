@@ -1,6 +1,6 @@
 # Spec Templates Guide
 
-*Last updated: 2026-08-20*
+*Last updated: 2026-09-17*
 
 Companion to the slimmed spec templates at
 [`framework/spec-workflows/templates/`](../framework/spec-workflows/templates/).
@@ -116,10 +116,65 @@ Row format:
 
 The validator reports backflips without a corresponding row as drift (best-effort static check; see `scripts/validate-specs.py` for the current heuristic).
 
-## `## Design` — Visualize trigger rules
+## `## Design` — Design Decisions and Visualize
 
-The `## Design` section is filled during the Visualize sub-step
-of Specify. Fill it when **any** of these apply:
+`## Design` is filled by two Specify sub-steps, in order: **Design
+Decisions** (the approach, with rejected alternatives) and **Visualize**
+(the picture of it). When both are skipped the whole section body is one
+`Skipped — <reason>` line.
+
+### Design Decisions — sub-sections
+
+Triggers and rules:
+[`spec-lifecycle.md § Design Decisions sub-step`](../framework/spec-workflows/spec-lifecycle.md#design-decisions-triggers).
+Questions: [`design-questions.md § Spec`](../framework/spec-workflows/questions/design-questions.md).
+
+- `### Decisions` — `D<n>: <chosen> — rejected: <alternative> (<why>)`.
+  A departure from `docs/architecture/profile.md` links a proposed ADR
+  ([`adr-conventions.md`](adr-conventions.md#when-a-spec-must-write-one)).
+  No trigger → one line: `Skipped — <reason>`.
+- `### Risks / Trade-offs` — `<risk> → <mitigation>`.
+- `### Open Questions` — only what can be answered later without changing
+  a requirement, the approach or the task breakdown; `None.` when empty.
+
+**Worked example 1 — trigger fires (new bounded context).** A CR adds a
+`reviews` context to a project whose profile row *Integration style* reads
+"sync API calls — ADR-0003". The agent reads the profile and asks three
+questions — boundary placement, data-flow direction, persistence shape —
+and not "DDD or monolith?", which *Domain modelling* settles. The answers
+put rating aggregation on an event, departing from ADR-0003:
+
+```markdown
+### Decisions
+
+- D1: `reviews` owns ratings; `places` reads a projection — rejected: ratings as a `places` field (couples two
+  write paths).
+- D2: Rating changes publish a `RatingChanged` event — rejected: sync call from `places` (profile row *Integration
+  style*, ADR-0003) — p95 page load doubles under fan-out. Departs from the profile → proposed
+  [ADR-0015-events-for-cross-context-aggregates](../../decisions/ADR-0015-events-for-cross-context-aggregates.md).
+
+### Risks / Trade-offs
+
+- Projection lags the source → page shows "updated a few seconds ago"; reconcile job nightly.
+
+### Open Questions
+
+- Event retention period — tunable config, changes no FR.
+```
+
+**Worked example 2 — no trigger (label change).** A CR renames the
+"Save" button label to "Save place". No context, flow, pattern, schema or
+profile row moves, and risk is `low`; Visualize does not fire either:
+
+```markdown
+## Design
+
+Skipped — copy change on one label; no Design Decisions or Visualize trigger.
+```
+
+### Visualize — trigger rules
+
+Fill the diagrams when **any** of these apply:
 
 - Risk is `medium` or `high` (CR / IMP only).
 - The spec adds, removes, or reshapes a bounded context.
@@ -200,6 +255,65 @@ Canonical rules and triggers:
 
 ---
 
+## `## Baseline Deltas` — changing a baseline <a id="baseline-deltas"></a>
+
+A CR, IMP or BUG that changes behaviour a `docs/domain/*.md` baseline
+describes writes that change as a delta; one that changes none deletes the
+section and sets `baseline-impact: none — <reason>` in front-matter. A BUG
+restoring documented behaviour without changing a requirement's text uses
+the marker. The obligation and its enforcement live in
+[`spec-lifecycle.md` Rule 13](../framework/spec-workflows/spec-lifecycle.md#baseline-deltas).
+
+```markdown
+## Baseline Deltas
+
+### docs/domain/geo-canonicalization.md
+
+#### ADDED
+- Under `### Review status on the canonical layer (CR-20260831)`:
+  - **MUST** <behaviour>. *(REQ-GEO-CAN-024)*
+    - Scenario: Given <state> When <action> Then <observable result>
+
+#### MODIFIED
+- REQ-GEO-CAN-022 — Why: <one line>
+  - **MUST** <full replacement text>. *(REQ-GEO-CAN-022)*
+    - Verified by: `<test path>`
+
+#### REMOVED
+- REQ-GEO-CAN-011 — Reason: <why> — Migration: <what replaces it>
+
+#### RENAMED
+- FROM REQ-GEO-CAN-005 TO REQ-GEO-CAN-025 — Why: <one line>
+```
+
+- One `###` per baseline, named by its project-relative path; keep only the
+  blocks you use.
+- **ADDED** names the baseline heading exactly as written there; its IDs
+  continue at `max(existing) + 1`
+  ([`req-id-lifecycle.md § Numbering`](req-id-lifecycle.md#numbering)).
+- **MODIFIED** carries the full replacement, not a patch; `Why` is optional
+  and lands in the amendment note.
+- **REMOVED** needs `Reason` and `Migration`; **RENAMED** needs `FROM` and
+  `TO`.
+- Every added or modified requirement carries a nested `Scenario:` or
+  `Verified by:` bullet, and states what an observer of the system sees —
+  no file paths or symbol names
+  ([`baseline-citations.md § Anti-patterns`](baseline-citations.md#anti-patterns)).
+- A baseline with no REQ-IDs takes ADDED only. An un-numbered entry — or a
+  duplicated ID, which `--check` reports as ambiguous — is edited by hand at
+  the closure of the spec changing it, cited in `## Closure Evidence`; a
+  baseline body is never edited outside a spec.
+
+`scripts/baseline-merge.py` works the section:
+
+| Command | When | Effect |
+|---|---|---|
+| `--check [spec]` | Any status; `make validate-specs` runs it for every active spec | Reports malformed blocks, missing targets, taken or out-of-sequence IDs, missing headings, and a REQ-ID two unrelated active specs both change |
+| `--diff <spec>` | Requirements gate | Prints the unified diff the merge would make; writes nothing |
+| `--apply <spec>` | Closure gate, after `closed:` is set | Writes the merge — replacement plus `amended by`, tombstones per [`req-id-lifecycle.md`](req-id-lifecycle.md), `Last src verified` and `Last updated` set to `closed:` — or nothing, when `--check` fails |
+
+---
+
 ## `## Tasks` — placeholder rule
 
 While `status: specify`, the section MUST hold exactly one placeholder
@@ -214,6 +328,26 @@ replace the placeholder with the approved task table per
 [`spec-lifecycle.md`](../framework/spec-workflows/spec-lifecycle.md)
 § Rule 2. For BUG specs, Task 1 is always
 `Reproduce & write failing test`.
+
+---
+
+## `## Closure Evidence` — the closure table <a id="closure-evidence"></a>
+
+Every template carries the section with the placeholder `Pending — closure only.`
+At the `in-progress → done` flip, replace it with a table whose first cell is
+the criterion it evidences:
+
+```markdown
+| AC | Evidence |
+|---|---|
+| AC-1 | `make tests` — `scripts/test/foo.test.sh` passes (run 2026-09-17) |
+| AC-2 – AC-3 | before/after diff in `archived/artifacts/<spec-id>-diff.md` |
+```
+
+`validate-specs` reads the first cell: `traceability_ac_no_evidence` fires for
+an AC with no row, and a high-tier spec's `### Review` sub-section lives under
+this heading. Older archived specs used `## Closure`, `## Evidence` or a
+checklist heading; they are history and are not renamed.
 
 ---
 

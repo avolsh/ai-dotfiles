@@ -1,6 +1,6 @@
 # Spec Workflow — How We Work
 
-*Last updated: 2026-08-27*
+*Last updated: 2026-09-17*
 
 Every change — feature, bug fix, or improvement — follows the same
 four-status lifecycle. Each status transition ends with a **human gate**:
@@ -88,7 +88,7 @@ again after each.
    (directory move — not a separate status).
 
 **🔒 Gate:** You confirm closure. The spec is archived — never deleted.
-For `risk: low`/`trivial` specs this gate may run **review-after**: the agent
+For `risk: low` specs this gate may run **review-after**: the agent
 archives immediately once every AC has evidence and you review closures in
 batch, with a defined revert path — see [`spec-lifecycle.md § Review-after closure`](../framework/spec-workflows/spec-lifecycle.md#review-after-closure).
 Requirements and plan gates stay blocking in every lane.
@@ -99,108 +99,9 @@ Owner-approved changes of **≤2 files and ≤30 lines** with no schema, prompt,
 boundary, or cross-repo impact may ship without a spec at all — only a
 Bottom Line post and an improvements-log entry. Eligibility and obligations:
 [`spec-lifecycle.md § Direct lane`](../framework/spec-workflows/spec-lifecycle.md#direct-lane).
-The three lanes, smallest first: **Direct** (no spec) → **Trivial**
-(one combined gate) → **Standard** (full gate sequence).
-
-## Trivial lane: when 3 gates is overkill
-
-For one-line / one-file changes (typo fixes, single-link redirects, single-emoji additions), the full 3-gate flow is theatre. The **Trivial lane** collapses Specify + Plan into a single combined gate while keeping the Closure gate intact. Total human attention drops from ~30 minutes to ~10 minutes.
-
-### Eligibility
-
-A change qualifies as trivial when ALL of these hold:
-
-- `affected-code` + `affected-docs` total ≤ 2 files
-- Single repo (no cross-repo)
-- No `depends-on:` (autonomous by construction)
-- No schema change (front-matter, baselines, API contracts)
-- No new bounded context
-- No change to AI prompts (`framework/prompts/`, `<project>/.github/copilot/prompts/`)
-- No change to `boundaries.md` or project `copilot-instructions.md § Boundaries`
-
-Full eligibility list + the combined-gate body shape: [`spec-lifecycle.md § Trivial lane`](../framework/spec-workflows/spec-lifecycle.md#trivial-lane). The validator enforces these mechanically — see `scripts/validate-specs.py`.
-
-### Worked example: fixing a typo in a doc
-
-Suppose `docs/spec-format.md` line 9 reads "Quik reference" — a one-character typo. Full walk-through under the Trivial lane:
-
-**Birth.** Author creates `docs/specs/active/CR-20260520-fix-spec-format-typo.md` from `CR-TEMPLATE.md`. Front-matter:
-
-```yaml
----
-id: CR-20260520-fix-spec-format-typo
-type: CR
-date: 2026-05-20
-status: specify+plan          # combined-gate marker (NOT a real lifecycle status; see note below)
-owner: avolsh
-risk: trivial                  # elects the lane
-affected-repos: [ai-dotfiles]
-affected-docs: [docs/spec-format.md]
-affected-code: []
-skills: [writing-docs]
-model-suggestion: fast
----
-```
-
-Body:
-
-```markdown
-## Summary
-- **Goal:** Fix "Quik reference" → "Quick reference" typo at docs/spec-format.md:9.
-
-## Problem Statement
-Header line in spec-format.md has "Quik" missing a "c". Misleads readers scanning the doc index.
-
-## Requirements
-- FR-1: The system MUST render "Quick reference" at docs/spec-format.md:9.
-
-## Acceptance Criteria
-### AC-1: typo corrected (FR-1)
-Given the file at HEAD
-When `head -9 docs/spec-format.md | tail -1` runs
-Then output is "Quick reference for spec sections, requirement keywords, ..."
-
-## Out of Scope —
-## Design
-Skipped — trivial lane.
-
-## Split Decision
-Kept as one — trivial lane (E4 by elective).
-
-## Tasks
-> **Before starting T1, set status: in-progress in the front-matter above.**
-
-| # | Description | Files | Source | Deps | Skills | Model | Status |
-|---|---|---|---|---|---|---|---|
-| T1 | Replace "Quik" → "Quick" at docs/spec-format.md:9. | `docs/spec-format.md` | — | — | writing-docs | fast | ☐ pending |
-```
-
-**Combined `specify+plan` gate (gate 1 of 2).** Author asks the 3 trivial questions:
-
-1. "Scope ≤ 2 files?" → Yes (1 file).
-2. "No schema, boundary, or prompt change?" → Yes (doc-only).
-3. "One AC sufficient?" → Yes.
-
-Author posts the gate summary (spec ID, FR/AC counts, eligibility-check). Human approves → status flips `specify+plan → in-progress`.
-
-**In-progress.** Author runs T1: one `sed` or one `Edit` call. `make validate-specs` green.
-
-**Closure gate (gate 2 of 2).** AC-1 evidence: `head -9 ... | tail -1` returns the corrected string. Human approves → status flips `in-progress → done`; file moves to `archived/`.
-
-**Wall-clock:** ~10 min total (5 min × 2 gates).
-**Standard-track equivalent:** ~30 min (10 min × 3 gates).
-**Savings:** ~66%.
-
-### When NOT to use the lane
-
-- Refactor "while you're in there" — out of scope. See [`boundaries.md § Never do #9`](../framework/boundaries.md).
-- Multi-defect bug — split into separate BUG specs first.
-- Anything touching `framework/boundaries.md` itself (including changes to the boundary that *defines* the Trivial lane — meta is still standard track).
-- Research / exploration — use `type: RES`, not `risk: trivial`. The two are incompatible (one is iterative, the other is one-shot).
-
-### Note on `status: specify+plan`
-
-The `specify+plan` value in the example above is a documentation convention to signal "this spec is at the combined-gate stage". The lifecycle's actual status enum is `specify | plan | in-progress | done`; trivial-lane specs flip `specify → in-progress` directly once the combined gate is approved (with the Tasks row pre-filled). The validator's status-invariant check exempts trivial specs from the "no Tasks at specify" rule for exactly one row. See [`spec-lifecycle.md § Trivial lane`](../framework/spec-workflows/spec-lifecycle.md#trivial-lane) for the canonical state-machine.
+Two lanes, smallest first: **Direct** (no spec) → **Standard** (full gate
+sequence). The Trivial lane was removed on 2026-09-17 — see
+[`spec-lifecycle.md § Trivial lane`](../framework/spec-workflows/spec-lifecycle.md#trivial-lane).
 
 ## RES lane: iterative research / spike / POC
 
@@ -219,7 +120,7 @@ This is fundamentally different from CR/IMP/BUG, which are forward-only. The loo
 
 - You know what to build → write a CR
 - You know exactly what's broken → write a BUG
-- The change is one-shot and verifiable with one AC → use the Trivial lane
+- The change is one-shot and verifiable with one AC → a CR/IMP at `risk: low`, or the Direct lane if it fits
 - The work is purely a refactor or convention change → write an IMP
 
 ### Mandatory front-matter fields
@@ -283,7 +184,6 @@ The sandboxed code in `research/RES-20260520-redis-place-cache/` stays as refere
 - `code-location:` MUST be outside `src/` of any repo. The validator enforces this mechanically.
 - `outcome: promoted-to-<spec-id>` requires the referenced spec to exist. Throwaway research code MUST NOT merge into production without an explicit `done` sibling.
 - Mixing kill-criteria shapes (`≤8 hours OR ≤3 backflips`) is rejected by the validator — pick ONE shape.
-- RES specs MUST NOT elect `risk: trivial` — Trivial is one-shot, RES is iterative; the lanes are incompatible.
 
 Full lifecycle rules at [`spec-lifecycle.md § RES exception`](../framework/spec-workflows/spec-lifecycle.md#res-exception). Entry-point prompt at [`framework/prompts/research-spec.prompt.md`](../framework/prompts/research-spec.prompt.md).
 
@@ -370,6 +270,7 @@ Identical to [Getting Started](../README.md#3-start-working).
 
 | What you want | What to say | What happens |
 |---|---|---|
+| Think an idea through | `explore`, `think through`, `compare options` | AI reads and asks, writes nothing → hands off settled answers to create-spec |
 | Build a feature | `create CR`, `new feature`, `specify` | AI asks questions → writes spec → waits for approval |
 | Improve / refactor | `create IMP`, `improve`, `refactor` | AI writes improvement spec → waits for approval |
 | Fix a bug | `bug`, `triage`, `investigate issue` | AI investigates → writes bug spec → waits for approval |
@@ -378,6 +279,7 @@ Identical to [Getting Started](../README.md#3-start-working).
 | Add a new project | `bootstrap project`, `new project` | AI scans the repo → scaffolds framework files |
 | Refresh project framework | `update project framework`, `refresh docs` | AI re-bootstraps an existing project |
 | Approve & advance | `continue` | Approves the current task; AI starts the next single task |
+| Resume after a break | `resume`, `where were we` | AI finds the spec's next task; re-asks approval for a task still `◐`, else posts preflight |
 
 ---
 

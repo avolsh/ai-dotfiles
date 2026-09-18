@@ -1,6 +1,6 @@
 # Bootstrapping a Project
 
-*Last updated: 2026-08-30*
+*Last updated: 2026-09-16*
 
 How to scaffold a new project (or workspace root) so it complies with the AI Agent Framework: operating modes, workflow, verification, hard rules, file naming, content boundary, and anti-patterns. The artifact manifest (templates per file) lives in [`framework/skills/bootstrapping-project/references/scaffold-manifest.md`](../framework/skills/bootstrapping-project/references/scaffold-manifest.md).
 
@@ -43,18 +43,36 @@ A workspace root does **not** create:
    `<verification-sequence command>`, the § Build and Run and § Verification by
    Change Type tables, etc.) from the scan results. It is the only one of the
    four instruction files a human edits; the other three are outputs.
-5. **Render** the three agent files mechanically — run `make sync-agents`
+   The § Build and Run table seeds one `n/a — to be decided` row per required
+   quality kind — `format`, `lint`, `duplication`, `security`. **Ask the human
+   about each one**: the command, its `Kind` and `Mode` (`gate` or `report`),
+   and for `duplication` where its report is written — or the reason the
+   project has none, written as `n/a — <reason>`. Never leave a seed row as
+   it came, and never drop one silently. The build enforces this:
+   `validate-quality-gates` (`$AI_DOTFILES/scripts/validate-quality-gates.py
+   <project-root>`, wired into the project's verification sequence) fails the
+   build while a seed row reads `n/a — to be decided`, and on a missing required
+   kind, an unknown `Kind` or `Mode`, or a `duplication` step with no report path.
+5. **Fill `docs/architecture/profile.md`** by asking the human every question
+   in [`design-questions.md § Project`](../framework/spec-workflows/questions/design-questions.md)
+   — one per profile row. Read existing ADRs, `docs/architecture/*` and
+   enforcing checks first and offer what they say, with the source. A row the
+   human cannot source stays `unrecorded` with its open question; that is a
+   valid answer, not a gap to fill by inference. Sources that disagree go
+   under `## Contradictions`. Spec Design Decisions rounds read this page and
+   never re-ask what it settles.
+6. **Render** the three agent files mechanically — run `make sync-agents`
    (which invokes `.github/scripts/sync-agents.sh`), writing `CLAUDE.md`,
    `AGENTS.md` and `.github/copilot-instructions.md` as byte-identical copies
    of `_canonical.md`. The bootstrap is not complete until this step succeeds
    and `make sync-agents-check` exits 0.
-6. **Validate** — every link resolves, every referenced skill exists, and
+7. **Validate** — every link resolves, every referenced skill exists, and
    `grep -E '^@' AGENTS.md` returns no matches (Codex compatibility).
-7. **Register** in the workspace root `CLAUDE.md`, `AGENTS.md`, and
+8. **Register** in the workspace root `CLAUDE.md`, `AGENTS.md`, and
    `.github/copilot-instructions.md` with path, purpose, build commands.
    **Conditional** — skip this step if the host has no `<workspace>`
    configured (single-project hosts).
-8. **Present** the diff to the human for review. Commit only after approval.
+9. **Present** the diff to the human for review. Commit only after approval.
 
 Each step is gated. This is not an autonomous scaffold — every artifact is
 shown to the human before it's written.
@@ -70,6 +88,8 @@ confirm:
 - `grep -E '^@' AGENTS.md` returns no matches (AGENTS.md is fully
   self-contained for Codex).
 - `make sync-agents-check` exits 0.
+- `python3 "$AI_DOTFILES/scripts/validate-quality-gates.py" .` exits 0 — no
+  seed row left as `n/a — to be decided`.
 
 ## Pre-flight for any bootstrapping session
 
@@ -88,6 +108,8 @@ confirm:
   `Cargo.toml`, or equivalent.
 - Never skip `docs/architecture/module-map.md` — the agent-protocol
   post-task checklist requires it, so it must exist on day one.
+- Never fill an architecture-profile row from inference over the code alone —
+  cite a source or leave it `unrecorded`.
 - If the project's primary language or stack is unclear, stop and ask.
 
 ## Excluded (never committed)
@@ -114,7 +136,7 @@ No underscores. No spaces. Lowercase only (except `ADR-`/`CR-`/`BUG-`/`IMP-` pre
 | Content | Location |
 |---|---|
 | Repo purpose, tech stack, codebase layout | `_canonical.md` |
-| The verification sequence and what each step fails on | `_canonical.md` § Build and Run |
+| The verification sequence, what each step fails on, and which quality kind each step guards (gate or report) | `_canonical.md` § Build and Run |
 | Which command a given kind of change must be verified with | `_canonical.md` § Verification by Change Type |
 | Project-scope boundary rules | `_canonical.md` § Boundaries |
 | Skill & prompt resolution rule (two-scope) | `_canonical.md` § Skill & prompt resolution |
@@ -122,6 +144,7 @@ No underscores. No spaces. Lowercase only (except `ADR-`/`CR-`/`BUG-`/`IMP-` pre
 | Deep procedural knowledge | `.github/copilot/skills/` |
 | Workflow templates | `.github/copilot/prompts/` |
 | Sync script | `.github/scripts/sync-agents.sh` |
+| How the project is built — architectural and programming style, each with its source | `docs/architecture/profile.md` |
 | Everything else (architecture, schemas, runbooks, specs) | `docs/` |
 
 ---

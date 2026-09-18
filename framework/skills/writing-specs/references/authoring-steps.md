@@ -1,6 +1,6 @@
 # Authoring Steps — inline procedures
 
-*Last updated: 2026-08-27*
+*Last updated: 2026-09-17*
 
 <!-- Anchors in this file (per `docs/rule-canonical-map.md`): R14 `§ C step 5` (the cap counts decisions) · R15 `§ C step 6` (adjudicated cluster is an override, not a re-run). -->
 
@@ -35,10 +35,11 @@ the spec body through `## Out of Scope`; leaves `## Split Decision` for
 7. **Fill `## Requirements`** — one FR per discrete capability, one physical line each, MUST per RFC 2119, numbered FR-1, FR-2, …
 8. **Fill `## Acceptance Criteria`** — Given/When/Then, one block per FR / Fix-Criteria cluster (not per FR), numbered AC-1, … Then mark every **observation-shaped** criterion — one whose `When` has a person operating a user-facing surface — with the evidence kind it will close under, as a trailing `Evidence: rendering test` or `Evidence: manual (observation, surface, observer, date)` line inside the block. A criterion carrying no such mark is asserting that a suite can reach it; if it cannot, the mark is what surfaces that now rather than at closure ([`spec-lifecycle.md § Rules #5`](../../../spec-workflows/spec-lifecycle.md#observation-shaped-evidence)). The requirements gate is not requested while any such criterion is unmarked.
 9. **Fill `## Out of Scope`** — explicit OS-1, OS-2, … from Q1's out-of-scope answer.
-10. **Fill `## Design`** — `Skipped — <reason>`, or `Pending — Visualize sub-step` when a [Visualize trigger](../../../spec-workflows/spec-lifecycle.md#visualize-triggers) fires.
-11. **Leave `## Split Decision`** as `Pending` until § B runs; **leave `## Tasks`** as `Pending — Plan stage only.` — never write rows here ([Rule #2](../../../spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify)).
-12. **Compression pass** — apply [`writing-specs.md § Compression pass`](../../../../docs/writing-specs.md); verify the body meets the § Length budget (≤120 physical lines, or a one-line justification); record the body line count before and after.
-13. **Write the file** atomically; set `*Last updated: <date>*` under the H1.
+10. **Fill `## Baseline Deltas`** — for every `docs/domain/*.md` baseline whose behaviour the FRs change, one `###` block with ADDED / MODIFIED / REMOVED / RENAMED entries, each new or modified requirement stating observable behaviour and carrying a `Scenario:` or `Verified by:` bullet; run `baseline-merge --check <spec>` until clean. A spec changing no baseline deletes the section and sets `baseline-impact: none — <reason>` instead ([`spec-templates-guide.md § Baseline Deltas`](../../../../docs/spec-templates-guide.md#baseline-deltas)).
+11. **Fill `## Design`** — `Skipped — <reason>`, or `Pending — Visualize sub-step` when a [Visualize trigger](../../../spec-workflows/spec-lifecycle.md#visualize-triggers) fires.
+12. **Leave `## Split Decision`** as `Pending` until § B runs; **leave `## Tasks`** as `Pending — Plan stage only.` — never write rows here ([Rule #2](../../../spec-workflows/spec-lifecycle.md#never-tasks-table-at-specify)).
+13. **Compression pass** — apply [`writing-specs.md § Compression pass`](../../../../docs/writing-specs.md); verify the body meets the § Length budget (≤120 physical lines, or a one-line justification); record the body line count before and after.
+14. **Write the file** atomically; set `*Last updated: <date>*` under the H1.
 
 ## B. Split check (Specify, mandatory)
 
@@ -66,7 +67,7 @@ Plan-stage safety net ([`splitting-rules.md § 3`](splitting-rules.md)).
 2. **Build the FR→AC map.**
 3. **Cluster into vertical slices** — each owns ≥1 FR and ends at a verifiable AC/green build moment. A slice is over-bundled when it exceeds the ≤5 cap of step 5 — which counts decisions, not written files — and is split on that count, never on the length of its Files column.
 4. **Order by dependency** — earlier tasks produce what later tasks consume; scaffolding first, verification/closure last; aim for a near-linear chain.
-5. **Per task, build the row** — Description (what/why + FR/AC numbers); Files (every file the task writes, exact paths, mark `*(new)*`); Source files (read-only, optional, uncapped); Depends on (earlier task IDs or `—`); Skills (subset of spec `skills:`); Model (`fast`/`default`/`deep` per [`docs/model-selection.md`](../../../../docs/model-selection.md), default `default`); Status `☐ pending`.
+5. **Per task, build the row** — Description (what/why + FR/AC numbers); Files (every file the task writes, exact paths, mark `*(new)*`); Source files (read-only, optional, uncapped); Depends on (earlier task IDs or `—`); Skills (subset of spec `skills:`); Model (`fast`/`default`/`deep` per [`docs/model-selection.md`](../../../../docs/model-selection.md), default `default`); Status `☐ pending` (later values per [`boundaries.md § Always do #11`](../../../boundaries.md#task-row-status-in-place)).
 
    **The ≤5 cap counts files the task decides about; the Files column lists every file the task writes.**
    The cap excludes spillover a project convention adds mechanically from a decision already in the row — a barrel re-export beside a new exported type, a one-exported-type-per-file split of a type the task owns, a registry entry for a resource the task registers, and the test file of a file already listed.
@@ -77,7 +78,7 @@ Plan-stage safety net ([`splitting-rules.md § 3`](splitting-rules.md)).
    **A P-signal whose cluster matches a trigger already adjudicated at the Specify gate is recorded as an override under `## Split Decision`, not re-run.**
    Write the table, keep `status: plan`, and have the override cite the P-signal, the Specify trigger it repeats, and the exception the human elected; surface it at the Plan gate so the human can still reject it.
    The flip back to `specify` is for clusters the Split check never named — there, do NOT write the table: flip `status: plan → specify` and re-run the Split check.
-7. **Format `## Tasks`** — first the line `> **Before starting Task <T1>, set status: in-progress in the front-matter above.**`, then the 8-column table: `| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |`.
+7. <a id="tasks-table-format"></a>**Format `## Tasks`** — first the line `> **Before starting Task <T1>, set status: in-progress in the front-matter above.**`, then the 8-column table: `| # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |`.
 
 ## D. Research authoring (RES)
 

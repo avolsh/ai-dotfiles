@@ -5,7 +5,7 @@ description: "When repeated code is a defect and when it is fine — the axis-of
 
 # Avoiding Duplication
 
-*Last updated: 2026-08-13*
+*Last updated: 2026-09-16*
 
 Duplication is not wrong because it is repetitive — it is wrong when one
 copy can change and the others cannot notice. These rules separate the
@@ -90,9 +90,14 @@ Removing duplication is not automatic. Keep the copies, and say why, when:
 - The sites are **test fixtures or assertions**, where explicitness is
   worth more than reuse and a shared factory hides what a case tests.
 
-Accepted duplication is a decision, so record it — a one-line comment or
-a note in the Bottom Line. Undocumented, it is indistinguishable from an
+Accepted duplication is a decision, so record it — a one-line comment at
+the site, a note in the Bottom Line, and, when the work runs under a spec,
+a `- **Accepted duplication:** <what stands where> — <why>` bullet in its
+`## Closure Evidence`. Undocumented, it is indistinguishable from an
 oversight, and the next reader either "fixes" it or copies the pattern.
+Chat is not a record: only the Closure Evidence bullet reaches the
+context's next consolidation checkpoint
+([`docs/consolidation-log-format.md`](../../../docs/consolidation-log-format.md)).
 
 ## References
 

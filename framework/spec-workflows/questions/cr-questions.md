@@ -1,6 +1,6 @@
 # CR Standard Questions
 
-*Last updated: 2026-05-27*
+*Last updated: 2026-09-16*
 
 During the Specify stage, the agent asks up to **10 questions** from this
 list plus any spec-specific ones. The human answers before requirements
@@ -50,6 +50,10 @@ are written.
   baseline file at closure?
 - **Migration:** Is there existing data that needs migration or backfill?
 - **Configuration:** Are new environment variables or config entries needed?
+- **Design approach:** Does the change touch architecture (a Design Decisions
+  trigger)? If yes, the ≤5 architecture questions come from
+  [`design-questions.md § Spec`](design-questions.md) in their own sub-step —
+  do not ask them here.
 - **Visualization:** Would architecture diagrams help clarify the design?
   If yes, the Visualize sub-step is required before requirements approval.
 - **Localization:** Does this affect `en`, `uk`, `ru`, or other locales?

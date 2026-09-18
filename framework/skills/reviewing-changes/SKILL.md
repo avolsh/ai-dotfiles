@@ -5,7 +5,7 @@ description: "Spec-conformance review checklist for a code change (diff). Use wh
 
 # Reviewing Changes
 
-*Last updated: 2026-08-13*
+*Last updated: 2026-09-16*
 
 The shared review language for the framework. Both the read-only
 [`reviewer`](../../agents/reviewer.md) sub-agent (Claude) and a separate
@@ -37,7 +37,11 @@ Judge the change on exactly five dimensions:
 2. **Scope** — the diff implements the spec's FRs and nothing beyond.
    Flag gold-plating, out-of-scope additions, or mixed refactor+feature.
 3. **Contract** — public interfaces, schemas, outputs, and cross-layer
-   contracts match what the spec specifies. Flag drift.
+   contracts match what the spec specifies. Flag drift. For a spec with
+   `## Baseline Deltas`, also flag a new or modified requirement whose text
+   names a file path or symbol rather than stating externally observable
+   behaviour — the validator cannot judge that
+   ([`spec-templates-guide.md § Baseline Deltas`](../../../docs/spec-templates-guide.md#baseline-deltas)).
 4. **Bugs** — correctness defects: logic errors, unhandled edge cases,
    broken invariants, regressions. Apply these checks, and flag what
    fires:
@@ -81,27 +85,39 @@ Judge the change on exactly five dimensions:
 
 ## What to ignore
 
-Formatting, naming taste, import order, and other cosmetics. Those are
-the linter's and formatter's job — not the reviewer's. Do not raise them.
+Formatting, naming taste, import order, and other cosmetics. Those belong
+to the `format` and `lint` rows of the project's `_canonical.md` § Build and
+Run — not the reviewer's. Do not raise them. If a row reads `n/a`, the gap
+is the project's declared choice, not a finding for this diff.
 
 ## Output contract
 
-Either:
+A header, a `RESULT:` line, and nothing else:
 
 ```
-PASS
+REVIEW <spec-id> <diff_ref>
+RESULT: PASS
 ```
 
-or one finding per line, nothing else:
+or, when there are findings, N numbered lines after the count:
 
 ```
-<path>:<line> → <FR/AC id> violated: <one-line what + which dimension>
+REVIEW <spec-id> <diff_ref>
+RESULT: <N> findings
+1. <path>:<line> → <FR/AC id> violated: <one-line what + which dimension>
 ```
 
 Diagnose only — never edit. The main agent is the arbiter: it decides
 which findings to apply, applies them, and re-runs the review for **at
 most 1–2 cycles**. The reviewer is not a gate and does not replace the
 human closure gate.
+
+**Where the output lands.** At a high-tier closure the arbiter transcribes
+this reply into the spec's `### Review` sub-section under
+`## Closure Evidence`, one findings row per numbered line, adding only the
+`Disposition` cell — see
+[`spec-lifecycle.md § Recording the outcome`](../../spec-workflows/spec-lifecycle.md#review-record).
+Below that tier the review informs the closure and nothing is recorded.
 
 ## References
 

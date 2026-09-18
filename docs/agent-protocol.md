@@ -1,6 +1,6 @@
 # Agent Protocol
 
-*Last updated: 2026-08-30*
+*Last updated: 2026-09-17*
 
 Operating procedures for AI agents working in any project that participates in the AI Agent Framework: path prefixes, two-scope model, context loading order, checklists, output conventions, and the on-demand reference material (determinism, schema sync, doc freshness, skills audit).
 
@@ -13,7 +13,7 @@ Documentation uses three path prefixes to avoid fragile relative paths
 
 | Prefix | Meaning | Example resolution |
 |---|---|---|
-| `<system>/` | The active tool's config dir — `$CLAUDE_CONFIG_DIR`, `$COPILOT_HOME`, or `$CODEX_HOME`, each pointing at `$AI_DOTFILES/profiles/<profile>/<tool>/`. Wired by `scripts/lib/profile-links.sh` (called by both `ai-switch.sh` and `ai-profile-init.sh`): `<system>/skills/`, `<system>/spec-workflows/`, `<system>/prompts/`, `<system>/templates/`, `<system>/agents/`, `<system>/upstream/`, and `<system>/boundaries.md` resolve via whole-dir/file symlinks into `$AI_DOTFILES/framework/`, with per-entry symlinks as the fallback inside CLI-owned real dirs (e.g. `codex/skills/`). | `<system>/skills/writing-specs/SKILL.md` → `$AI_DOTFILES/profiles/personal/claude/skills/writing-specs/SKILL.md` |
+| `<system>/` | The active tool's config dir — `$CLAUDE_CONFIG_DIR`, `$COPILOT_HOME`, or `$CODEX_HOME`, each pointing at `$AI_DOTFILES/profiles/<profile>/<tool>/`. Wired by `scripts/lib/profile-links.sh` (called by both `ai-switch.sh` and `ai-profile-init.sh`): `<system>/skills/`, `<system>/spec-workflows/`, `<system>/prompts/`, `<system>/templates/`, `<system>/agents/`, `<system>/upstream/`, and `<system>/boundaries.md` resolve via whole-dir/file symlinks into `$AI_DOTFILES/framework/`, and `<system>/docs/` into `$AI_DOTFILES/docs/`, with per-entry symlinks as the fallback inside CLI-owned real dirs (e.g. `codex/skills/`). | `<system>/skills/writing-specs/SKILL.md` → `$AI_DOTFILES/profiles/personal/claude/skills/writing-specs/SKILL.md` |
 | `<project>/` | Per-repo project root. Holds `CLAUDE.md`, `AGENTS.md`, `.github/copilot-instructions.md`, `.github/copilot/instructions/`, and (when present) project-scope `.github/copilot/skills/`, `.github/copilot/prompts/`, `.github/copilot/agents/`. Project entries extend or override system-scope catalog entries on name collision. | `<project>/docs/architecture/` → `src/github.com/tobeverse/tobevisit-content/docs/architecture/` |
 | `<workspace>/` | Optional. Host-specific workspace root for multi-project workspaces. The project list lives in `<workspace>/CLAUDE.md` (or `AGENTS.md`). Single-project hosts can omit; workspace-level steps in workflows are conditional on this placeholder being configured. | `<workspace>/CLAUDE.md` → `~/vcs/geeoz/tobevisit/CLAUDE.md` |
 
@@ -79,7 +79,11 @@ An AI agent starting work MUST read files in this order:
    the change is cross-project, or shared framework files are involved. Skip
    if the host has no `<workspace>` configured.
 4. Relevant spec from the project's `docs/specs/active/` (if working on a spec).
-   Once the spec exists, load the current spec file rather than the template.
+   Once the spec exists, load the current spec file rather than the template,
+   then run `python3 "$AI_DOTFILES/scripts/spec-next.py" <spec>` and load its
+   output and the files under its `Load:` instead of the lifecycle docs — it
+   prints the next step's missing sections, questions, gate and rules read from
+   those docs. If it is missing or exits non-zero, load the lifecycle docs in full.
    Read `## Summary` first to anchor Goal, Scope, and Out of scope before
    reading detailed requirements or tasks.
 5. Specific docs referenced by the spec's `affected-docs` field that are
@@ -110,7 +114,7 @@ Load only what the current task requires. Not every task needs the full protocol
 |---|---|---|
 | Quick fix / typo | `<system>` instruction file + project `AGENTS.md` | -- |
 | Feature work (no spec) | Above + `<system>/boundaries.md` + relevant skill(s) | `agent-protocol.md` if ambiguity arises |
-| Spec-driven work | Above + current spec + `agent-protocol.md` + `spec-lifecycle.md` + stage skills (see `spec-types.md` § Skills per stage) | Question templates, ADR conventions, this doc's on-demand sections for determinism/schema-sync/doc-freshness |
+| Spec-driven work | Above + current spec + `spec-next` output and the files it lists + stage skills (see `spec-types.md` § Skills per stage) | `agent-protocol.md` + `spec-lifecycle.md` when `spec-next` is unavailable; question templates, ADR conventions, this doc's on-demand sections for determinism/schema-sync/doc-freshness |
 | Skills audit | `<workspace>/CLAUDE.md` + `<system>/skills/` + project `<project>/.github/copilot/skills/` + upstream catalog tree | Individual upstream `SKILL.md` files |
 | Framework changes | Full protocol + both scopes | All framework docs |
 
@@ -203,7 +207,9 @@ a spec. Each task must independently pass all checks before proceeding.
 - [ ] No scope creep -- nothing built outside spec.
 - [ ] Build and test pass per project's `AGENTS.md` § Build and Run.
 - [ ] Affected docs updated (reference, how-to, glossary).
-- [ ] Touched baselines updated to reflect post-closure actual state -- see
+- [ ] Touched baselines updated to reflect post-closure actual state, with the
+      `Last src verified` row bumped to the closure date and the spec's
+      `closed:` set to that same date -- see
       [`baseline-citations.md`](baseline-citations.md).
 - [ ] `*Last updated: YYYY-MM-DD*` date set on every modified doc.
 - [ ] No broken links or missing references in affected docs.
@@ -219,6 +225,21 @@ a spec. Each task must independently pass all checks before proceeding.
       container, watcher and background build the work started, confirm the ports are free, and say
       what was stopped. A process the human started is theirs: ask, never kill it. See
       [`spec-lifecycle.md § Rules #14`](../framework/spec-workflows/spec-lifecycle.md#stop-processes-at-closure).
+- [ ] **Review disposition stated** — at a high-tier closure (`risk: high`,
+      or `severity: high | critical`), the gate request states
+      `findings N / applied M / rejected K` and every rejection reason, or
+      `review waived by <who> — <reason>` when the human waived the run.
+      The counts come from the spec's `### Review` sub-section; see
+      [`spec-lifecycle.md § Reviewer sub-step`](../framework/spec-workflows/spec-lifecycle.md#reviewer-substep).
+      Never offer the waiver as an option — record it only when the human
+      raises it.
+- [ ] **Accepted duplication recorded** — a duplication accepted under
+      `boundaries.md` Always do #16 is a `- **Accepted duplication:**` bullet
+      in the spec's `## Closure Evidence`, not only a Bottom Line note.
+- [ ] **Consolidation checked** — at spec closure, run the
+      [`spec-lifecycle.md § Consolidation sub-step`](../framework/spec-workflows/spec-lifecycle.md#consolidation-substep)
+      and post each due context's recommendation after the closure summary;
+      log the human's answer in `docs/consolidation-log.md`.
 - [ ] Post **"The Bottom Line"** using the canonical format below and
       wait for explicit human approval before starting the next task.
 
@@ -382,13 +403,15 @@ by boundaries.
 
 **After the task:**
 6. Follow the post-task checklist (above).
-7. Update the task status in the spec.
+7. Set the task row to `◐ awaiting approval` when posting the Bottom Line, and to `☑ done` only after the human
+   approves it — see [`boundaries.md § Always do #11`](../framework/boundaries.md#task-row-status-in-place).
 
 ### Interpreting "continue" in spec work
 
 When a user says "continue spec implementation", this grants permission for
 the **next single task only**. After that task, the agent must stop again and
-wait for explicit approval to proceed.
+wait for explicit approval to proceed. That approval is what flips the
+preceding task's row from `◐` to `☑` — never a later one.
 
 **On bug fix:**
 Follow the bug-fix protocol in the BUG template.

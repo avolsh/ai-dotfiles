@@ -1,6 +1,6 @@
 # Spec Types
 
-*Last updated: 2026-06-10*
+*Last updated: 2026-09-17*
 
 ## Type catalog
 
@@ -75,8 +75,3 @@ These files are loaded at **every** stage, regardless of type:
 - `<system>/docs/agent-protocol.md` — when any trigger in boundaries § "When to consult" fires.
 - Project-scope skills in the spec's `skills` field — project-first lookup (see two-scope model in
   [`docs/agent-protocol.md`](../../docs/agent-protocol.md)).
-
-## Trivial lane (applicable to CR / BUG / IMP)
-
-CR/BUG/IMP may elect the Trivial lane (`risk: trivial` or `severity: trivial`). RES does not support the Trivial
-lane. Full rules: [`spec-lifecycle.md § Trivial lane`](spec-lifecycle.md#trivial-lane).

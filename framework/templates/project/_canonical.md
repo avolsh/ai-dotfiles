@@ -15,11 +15,13 @@
 
 | User says | Load prompt |
 |---|---|
+| "explore", "think through", "compare options" | `<system>/prompts/explore.prompt.md` |
 | "create CR", "new feature", "specify" | `<system>/prompts/create-spec.prompt.md` |
 | "create IMP", "improve", "refactor" | `<system>/prompts/create-spec.prompt.md` |
 | "visualize", "architecture" | `<system>/prompts/visualize-spec.prompt.md` |
 | "bug", "triage", "investigate issue" | `<system>/prompts/bug-triage.prompt.md` |
 | "plan", "break into tasks" | `<system>/prompts/plan-spec.prompt.md` |
+| "resume", "where were we" | `<system>/prompts/resume-spec.prompt.md` |
 
 ## Verification by Change Type
 
@@ -40,15 +42,29 @@ every part of the run (`<system>/boundaries.md` § Always do #19).
 
 ## Build and Run
 
-`<verification-sequence command>` runs the steps below in order: single-purpose commands, each with
-its own exit status, the first non-zero one stopping the run. **No step rewrites the source it
-checks** — formatting and code generation get their own developer command and never appear here
-(`<system>/boundaries.md` § Always do #21).
+`<verification-sequence command>` runs the numbered `gate` steps below in order: single-purpose
+commands, each with its own exit status, the first non-zero one stopping the run. **No step rewrites
+the source it checks** — formatting and code generation get their own developer command and never
+appear here (`<system>/boundaries.md` § Always do #21).
 
-| # | Step | What fails it |
-|---|---|---|
-| 1 | `<step>` | <the one condition that fails it> |
-| 2 | `<step>` | <the one condition that fails it> |
+- **Kind** — what the step guards: `format | lint | typecheck | test | duplication | security | docs |
+  build | other`. `format`, `lint`, `duplication` and `security` are required: at least one row each,
+  or one `n/a — <reason>` row saying why the project has none.
+- **Mode** — `gate` steps are numbered and stop the run on failure. `report` steps are numbered `—`,
+  exit zero whatever they find, and are not part of the stopping order.
+- **`duplication`** — its row names the file its machine-readable report is written to, so
+  consolidation tooling can read it.
+- **`security`** — checks the project's third-party dependencies for known vulnerabilities. The
+  framework's commit-time secret scan already runs everywhere and is not listed here.
+
+| # | Step | Kind | Mode | What fails it |
+|---|---|---|---|---|
+| 1 | `<step>` | <kind> | gate | <the one condition that fails it> |
+| — | `<step>` | <kind> | report | never; writes `<report path>` |
+| — | n/a — to be decided | format | — | — |
+| — | n/a — to be decided | lint | — | — |
+| — | n/a — to be decided | duplication | — | — |
+| — | n/a — to be decided | security | — | — |
 
 - `<target>` — <what it runs, and when to reach for it instead of the whole sequence>
 

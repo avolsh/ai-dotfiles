@@ -1,9 +1,11 @@
 # Spec Lifecycle
 
-*Last updated: 2026-08-31*
+*Last updated: 2026-09-17*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
-Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
+Design Decisions / Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
+The mechanical subset — front-matter schema, lanes, naming, freshness, links, inventory, traceability — is declared in
+[`lifecycle.yaml`](lifecycle.yaml) and enforced by `validate-specs.py`; a rule changed here changes there in the same edit.
 
 <!-- Anchors in this file (per `docs/rule-canonical-map.md`): R2 `never-tasks-table-at-specify` · R3 `never-flip-without-gate`, `observation-shaped-evidence` · R6 `split-check-mandatory` · R7 `depends-on-blocks-plan`, `inventory-overlap-restales` · R8 `visualize-not-a-status` · R10 `visualize-triggers` (anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). -->
 
@@ -18,9 +20,10 @@ id: CR-YYYYMMDD-<kebab-case-title>     # file basename without .md
 type: CR                                # CR | BUG | IMP | RES
 date: YYYY-MM-DD                        # creation date
 status: specify                         # specify | plan | in-progress | done
+closed: YYYY-MM-DD                      # set when status flips to done; required for specs dated on or after 2026-09-16
 owner: <github-handle>                  # accountable human
-risk: low | medium | high | trivial      # CR / IMP only; BUG uses severity. `trivial` opts into the short-circuited Trivial lane (see § Trivial lane).
-severity: low | medium | high | critical | trivial  # BUG only; `trivial` opts into the Trivial lane.
+risk: low | medium | high               # CR / IMP only; BUG uses severity. `trivial` is history only (see § Trivial lane).
+severity: low | medium | high | critical  # BUG only
 affected-repos: # repos that will change
   - <project-name>
 affected-docs: # docs that will change (planning inventory)
@@ -35,6 +38,7 @@ siblings: # optional — sibling spec IDs produced by the Split check
   - <spec-id>
 depends-on: # optional — specs that MUST reach `done` before this one advances to `plan`
   - <spec-id>
+baseline-impact: none — <reason>        # CR / IMP / BUG — set instead of `## Baseline Deltas` when no docs/domain/ baseline changes (Rule 13)
 ---
 ```
 
@@ -57,9 +61,9 @@ stateDiagram-v2
 | Transition             | Precondition                                                                                                     | Agent action                                                                |
 |------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------|
 | `[start]` → `specify`  | Human asked for a new spec                                                                                       | Copy template, fill front-matter, write title — status `specify` from birth |
-| `specify` → `plan`     | Human approved requirements (and design if Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                               |
+| `specify` → `plan`     | Human approved requirements (and design if Design Decisions or Visualize triggered). All `depends-on:` siblings must be `done` | Flip status, write `## Tasks` table                                               |
 | `plan` → `in-progress` | Human approved the plan, first task begins                                                                       | Flip status **before** the first file edit of Task 1                        |
-| `in-progress` → `done` | Every AC has evidence that could have failed for it — an observation-shaped criterion needs evidence reaching its surface (see [§ Rules #5](#observation-shaped-evidence)); tests pass, docs updated. Closure approval is synchronous for `medium`/`high` risk; `low`/`trivial` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
+| `in-progress` → `done` | Every AC has evidence that could have failed for it — an observation-shaped criterion needs evidence reaching its surface (see [§ Rules #5](#observation-shaped-evidence)); tests pass, docs updated. **High tier** (`risk: high`, or `severity: high \| critical`) also needs a recorded `### Review` — a run or a waiver (see [§ Reviewer sub-step](#reviewer-substep)). Closure approval is synchronous for `medium`/`high` risk; `low` may use review-after closure (see [§ Review-after closure](#review-after-closure)) | Flip status, post closure summary                                           |
 | `done` → `archived/`   | Immediately after closure; every process the work started is already stopped ([§ Rules #14](#stop-processes-at-closure))                                                                                        | Move file from `docs/specs/active/` to `docs/specs/archived/`               |
 
 **No status is skipped. No status is revisited in place** — if the plan
@@ -109,9 +113,13 @@ for the full rule set and Iteration Log mandate.
    complete it before asking for the requirements gate.
 9. <a id="split-check-mandatory"></a>The **Split check** (see
    [`splitting-rules.md § 2`](../skills/writing-specs/references/splitting-rules.md))
-   is a mandatory sub-step of Specify — complete it before Visualize and
-   record the outcome under `## Split Decision` in every affected spec.
+   is a mandatory sub-step of Specify — complete it before Design Decisions
+   and Visualize, and record the outcome under `## Split Decision` in every
+   affected spec. Order: Split → [Design Decisions](#design-decisions-triggers)
+   → Visualize → requirements gate.
 10. <a id="depends-on-blocks-plan"></a>A spec with unmet `depends-on:` MUST stay at `specify` (never flip to `plan`) until all listed siblings reach `done`.
+    `validate-specs.py` enforces this at `plan` and `in-progress` only: a `done` spec already passed the gate and is
+    not re-judged when a dependency is later reopened or renamed.
 
     Waiting is not the only obligation the field carries. A spec written
     against a dependency goes stale the moment that dependency closes —
@@ -143,15 +151,45 @@ for the full rule set and Iteration Log mandate.
 13. **Baseline closure rule and Summary refresh.** Any spec that changes
     baseline behaviour in a feature with an existing
     `<project>/docs/domain/<feature>.md` file MUST update that
-    file in the same change before flipping to `done`. Baselines updated
+    file in the same change before flipping to `done` — through
+    `baseline-merge --apply` for everything a delta can express (see
+    *Baseline deltas* below). Baselines updated
     under this rule MUST describe the system after the spec's changes
-    are applied -- not desired future behaviour -- and MUST bump the
-    `Last src verified` row in the baseline's header info to the
-    closure date, even when the baseline body is unchanged. The Closure
+    are applied -- not desired future behaviour. The Closure
     Evidence row for the affected AC MUST cite the diff (path +
     summary). If the spec's scope changed between Plan and closure,
     refresh `## Summary` before flipping to `done` so Goal, Scope, and
     Out of scope reflect post-closure state.
+
+    **Enforcement — `Last src verified`.** `make validate-specs` reports
+    `baseline_stale` when a baseline's `Last src verified` date is older
+    than the closure date of the newest archived spec naming it in
+    `affected-docs` — read from `closed:`, else a `Closed YYYY-MM-DD` line,
+    else the `Last updated:` stamp, else `date:` — and
+    `baseline_verified_missing` when the row or its leading date is absent.
+    At closure, set `closed:` and the row to the same date, even when the
+    baseline body is unchanged after re-checking `src`.
+
+    <a id="baseline-deltas"></a>**Baseline deltas.** A CR, IMP or BUG dated
+    after 2026-09-16 states its baseline impact by the requirements gate:
+
+    **A spec that changes a baseline carries `## Baseline Deltas`; a spec that changes none sets `baseline-impact: none — <reason>`.**
+
+    Every new or modified REQ in a delta states externally observable
+    behaviour and carries a `Scenario:` or `Verified by:` pointer.
+    `scripts/baseline-merge.py` works the section: `--check` runs at every
+    status inside `make validate-specs` (`baseline_delta_*`), `--diff` goes
+    into the requirements-gate summary, and `--apply` merges it at the
+    closure gate once `closed:` is set, writing the `Last src verified` row
+    itself. From `plan` on the validator reports `baseline_impact_missing`
+    and `baseline_impact_malformed`. Format and merge semantics:
+    [`spec-templates-guide.md § Baseline Deltas`](../../docs/spec-templates-guide.md#baseline-deltas).
+
+    **A closure edits a baseline by hand only where no delta can address it — an un-numbered entry or a duplicated ID — and cites that edit in `## Closure Evidence`.**
+
+    A baseline body is never edited outside a spec: the Direct lane excludes
+    it. Specs dated on or before 2026-09-16 and not yet closed may still
+    close under the hand-edit form this rule had before `--apply`.
 
     **Baseline discovery (Plan stage).** Before flipping to `plan`, scan
     `<project>/docs/domain/` for files whose feature name matches the
@@ -186,7 +224,20 @@ for the full rule set and Iteration Log mandate.
     deliverable is meant to leave running is named in the closure summary as
     such, with the reason.
 
+15. **Flip the implementation badges.** <a id="flip-implementation-badges"></a>
+    Before flipping a design-first spec to `done`, **every Figma frame the spec
+    implemented or changed MUST have its `status/implementation` badge flipped**
+    — to `Implemented` with this spec's ID for what shipped, and `00 Cover`'s
+    per-screen summary regenerated. A frame drawn but not built stays
+    `Designed`. Code-first projects carry no badges and skip this rule; the
+    mode and the badge semantics are defined in
+    [`figma-file-organization.md § 6`](../prompts/references/figma-file-organization.md#source-of-truth--code-first-or-design-first).
+
 ## RES exception <a id="res-exception"></a>
+
+**Lane review 2026-09-17 — keep.** Two uses in 160 archived specs, one of them the spike that produced
+`lifecycle.yaml`; `explore.prompt.md` takes exploration that needs no running code. Evidence:
+[lane review](../../docs/specs/archived/artifacts/IMP-20260914-explore-mode-and-lane-review-lane-review.md).
 
 The RES (Research / Spike / POC) spec type implements a fundamentally
 different lifecycle from CR / BUG / IMP: the work is **iterative**, not
@@ -235,77 +286,31 @@ being `done`.
 2. Each backflip MUST land a row in `## Iteration Log` with date + cause
     + decision. The validator flags backflips without a corresponding log
       entry.
-3. RES specs MUST NOT elect `risk: trivial` or `severity: trivial`. The
-   Trivial lane is one-shot and incompatible with the RES loop
-   (documented in [`spec-types.md § Trivial lane`](spec-types.md)).
+3. RES specs MUST NOT carry `risk: trivial` or `severity: trivial` at any
+   date — the validator reports `trivial_lane_removed`
+   ([§ Trivial lane](#trivial-lane)).
 4. `code-location:` MUST be outside every repo's `src/`. The default
    `research/<spec-id>/` lives in the workspace `research/` directory.
+   The validator rejects a top-level `src/…` or `<repo>/src/…` path; a
+   folder named `src` inside the sandbox is allowed.
 5. At `done`, `outcome:` MUST be filled with a valid value. Promotion
    targets (`promoted-to-<id>`) MUST resolve to an existing spec in
    `docs/specs/active/` or `docs/specs/archived/`.
+6. RES has no `plan` status, and [Rule #2](#never-tasks-table-at-specify)
+   forbids a Tasks table at `specify`, so the `## Tasks` table lands in
+   the same edit as the `specify → in-progress` flip.
 
 ## Trivial lane <a id="trivial-lane"></a>
 
-The Trivial lane is a parallel short-circuit of the standard lifecycle for changes too small to warrant the full
-Specify → Plan → in-progress gate sequence. It elects in via `risk: trivial` (CR/IMP) or `severity: trivial` (BUG). The
-Closure evidence requirement is **unchanged** — every AC still needs evidence; the closure approval may run
-review-after per [§ Review-after closure](#review-after-closure).
-
-### Status sequence
-
-```
-specify+plan → in-progress → done
-```
-
-Two gates instead of three. The `specify+plan` gate is a single combined approval: requirements and the (one-row) Tasks
-table land together. `## Tasks` may carry exactly one row at this combined gate — this is the only exception to [
-`Rule #2`](#never-tasks-table-at-specify).
-
-### Eligibility (validator-enforced)
-
-A spec MUST satisfy all of these to elect `trivial`:
-
-- `affected-code` + `affected-docs` total ≤ 2 files
-- Exactly one entry in `affected-repos` (no cross-repo)
-- No `depends-on:` (autonomous by construction)
-- No schema change (front-matter, baseline, type system, API contract)
-- No new bounded context
-- No change to AI prompts under `framework/prompts/` or the project's prompt catalog (`<project>/.github/copilot/prompts/`)
-- No change to `framework/boundaries.md` or any `<project>/_canonical.md` § Boundaries section (including its rendered agent files)
-
-A spec that fails any check MUST drop `trivial` and re-run Specify on the standard track. `validate-specs.py` enforces
-these mechanically; the human elects the lane, the framework verifies.
-
-### Combined gate format
-
-A trivial spec body has the same H2 sections as a standard spec but with reduced content:
-
-| Section                  | Trivial-lane content                                                   |
-|--------------------------|------------------------------------------------------------------------|
-| `## Summary`             | One-line Goal. No Scope / Out of scope paragraphs.                     |
-| `## Problem Statement`   | One paragraph; no separate Current State / Proposed Improvement split. |
-| `## Requirements`        | ≤3 FRs (typically 1).                                                  |
-| `## Acceptance Criteria` | Exactly 1 AC.                                                          |
-| `## Out of Scope`        | One line, OR `—` if Goal is self-bounding.                             |
-| `## Design`              | Always `Skipped — trivial lane`.                                       |
-| `## Split Decision`      | Always `Kept as one — trivial lane (E4 by elective)`.                  |
-| `## Tasks`               | Exactly one row at the combined gate.                                  |
-
-The Specify question round shrinks to ≤3 questions from a dedicated `questions/trivial-questions.md` list (introduced in
-IMP-20260514-trivial-lane Task T2).
-
-### Rules for the lane
-
-1. `risk: trivial` / `severity: trivial` is elected by the spec author; the validator verifies eligibility. It is never
-   auto-assigned.
-2. The combined `specify+plan` gate requires explicit human approval before status flips to `in-progress` — same
-   approval discipline as the standard track, just merged.
-3. A trivial spec MUST NOT be elevated mid-flight. If complexity grows past the eligibility criteria, the spec is closed
-   as `done` with `outcome: scope-grew` (one-line note) and the work re-opens as a standard-track spec.
-4. **No retroactive reclassification.** Archived specs (`docs/specs/archived/`) MUST NOT have `risk:` or `severity:`
-   flipped to `trivial`. The lane applies only to specs created after this rule lands.
+**Removed 2026-09-17** by `IMP-20260917-remove-trivial-lane` after the lane review (one use in 160 specs). Small
+changes take the [Direct lane](#direct-lane) or the standard track with `risk: low`. Specs dated before the removal keep
+`risk: trivial` / `severity: trivial` as history; on a later spec, or any RES, `make validate-specs` reports
+`trivial_lane_removed`.
 
 ## Direct lane <a id="direct-lane"></a>
+
+**Lane review 2026-09-17 — keep.** Eight improvements-log entries across both corpora at 122 lines of footprint, the
+cheapest lane per use.
 
 The Direct lane covers owner-approved changes too small for any spec — the
 "owner-approved direct edit" practice the improvements log already records,
@@ -314,7 +319,9 @@ now with a canonical home (IMP-20260610-mechanize-framework-guardrails FR-4).
 **Eligibility — all MUST hold:**
 
 - ≤ 2 files and ≤ 30 changed lines in total.
-- No schema change (front-matter, baseline, type system, API contract).
+- No schema change (front-matter, baseline, type system, API contract),
+  and no edit to a baseline body under `docs/domain/` — a baseline change
+  always runs through a spec, whose closure Rule 13 checks.
 - No change to AI prompts (`framework/prompts/`, project prompt catalogs).
 - No change to `framework/boundaries.md`, this file, or any project
   `_canonical.md` § Boundaries (including rendered agent files).
@@ -326,16 +333,18 @@ now with a canonical home (IMP-20260610-mechanize-framework-guardrails FR-4).
 1. Post **The Bottom Line** for the change
    ([`agent-protocol.md § Bottom Line`](../../docs/agent-protocol.md#the-bottom-line--canonical-format)).
 2. Land an entry in the project's `docs/improvements-log.md` in the same
-   session (what changed, why, owner approval noted).
+   session (what changed, why, owner approval noted), with a
+   `- **Closed:** YYYY-MM-DD` line — `make validate-specs` reports
+   `log_closed_missing` on Direct-lane entries dated on or after 2026-09-16
+   without one ([`improvements-log-format.md`](../../docs/improvements-log-format.md)).
 
-Anything beyond the threshold falls back to the Trivial lane (if eligible)
-or the standard track. The Direct lane is **not** a skip of judgment — it is
+Anything beyond the threshold falls back to the standard track. The Direct lane is **not** a skip of judgment — it is
 the codification of the smallest unit of owner-approved work; when in doubt,
 write a spec.
 
 ## Review-after closure <a id="review-after-closure"></a>
 
-For specs with `risk: low` or `risk: trivial` (BUG: `severity: low`/`trivial`),
+For specs with `risk: low` (BUG: `severity: low`),
 the closure approval MAY run **review-after** (IMP-20260610-mechanize-framework-guardrails FR-5):
 
 - The agent flips `in-progress → done` and archives **immediately** once
@@ -352,6 +361,58 @@ the closure approval MAY run **review-after** (IMP-20260610-mechanize-framework-
 `medium`/`high` risk closures remain synchronous. Requirements and plan
 gates remain blocking for **all** lanes — review-after applies to the
 closure gate only.
+
+## Consolidation sub-step (after closure) <a id="consolidation-substep"></a>
+
+`Never do #5` keeps refactoring out of feature tasks; this sub-step brings it back on a schedule
+(IMP-20260914-consolidation-checkpoint). It runs after **every** spec reaches `done` — any lane, any tier.
+
+1. **Run** `make consolidation-due PROJECT=<project> CLOSED=<spec-id>` from `$AI_DOTFILES`. It lists the bounded
+   contexts the closed spec maps to, each with its count since that context's last checkpoint and whether it is
+   due — at the log's `threshold` (default 5), or at once when the closed spec has `risk: high`, more than 8 tasks,
+   or more than 15 `affected-code` entries.
+2. **Nothing due → nothing posted.** Otherwise, for each due context run
+   `make consolidation-due PROJECT=<project> CONTEXT="<name>"` and post its recommendation **after** the closure
+   summary: the trigger, the accepted-duplication bullets, the rejected reviewer findings, the improvements-log
+   entries and the duplication figure — or the stated cause of its absence — each with its source.
+3. **The human decides.** Never create the IMP without an explicit accept. The agent never declines on the human's
+   behalf, and never waits on the answer to continue other work.
+4. **Log either answer** by appending an entry to the project's `docs/consolidation-log.md` per
+   [`docs/consolidation-log-format.md`](../../docs/consolidation-log-format.md): `accepted — <IMP id>` or
+   `declined — <reason>`. Either resets that context's counter; the accepted IMP's own closure never counts.
+5. **An accepted IMP is refactor-only** (`Never do #5`): no behaviour change, and its `## Current State` cites the
+   recommendation's inputs by source path. It then runs the normal lifecycle from Specify.
+
+## Design Decisions sub-step (Specify) <a id="design-decisions-triggers"></a>
+
+Run inside Specify after the Split check and before Visualize when **any** apply (CR / IMP):
+
+- Adds or reshapes a bounded context.
+- Changes data flow between contexts or services.
+- Introduces a new architectural pattern or external dependency.
+- Changes a persistence or schema model.
+- Departs from `docs/architecture/profile.md` or an accepted ADR.
+- Risk is `high`.
+
+Skip only when all are false: `### Decisions` under `## Design` reads `Skipped — <reason>` on one line.
+
+**Questions.** Read the project's `docs/architecture/profile.md` and ADRs first, then ask **at most 5** from
+[`design-questions.md § Spec`](questions/design-questions.md). Never ask what a profile row or an accepted ADR
+already settles.
+
+**Record** under `## Design`, before any diagram:
+
+- `### Decisions` — each decision with the alternatives considered and why each was rejected.
+- `### Risks / Trade-offs` — one line per risk: `<risk> → <mitigation>`.
+- `### Open Questions` — only questions answerable later without changing a requirement, the approach or the task
+  breakdown; anything else is asked now. `None.` when empty.
+
+**Departures.** <a id="design-departure-adr"></a>A decision that departs from a profile row or sets a new project-wide
+convention links a `proposed` ADR ([`docs/adr-conventions.md`](../../docs/adr-conventions.md)) before the
+requirements gate is requested.
+
+The trigger list overlaps Visualize's on purpose: Design Decisions weighs the approach, Visualize draws the one
+chosen. `risk: medium` alone triggers Visualize, not Design Decisions.
 
 ## Visualize sub-step (Specify) <a id="visualize-triggers"></a>
 
@@ -377,20 +438,72 @@ one spec"* per [`splitting-rules.md § 4`](../skills/writing-specs/references/sp
 
 ## Reviewer sub-step (in-progress) <a id="reviewer-substep"></a>
 
-A **recommended, non-blocking** sub-step run during `in-progress`, before
-requesting the closure gate. Run it when **risk is `medium` or `high`**,
-or on demand for any spec.
+Run during `in-progress`, before requesting the closure gate.
+
+- **High tier — `risk: high`, or `severity: high | critical` at any risk —
+  the run is a closure precondition.** The spec does not flip to `done`
+  until the reviewer has run against the final diff or the human has waived
+  the run; either outcome is recorded under `### Review` (below).
+- **Medium and low — recommended, non-blocking.** Run it when risk is
+  `medium`, or on demand for any spec. Nothing is recorded.
 
 - The [`reviewer`](../agents/reviewer.md) judges the change **cold** in a
   fresh, read-only context: inputs are the spec + the `git diff` (it reads
-  the diff itself), output is `PASS` or `file:line → violated clause` per
-  the [`reviewing-changes`](../skills/reviewing-changes/SKILL.md) checklist.
+  the diff itself). Its reply is a `REVIEW <spec-id> <range>` header, a
+  `RESULT:` line reading `PASS` or `<N> findings`, and N numbered
+  `file:line → violated clause` findings, per the
+  [`reviewing-changes`](../skills/reviewing-changes/SKILL.md) checklist.
 - **You are the arbiter.** Decide which findings to apply, apply them, and
   re-run for **at most 1–2 cycles** — not an unbounded loop.
 - This is **not a status and not a gate.** It does not replace the human
   `in-progress → done` closure gate; it informs it.
 - Harness without an `Agent` tool: run the reviewer as a separate
-  empty-context session per [`agents/README.md § Fallback`](../agents/README.md).
+  empty-context session per
+  [`agents/README.md § Fallback`](../agents/README.md#fallback-for-harnesses-without-sub-agents).
+
+### The reviewed range <a id="reviewed-range"></a>
+
+The final diff is `<first task commit>^..<head>`, recorded as literal
+revisions so the run can be reproduced. When that range is not
+unambiguously derivable — several specs interleaved on one branch, a
+rebase, a squash — **ask the human for the range at the closure gate**
+rather than inferring one.
+
+### The hand-off <a id="reviewer-handoff"></a>
+
+When the last task passes and closure is next, a high-tier spec's agent
+emits a ready-to-paste reviewer prompt in its own fenced block, per
+[`agents/README.md § Fallback`](../agents/README.md#fallback-for-harnesses-without-sub-agents).
+It carries the absolute `spec_path`, the range, the checklist reference,
+the read-only constraint and the reply format — and no diff and no
+reasoning of the agent's own, since pasting either is what stops the read
+being cold.
+
+### Recording the outcome <a id="review-record"></a>
+
+`## Closure Evidence` gains a `### Review` sub-section whose first
+non-blank line is `RESULT:`:
+
+| Result | `RESULT:` line | Findings table |
+|---|---|---|
+| Pass | `PASS — run <date> against <range>, <harness>.` | none |
+| Findings | `<N> findings / <M> applied / <K> rejected — run <date> against <range>, <harness>.` | exactly N rows |
+| Waived | `WAIVED — by <who> <date>: <reason>. No reviewer run.` | none |
+
+A findings row is `| <n> | <path>:<line> → <FR/AC id> violated: <what +
+dimension> | <disposition> |`, the disposition opening with `applied` and
+the fixing `path:line`, or `rejected` and a one-line reason. Numbering runs
+continuously across cycles, so `<N>` is the total the gate sees. **Findings
+still open at the cycle cap are dispositioned `rejected` with the reason,
+never left unrecorded.**
+
+The human may waive the run. The agent never suggests the waiver and never
+offers it in the gate request: it emits the hand-off prompt first and
+records a waiver only when the human gives one unprompted, so the skip is
+a choice made against a concrete offer to review.
+
+`validate-specs.py` reports a high-tier spec at `done` that breaks any of
+this (`review_*` findings), judging specs dated 2026-09-16 or later.
 
 ## File naming
 

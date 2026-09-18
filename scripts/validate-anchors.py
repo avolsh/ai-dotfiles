@@ -88,20 +88,29 @@ def _strip_fences(text: str) -> list[str]:
     return out
 
 
-def collect_anchors(text: str) -> set[str]:
-    """All valid fragment targets in a markdown file."""
-    anchors: set[str] = set()
+def anchor_lines(text: str) -> dict[str, int]:
+    """Every valid fragment target in a markdown file, with its 0-based line index.
+
+    `spec-next.py` reads the text at these positions, so both tools resolve a
+    fragment the same way.
+    """
+    anchors: dict[str, int] = {}
     slug_counts: dict[str, int] = {}
-    for line in _strip_fences(text):
+    for i, line in enumerate(_strip_fences(text)):
         for m in _ID_RE.finditer(line):
-            anchors.add(m.group(1))
+            anchors.setdefault(m.group(1), i)
         h = _HEADING_RE.match(line)
         if h:
             slug = _slugify(h.group(1))
             n = slug_counts.get(slug, 0)
-            anchors.add(slug if n == 0 else f"{slug}-{n}")
+            anchors.setdefault(slug if n == 0 else f"{slug}-{n}", i)
             slug_counts[slug] = n + 1
     return anchors
+
+
+def collect_anchors(text: str) -> set[str]:
+    """All valid fragment targets in a markdown file."""
+    return set(anchor_lines(text))
 
 
 # ---------------------------------------------------------------------------
@@ -174,6 +183,52 @@ def validate(root: Path, files: list[Path]) -> tuple[list[Finding], int]:
 
 
 # ---------------------------------------------------------------------------
+# lifecycle.yaml references — `stages:` and `question_lists:` point into the docs
+# (IMP-20260914-spec-next-instructions FR-6); `spec-next.py` reads the text there.
+# ---------------------------------------------------------------------------
+
+_SCHEMA = Path("framework") / "spec-workflows" / "lifecycle.yaml"
+_STAGE_REF_RE = re.compile(r"^[\w./-]+\.md#[\w-]+$")
+
+
+def _stage_refs(node: object) -> list[str]:
+    if isinstance(node, str):
+        return [node] if _STAGE_REF_RE.match(node) else []
+    if isinstance(node, dict):
+        return [r for v in node.values() for r in _stage_refs(v)]
+    if isinstance(node, list):
+        return [r for v in node for r in _stage_refs(v)]
+    return []
+
+
+def validate_stage_refs(root: Path) -> tuple[list[Finding], int]:
+    schema_path = root / _SCHEMA
+    if not schema_path.is_file():
+        return [], 0
+    sys.dont_write_bytecode = True  # like the other scripts: a check writes nothing, not even __pycache__/
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import yamlite  # noqa: PLC0415 — only needed when a schema exists
+
+    text = schema_path.read_text(encoding="utf-8")
+    schema = yamlite.load(text) or {}
+    lines = text.splitlines()
+    findings: list[Finding] = []
+    refs = _stage_refs({k: schema.get(k) for k in ("question_lists", "stages")})
+    for ref in refs:
+        file_part, fragment = ref.split("#", 1)
+        dest = root / file_part
+        line = next((i for i, t in enumerate(lines, start=1) if ref in t), 1)
+        if not dest.is_file():
+            problem = f"stage reference '{ref}': file {file_part} does not exist"
+        elif fragment not in collect_anchors(dest.read_text(encoding="utf-8")):
+            problem = f"stage reference '{ref}': fragment '#{fragment}' not found in {file_part}"
+        else:
+            continue
+        findings.append(Finding(path=schema_path, line=line, check="stage_ref_missing", message=problem))
+    return findings, len(refs)
+
+
+# ---------------------------------------------------------------------------
 # Self-test fixture (deliberate broken anchor)
 # ---------------------------------------------------------------------------
 
@@ -199,7 +254,26 @@ def self_test() -> int:
         assert len(findings) == 1, f"expected 1 finding, got {findings}"
         assert findings[0].check == "anchor_missing"
         assert "no-such-anchor" in findings[0].message
-    print("validate-anchors: self-test OK (1 deliberate breakage caught).", file=sys.stderr)
+
+        # lifecycle.yaml `stages:` / `question_lists:` references (IMP-20260914-spec-next-instructions FR-6).
+        schema = root / "framework" / "spec-workflows" / "lifecycle.yaml"
+        schema.parent.mkdir(parents=True)
+        schema.write_text(
+            "question_lists:\n"
+            "  CR: {ref: framework/target.md#real-id, limit: '≤10', mandatory: [1]}\n"
+            "stages:\n"
+            "  specify:\n"
+            "    standard:\n"
+            "      - {id: author, until: required, refs: [framework/target.md#real-section, framework/target.md#gone]}\n"
+            "      - {id: gate, gate: Requirements gate, refs: [framework/missing.md#x]}\n",
+            encoding="utf-8",
+        )
+        stage_findings, stage_checked = validate_stage_refs(root)
+        assert stage_checked == 4, f"expected 4 stage references, got {stage_checked}"
+        got = sorted(f.message for f in stage_findings)
+        assert len(got) == 2 and "#gone" in got[1] and "missing.md" in got[0], got
+        assert all(f.check == "stage_ref_missing" for f in stage_findings)
+    print("validate-anchors: self-test OK (1 fragment + 2 stage-reference breakages caught).", file=sys.stderr)
     return 0
 
 
@@ -215,6 +289,9 @@ def main(argv: list[str]) -> int:
     root = find_repo_root(here)
     files = discover_files(root)
     findings, checked = validate(root, files)
+    stage_findings, stage_checked = validate_stage_refs(root)
+    findings += stage_findings
+    checked += stage_checked
     for f in findings:
         print(f.render(root))
     if findings:

@@ -24,6 +24,7 @@ mkdir -p "$DF/framework/templates/system/claude" \
          "$DF/framework/templates/system/codex" \
          "$DF/framework/skills/writing-specs"
 echo "# b" > "$DF/framework/boundaries.md"
+mkdir -p "$DF/docs" && echo "# ap" > "$DF/docs/agent-protocol.md"
 echo "# c" > "$DF/framework/templates/system/claude/CLAUDE.md"
 echo "# p" > "$DF/framework/templates/system/copilot/copilot-instructions.md"
 echo "# a" > "$DF/framework/templates/system/codex/AGENTS.md"
@@ -45,6 +46,8 @@ for tool in claude copilot codex; do
     [ -L "$P/$tool/$ref" ] || fail "missing ref link: $tool/$ref"
   done
   [ -L "$P/$tool/boundaries.md" ] || fail "missing boundaries link: $tool"
+  # `<system>/docs/agent-protocol.md` must resolve (BUG-20260916-system-docs-prefix-unresolved)
+  [ -f "$P/$tool/docs/agent-protocol.md" ] || fail "missing docs link: $tool"
 done
 [ -L "$P/claude/CLAUDE.md" ] || fail "missing claude instruction link"
 [ -L "$P/copilot/copilot-instructions.md" ] || fail "missing copilot instruction link"

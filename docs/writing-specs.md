@@ -1,6 +1,6 @@
 # Writing Specs
 
-*Last updated: 2026-08-27*
+*Last updated: 2026-09-17*
 
 Consolidated guidance for spec-driven work: lifecycle pointer, stage walk-throughs (Specify, Plan), writing-style rules, RFC 2119 keywords, the self-review additions, template usage, and anti-patterns. Topic-specific deep dives live in the linked docs.
 
@@ -50,7 +50,7 @@ Apply to all spec text during Specify and Plan.
 
 - **Standard-track spec body ≤120 physical lines** — counted from the first line after the front-matter close (`---`) to EOF, **including** blank lines, the H1, and the `*Last updated:*` line. **Exclude** lines inside fenced diagram blocks (```` ```mermaid ````, Figma embeds) under `## Design`, and the entire `## Closure` section.
 - Per-section soft caps: Summary ≤6; Current State / Problem Statement ≤12; Proposed Improvement ≤12; one line per FR; one Given/When/Then block (≤6 lines) per FR / Fix-Criteria cluster; one line per Out-of-Scope item.
-- Exceeding any cap is allowed only with a **one-line justification at the top of that section**. Trivial / RES lanes inherit these caps where the section exists.
+- Exceeding any cap is allowed only with a **one-line justification at the top of that section**. The RES lane inherits these caps where the section exists.
 
 ### Forbidden
 
@@ -107,6 +107,9 @@ Mandatory step in spec authoring ([`authoring-steps.md § A`](../framework/skill
    of Scope`. See
    [`spec-format.md`](spec-format.md) and
    [`acceptance-criteria-patterns.md`](acceptance-criteria-patterns.md).
+   Write `## Baseline Deltas` for every baseline the FRs change, or set
+   `baseline-impact: none — <reason>`; `baseline-merge --check` must pass.
+   See [`spec-templates-guide.md § Baseline Deltas`](spec-templates-guide.md#baseline-deltas).
 5. **Split check** — apply [`splitting-rules.md § 2`](../framework/skills/writing-specs/references/splitting-rules.md)
    against the FR clusters + Separability answer. If any trigger fires,
    propose a split, pause for the human decision, and create sibling
@@ -117,7 +120,8 @@ Mandatory step in spec authoring ([`authoring-steps.md § A`](../framework/skill
 6. Run **Visualize sub-step** if any trigger applies — per spec, after
    the split is resolved
    (see [`spec-lifecycle.md § Visualize sub-step`](../framework/spec-workflows/spec-lifecycle.md#visualize-triggers)).
-7. **Gate:** human approves requirements (and design, if populated).
+7. **Gate:** human approves requirements (and design, if populated), with
+   the `baseline-merge --diff` output in front of them.
 
 ## Plan stage (detail)
 
@@ -162,6 +166,14 @@ Additional spec-specific checks:
 - [ ] API contracts match implementation (field names, types, status codes).
 - [ ] Non-functional requirements verified with evidence.
 - [ ] Out-of-scope items not built.
+- [ ] Traceability holds — `make validate-specs` reports no `traceability_*` finding. RES specs, and specs dated before `_TRACEABILITY_CUTOFF` in `scripts/validate-specs.py`, are not judged.
+
+  | Status | Check | Requires |
+  |---|---|---|
+  | any | `traceability_fr_uncited` | every FR cited by an acceptance block (BUG: Fix Criteria) |
+  | any | `traceability_fr_dangling` | every FR an acceptance block cites is defined |
+  | `plan` on | `traceability_fr_no_task` | every FR cited directly (`FR-n`) by a `## Tasks` row — citing only its AC does not count |
+  | `done` | `traceability_ac_no_evidence` | every AC has a `## Closure Evidence` table row whose first cell is its ID |
 
 ---
 

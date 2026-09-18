@@ -2,7 +2,7 @@
 
 *Last updated: 2026-09-14*
 
-<!-- Anchors in this file (per `docs/rule-canonical-map.md`): R16 `§ 4` (a frame ID names its screen and its state) · R17 `§ 5` (layout derived from IDs; reflow is ordinary) · R18 `§ 5` (`assertPlacement()` is the single gate) · R19 `§ 6` (an archived one-part ID is correct) · R20 `§ 6` (a quoted config path is one the schema declares). -->
+<!-- Anchors in this file (per `docs/rule-canonical-map.md`): R16 `§ 4` (a frame ID names its screen and its state) · R17 `§ 5` (layout derived from IDs; reflow is ordinary) · R18 `§ 5` (`assertPlacement()` is the single gate) · R19 `§ 6` (an archived one-part ID is correct) · R20 `§ 6` (a quoted config path is one the schema declares) · R21 `§ 4` (breakpoints share an ID) · R22 `§ 4` (two placement questions) · R23 `§ 4` (behaviour row = flow @ breakpoint) · R24 `§ 3` (declared variant axes, Brand) · R25 `§ 3`/`§ 5` (longest locale, loadable fonts) · R26 `§ 6` (implementation badge) · R27 `§ 6` (rebuild beside). -->
 
 Reference for the [Visualize sub-step](../visualize-spec.prompt.md). Applies
 whenever a spec's `## Design` links Figma frames, or when creating /
@@ -24,7 +24,7 @@ duplication.
   | `01 Foundations` | Tokens visualised: color, type, spacing, grid, radius, elevation, icons |
   | `02 Components` | Component / variant library (omit once a separate library file exists) |
   | `10 Web`, `20 iOS`, `30 Android` | **Platform is the primary axis** — one page per platform actually shipped; domains live as **Sections** inside |
-  | `80 Behaviour` | Complex transitions / prototype flows / navigation maps |
+  | `80 Behaviour` | Step-by-step sequences of transitions whose order variants alone do not show (§ 4) |
   | `90 Explorations` | WIP / divergent options not yet agreed |
   | `99 Archive` | Superseded frames kept for history |
   | `─────────` | Divider page (empty, label only) separating groups |
@@ -89,6 +89,44 @@ Form Controls / Checkbox
   for size/tone — not separately named components.
 - Component-set name = the family (`Button`); properties carry the rest.
 
+### Variant axes — one declared vocabulary
+
+**A file declares one variant-axis vocabulary, and every component set uses
+only declared axes.** Left undeclared, the same two concepts drift into
+`width=desktop`, `width=1024`, `size=desktop` and `status=hovered` across one
+file, and neither a reader nor Code Connect can map them.
+
+- **The declaration lives in `docs/architecture/design-system.md`** — a table
+  of property names and their allowed values (`state` = `default` / `hover` /
+  `focused` / `disabled`; `tone` = …). A component set that needs a new axis
+  or value adds it there first.
+- **A breakpoint-valued axis reuses the frame breakpoint names.** It is
+  `breakpoint=base|md|lg`, exactly the § 4 suffixes in their declared order —
+  never a width (`1024`), never a device word (`desktop`).
+- **One concept, one property.** Interaction state is `state`, never also
+  `status`; `status` is left free for data states a component displays.
+
+### Brand — logos and media ratios in `01 Foundations`
+
+- **`01 Foundations` holds a `Brand` section of logo component sets** — one set
+  per mark, all sharing one axis vocabulary (e.g. `variant=full|mark`,
+  `tone=color|mono|inverse`) declared like any other axis.
+- **UI components instance the `Brand` sets rather than redraw them.** A header
+  logo is an instance of `Logo`, not a second `icon/logo` drawing; the icon
+  catalog never holds a brand mark.
+- **Media aspect ratios are tokens, declared in `Brand`** (`ratio/hero` = 16:9,
+  `ratio/card` = 4:3, …) — not implied by the size a frame happens to be drawn
+  at, which drifts on resize exactly as a size in a name does (§ 4).
+
+### Text slots survive the longest locale
+
+**Every text-bearing component is verified with the longest shipped locale
+string, without auto-layout overflow.** A slot sized against English truncates
+or bursts its container in `uk` or `ru`. Before a text-bearing component is
+handed over, set each text layer to the longest translation the product ships
+for it (or, before translations exist, a string 40 % longer than English),
+read back that no child exceeds its parent's bounds, then restore the default.
+
 ### Variable / token naming (path hierarchy)
 
 Token-path style, slash-separated, semantic over raw:
@@ -138,15 +176,18 @@ space/100  space/200  space/300             radius/sm  radius/md  radius/lg
 Every root (screen) frame on a **product (platform) page** is named:
 
 ```
-[<ID>] <Entity> — <View> · <state>          <ID> = <platform>-<screen>.<state>
+[<ID>] <Entity> — <View> · <state> · <bp>   <ID> = <platform>-<screen>.<state>
 ```
 
+`· <bp>` is present in a responsive file and absent in a single-breakpoint one
+(see *Breakpoints* below); `· <state>` is omitted on the default `.01`.
+
 Applies to product pages only. `00 Cover`, `01 Foundations` and `02 Components`
-hold no application screens and are organised by § 1 and § 3.
+hold no application screens and are organised by § 1 and § 3. `80 Behaviour`
+uses the `[B-…]` grammar under *Behaviour sequences* below.
 
 - **`[<ID>]`** — *required*, and **both numeric parts are required**:
-  `[W-11.01]`, `[W-11.02]`, `[I-03.01]` (iOS), `[A-07.02]` (Android),
-  `[B-02.01]` (Behaviour). Each part is zero-padded to two digits. A screen
+  `[W-11.01]`, `[W-11.02]`, `[I-03.01]` (iOS), `[A-07.02]` (Android). Each part is zero-padded to two digits. A screen
   with exactly one state is `[W-11.01]`, never `[W-11]` — so a screen that
   gains a second state never has to rename its first.
 - **`<screen>` is the screen's handle for life.** Allocate it once as
@@ -168,15 +209,50 @@ hold no application screens and are organised by § 1 and § 3.
 - **`.01` is the default state** — the screen as a person first meets it.
   Exactly one per screen.
 - **`<Entity> — <View>`** — em dash. `View` ∈ List / Detail / Edit / Create /
-  Empty / Loading / Error / Console.
+  Empty / Loading / Error / Console / Landing. `Landing` is a route that is
+  neither a list nor a record — a home page, an about page, a campaign page.
 - **`· <state>`** — readable state suffix (`· Empty`, `· Validation error`),
   and it names what `.<state>` numbers. Prefer a **variant property** for
   state where the screen is a component.
 - **Step / wizard:** `[W-07.01] <Flow> · Step N — <View>`. Each step is its
   own route, so each step is its own screen.
 - **Never** encode size in the name (Figma stores dimensions — it drifts on
-  resize); breakpoints, if needed, are a `· sm/md/lg` suffix, not digits.
+  resize); a breakpoint is a declared name (`· lg`), never a width (`· 1024`).
 - Use the **product's user-facing vocabulary**; never embed `v2`/`FINAL`/dates.
+
+**Breakpoints — one ID, one frame per breakpoint.** A responsive file draws a
+screen at several widths. Those frames are the same screen in the same state,
+so they share one ID and differ only in the trailing `· <bp>`.
+
+- **The project declares the breakpoints.** Their names and their order, narrow
+  to wide, live in the breakpoint table of `docs/architecture/design-system.md`.
+  A name not in that table is not a breakpoint, and a responsive file's frame
+  without a declared `· <bp>` fails assertion A.
+- **One ID may have one frame per breakpoint** — never two frames with the same
+  ID and the same breakpoint.
+- **A state may omit breakpoints it does not have.** A map view that exists only
+  on narrow and wide screens is drawn at those two. The default `.01` is the
+  exception: every breakpoint a screen is drawn at has its own `.01`.
+- **A single-breakpoint file declares none and writes no suffix.** A desktop-only
+  admin UI keeps the names it has; nothing here renames it.
+
+**Worked example — a responsive list.** `design-system.md` declares `base`,
+`md`, `lg`. `Places — List` is screen `03`, drawn at all three; its map-view
+state exists at `base` and `lg` only. The five frames, in row order left to
+right, are:
+
+```
+[W-03.01] Places — List · base
+[W-03.01] Places — List · md
+[W-03.01] Places — List · lg
+[W-03.02] Places — List · Map view · base
+[W-03.02] Places — List · Map view · lg
+```
+
+They sit in **one** row, because they are one screen: the `.01` group at
+`base`, `md`, `lg`, then the `.02` group at `base`, `lg` (§ 5 layout). Three `[W-03.01]` frames are
+not three defaults — there is one `.01` per breakpoint, which is what
+`assertPlacement()` checks.
 
 **Screen or state? The route decides.** Apply this before allocating anything —
 it is what makes both halves mechanical rather than a judgement call.
@@ -199,6 +275,64 @@ file alone, with nothing else consulted.
 Examples: `[W-01.01] Invoice — List`, `[W-02.02] Invoice — Edit · Validation
 error`, `[W-11.01] Ingestion · Step 1 — Console`.
 
+### Where a drawing goes — two questions
+
+Screen-or-state settles allocation once a drawing is on a platform page. These
+two questions settle which page it belongs on at all, and they are asked in
+order.
+
+1. **Is the surface reused on several pages?** A header, a filter, a card, a
+   language selector — then it is a **component variant** in `02 Components`,
+   and each screen that shows it holds an instance. It is not redrawn as a
+   state of every screen it appears on.
+2. **Is the change specific to one route?** An overlay, a banner, an empty
+   list on that route — then it is a **screen state** on the platform page, by
+   the table above.
+
+Either answer may add a third home, never replace it: **a transition whose
+order is not obvious from the variants is additionally a sequence on
+`80 Behaviour`.** Variants say what states exist; the sequence says in which
+order a person moves through them. A drawing that is neither a surface nor a
+transition — a logo master, a colour ramp — is a foundation (§ 3).
+
+**Worked examples.**
+
+- *Header search filter, opening in nine steps.* It is in the header, on every
+  page — question 1: variants of the `Search Filter` component set. Nine steps
+  are not readable from the variant list — so it is also a `[B-01.01]` …
+  `[B-01.09]` flow. It is never a `[W-…]` state.
+- *Photo gallery overlay on a place page.* Only the place route has it —
+  question 2: `[W-04.02] Place — Detail · Gallery`. Open and closed are the
+  whole story, so there is no flow.
+- *Six 512 px logo masters.* Not a surface a screen shows, not a transition —
+  `Brand` component sets in `01 Foundations` (§ 3).
+
+### Behaviour sequences — `80 Behaviour`
+
+A behaviour frame is one step of a flow, named:
+
+```
+[B-<flow>.<step>] <Flow> · Step N — <change> · <bp>
+```
+
+- **`<flow>` is the flow's handle for life** — allocated `max(<flow>) + 1` on
+  the page, never reused, the same as a screen number. `<step>` is `N`,
+  zero-padded; the first step is `.01`.
+- **Steps are numbered independently per breakpoint.** A filter that takes nine
+  steps at `base` and four at `lg` is `[B-01.01…09] · base` and
+  `[B-01.01…04] · lg`; the same step number at two breakpoints need not show the
+  same change. In a single-breakpoint file `· <bp>` is omitted, as on a
+  platform page.
+- **Show only the page region the transition needs** — the header and the open
+  panel, not the whole page beneath them.
+- **Compose it from component instances.** A behaviour frame redraws nothing;
+  a surface missing from `02 Components` is built there first.
+- **Cite the screen state a step equals** with `→ W-xx.yy` at the end of
+  `<change>`: `[B-02.02] Gallery · Step 2 — Overlay open → W-04.02 · base`.
+- **Layout: a row is one flow at one breakpoint.** Rows run by flow number,
+  then declared breakpoint order; steps run left to right in step order. The
+  § 5 layout and `assertPlacement()` apply with that row key.
+
 ### Layer level (inside frames)
 
 - **Name layers by role or content, never tool defaults** (`Frame`,
@@ -219,6 +353,14 @@ Construction rules for *generating* frames programmatically — the companion to
 the discovery half of the design-system-first rule in
 [`visualize-spec.prompt.md`](../visualize-spec.prompt.md).
 
+- **Every font family a file uses is loadable by the write runtime.** Check
+  each family against `figma.listAvailableFontsAsync()` before the first
+  write. A family the runtime cannot load — a local-only font such as
+  `Helvetica Neue`, which fails with `font family does not exist` — makes every
+  text node in it unwritable by an agent; name it at the gate as a **blocker
+  for agent editing**. Replacing the family is the human's design decision;
+  until it is made, the agent never skips the text or substitutes a font
+  silently.
 - **Enumerate before you write.** Before the first `use_figma` write, list every
   `COMPONENT` / `COMPONENT_SET` in the file (walk `figma.root`) and note which
   catalog each lives in. You cannot reuse what you did not look up — skipping
@@ -258,7 +400,9 @@ the assertion covers the whole page.
 **A section's layout is a pure function of the frames it holds** — one row per
 screen ordered by screen number, that screen's states left to right in state
 order, packed left from the section origin with one column gutter and one row
-gutter, each row as tall as its tallest frame. Nothing about it depends on the
+gutter, each row as tall as its tallest frame. In a responsive file a state is
+a **column group** rather than a column: its breakpoint frames run left to right
+in the declared breakpoint order, and the next state's group follows. Nothing about it depends on the
 order the frames were added, so it is never patched: **recompute the whole
 section**, every time, and the result is the same layout a fresh run would
 produce.
@@ -272,24 +416,36 @@ thing as a section that is "due" a tidy-up.
 
 ```js
 // 1. Recompute the section's layout from its IDs — screen = row, state = column
+//    group, breakpoint = column inside the group
 const GUTTER_X = 60, GUTTER_Y = 120, ORIGIN_X = 60, ORIGIN_Y = 160;
+const BREAKPOINTS = ["base", "md", "lg"];     // design-system.md order; [] if single-breakpoint
 
-const parseId = n => {                        // "[W-11.03] …" -> {screen, state}
+const bpOf = name => {                        // "… · lg" -> 0-based rank, or -1
+  const tail = name.split(" · ").pop();
+  return BREAKPOINTS.indexOf(tail);
+};
+const parseId = n => {                        // "[W-11.03] … · lg" -> {screen, state, bp}
   const m = n.name.match(/^\[[A-Z]+-(\d{2})\.(\d{2})\]/);
   if (!m) throw new Error(`frame has no two-part ID: ${n.name}`);
-  return { screen: +m[1], state: +m[2] };
+  return { screen: +m[1], state: +m[2], bp: bpOf(n.name) };
 };
 
-const rows = new Map();                       // screen -> [{frame, state}]
-for (const f of section.children.filter(c => c.type === "FRAME")) {
-  const { screen, state } = parseId(f);
-  if (!rows.has(screen)) rows.set(screen, []);
-  rows.get(screen).push({ f, state });
+// On 80 Behaviour `screen` is the flow and `state` the step, and a row is one
+// flow at one breakpoint; on a platform page a row is one screen.
+const BEHAVIOUR = figma.currentPage.name.endsWith("Behaviour");
+const rowKey = ({ screen, bp }) => BEHAVIOUR ? screen * 100 + bp + 1 : screen;
+
+const rows = new Map();                       // row key -> [{frame, state, bp}]
+const live = n => !n.name.startsWith("[OLD]");   // § 6 rebuild — exempt until deleted
+for (const f of section.children.filter(c => c.type === "FRAME" && live(c))) {
+  const id = parseId(f), k = rowKey(id);
+  if (!rows.has(k)) rows.set(k, []);
+  rows.get(k).push({ f, state: id.state, bp: id.bp });
 }
 
 let y = ORIGIN_Y, widest = 0;
-for (const screen of [...rows.keys()].sort((a, b) => a - b)) {
-  const row = rows.get(screen).sort((a, b) => a.state - b.state);
+for (const k of [...rows.keys()].sort((a, b) => a - b)) {
+  const row = rows.get(k).sort((a, b) => a.state - b.state || a.bp - b.bp);
   let x = ORIGIN_X;
   for (const { f } of row) { f.x = x; f.y = y; x += f.width + GUTTER_X; }
   widest = Math.max(widest, x - GUTTER_X);
@@ -312,9 +468,9 @@ Visualize run reports at the gate.
 
 | | Assertion |
 |---|---|
-| A | Every root frame carries a two-part ID (§ 4) |
-| B | Exactly one `.01` per screen |
-| C | A screen's states share one row and run left to right in state order, and no two screens share a row |
+| A | Every root frame carries a two-part ID (§ 4), and in a responsive file a declared `· <bp>` |
+| B | Exactly one `.01` per screen per breakpoint, and no ID drawn twice at one breakpoint |
+| C | A screen's frames share one row and run left to right in state order, then breakpoint order within a state, and no two screens share a row |
 | D | Every child sits inside its host Section box |
 | E | No two Section boxes intersect |
 | F | Page grid — sections share one left edge and one gutter |
@@ -322,38 +478,52 @@ Visualize run reports at the gate.
 ```js
 function assertPlacement() {
   const fails = [], GUTTER = 300;
-  const ID = /^\[[A-Z]+-(\d{2})\.(\d{2})\]/;
+  const ID = /^\[([A-Z]+)-(\d{2})\.(\d{2})\]/;
+  const BPS = BREAKPOINTS;                         // same declared list as the layout
+  const BEH = figma.currentPage.name.endsWith("Behaviour");   // row = flow @ breakpoint
   const box = n => { const b = n.absoluteBoundingBox;
     return { x: b.x, y: b.y, x2: b.x + b.width, y2: b.y + b.height }; };
   const secs = figma.currentPage.children
-    .filter(c => c.type === "SECTION").sort((a, b) => a.y - b.y);
+    .filter(c => c.type === "SECTION" && !c.name.startsWith("[OLD]"))  // § 6 rebuild
+    .sort((a, b) => a.y - b.y);
 
   for (const s of secs) {
     const rows = new Map();                                  // screen -> frames
-    for (const f of s.children.filter(c => c.type === "FRAME")) {
+    for (const f of s.children.filter(c => c.type === "FRAME" && !c.name.startsWith("[OLD]"))) {
       const m = f.name.match(ID);
       if (!m) { fails.push(`A id-pattern · ${s.name} · ${f.name}`); continue; }
-      if (!rows.has(+m[1])) rows.set(+m[1], []);
-      rows.get(+m[1]).push({ f, state: +m[2] });
+      if ((m[1] === "B") !== BEH) { fails.push(`A id-page · ${s.name} · ${f.name}`); continue; }
+      const bp = BPS.indexOf(f.name.split(" · ").pop());
+      if (BPS.length && bp < 0) { fails.push(`A breakpoint · ${s.name} · ${f.name}`); continue; }
+      const k = BEH ? `${m[2]} @ ${BPS[bp] ?? "-"}` : m[2];
+      if (!rows.has(k)) rows.set(k, []);
+      rows.get(k).push({ f, state: +m[3], bp });
     }
-    for (const [screen, row] of rows) {
-      const defaults = row.filter(r => r.state === 1).length;
-      if (defaults !== 1)
-        fails.push(`B one-default · ${s.name} · screen ${screen} has ${defaults} .01 frames`);
+    for (const [screen, row] of rows) {                      // screen = flow @ bp on Behaviour
+      for (const bp of new Set(row.map(r => r.bp))) {        // bp = -1 when single-breakpoint
+        const at = row.filter(r => r.bp === bp), label = bp < 0 || BEH ? "" : ` @ ${BPS[bp]}`;
+        const defaults = at.filter(r => r.state === 1).length;
+        if (defaults !== 1)
+          fails.push(`B one-default · ${s.name} · screen ${screen}${label} has ${defaults} .01 frames`);
+        const states = at.map(r => r.state);
+        if (new Set(states).size !== states.length)
+          fails.push(`B duplicate · ${s.name} · screen ${screen}${label} draws a state twice`);
+      }
       const ys = [...new Set(row.map(r => Math.round(r.f.y)))];
       if (ys.length !== 1)
         fails.push(`C one-row · ${s.name} · screen ${screen} spans y ${ys}`);
-      const leftToRight = row.slice().sort((a, b) => a.f.x - b.f.x).map(r => r.state);
-      const ordered = row.map(r => r.state).sort((a, b) => a - b);
+      const key = r => `${r.state}:${r.bp}`;
+      const leftToRight = row.slice().sort((a, b) => a.f.x - b.f.x).map(key);
+      const ordered = row.slice().sort((a, b) => a.state - b.state || a.bp - b.bp).map(key);
       if (String(leftToRight) !== String(ordered))
-        fails.push(`C state-order · ${s.name} · screen ${screen} reads ${leftToRight}`);
+        fails.push(`C order · ${s.name} · screen ${screen} reads ${leftToRight}, want ${ordered}`);
     }
     const bands = [...rows.values()].map(r => Math.round(r[0].f.y));
     if (new Set(bands).size !== bands.length)
       fails.push(`C row-sharing · ${s.name} · two screens share a row`);
 
     const sb = box(s);
-    for (const c of s.children) { const b = box(c);
+    for (const c of s.children.filter(c => !c.name.startsWith("[OLD]"))) { const b = box(c);
       if (b.x < sb.x || b.y < sb.y || b.x2 > sb.x2 || b.y2 > sb.y2)
         fails.push(`D containment · ${s.name} ⊅ ${c.name}`); }
   }
@@ -440,11 +610,45 @@ Every frame in a spec's `## Design` is a **link-wrapped image**:
   every node URL under `## Design` and replace the image URLs in place.
   Freshness is a property of the process, not of the moment a frame was drawn.
 
+### Source of truth — code-first or design-first
+
+A project declares its mode in `docs/architecture/design-system.md`, and the
+mode decides what a frame that differs from the product means.
+
+- **Code-first** — the product leads and the file documents it. A frame that
+  differs from the product is a defect; the next subsection applies whole, and
+  frames carry no implementation badge.
+- **Design-first** — the design leads and the code follows, so a frame ahead
+  of the product is the normal state, not a divergence. What must never be
+  unclear is *which* frames are ahead.
+
+**A design-first file marks every root frame on platform and behaviour pages
+with a `status/implementation` instance.** The badge is a component in
+`02 Components` with one `status` axis and a spec-ID text property, placed
+above the frame's top-left corner inside the section:
+
+| `status` | Meaning | Spec ID |
+|---|---|---|
+| `Implemented` | The product matches the frame | the spec that shipped it |
+| `Designed` | Drawn, not yet built | the spec that will build it, or `—` |
+| `Changed` | Built, then redrawn; the product still shows the earlier design | the spec that redrew it |
+
+- **`00 Cover` summarises it per screen** — one line per screen ID with its
+  count per status (`W-03 · 3 Implemented · 2 Designed`), regenerated whenever
+  a badge flips.
+- **The badge flips at spec closure**, by the rule in `spec-lifecycle.md`; a
+  frame whose spec closed and still reads `Designed` is a divergence, and the
+  next subsection applies to it.
+- **Code-first files omit the badge and the Cover summary.**
+
 ### The current file carries no divergence
 
 The current file is the live design, not a gallery of what things used to look
 like. Freezing is what preserves a "before"; a stale frame left in the current
-file preserves nothing and misinforms every reader who opens it.
+file preserves nothing and misinforms every reader who opens it. In a
+design-first file, a frame badged `Designed` or `Changed` is ahead of the
+product by declaration and is not a divergence; a badge that misstates the
+product is.
 
 - **A frame that contradicts today's product is a defect, and fixing it is part
   of the run that found it.** Not a follow-up, not a note in the spec. This
@@ -516,6 +720,24 @@ links truthful again.
   the frame is still named `[W-59]`. Nothing is out of sync, no rule anywhere
   asks for a reconciliation, and an archived spec's IDs are never "corrected".
 
+### Rebuild beside, never rename in place
+
+Renaming a file that is far from the convention into shape — frame by frame,
+section by section — leaves it half-conforming for the whole run and loses the
+"before" as it goes. When a file is rebuilt rather than extended:
+
+- **The originals stay beside the rebuild, renamed `[OLD] <name>`.** An
+  `[OLD]` frame, section or page is exempt from the taxonomy, the ID grammar
+  and `assertPlacement()` until it is deleted; nothing new is ever named
+  `[OLD]`.
+- **The spec's `## Design` shows each screen before and after** — the `[OLD]`
+  frame beside its rebuilt `[W-…]` frame, both as link-wrapped images.
+- **`[OLD]` content is deleted only after the human confirms** the rebuild at
+  the gate, never by the run that built it.
+- **Rebuilt frames get new node IDs.** A citation of an original's node resolves
+  through the frozen key (*File versioning* above) — freeze the file before the
+  rebuild starts, and a closed spec's links stay correct by construction.
+
 ### Caveats
 
 - **Node IDs survive duplication** — a spec written against `node-id=51:2`
@@ -537,6 +759,23 @@ links truthful again.
       <state>` with `<ID>` a two-part `<platform>-<screen>.<state>` (§ 4) —
       both halves present, `.01` on a single-state screen, exactly one `.01`
       per screen; size never in the name.
+- [ ] Responsive file: every product frame ends in a breakpoint declared in
+      `design-system.md`; one ID per breakpoint; a state's breakpoint frames
+      left to right in declared order (§ 4, § 5).
+- [ ] Each drawing placed by the two questions — reused surface → component
+      variant, one-route change → screen state, non-obvious order → also a
+      `[B-<flow>.<step>]` flow on `80 Behaviour`, one row per flow per
+      breakpoint, built from instances (§ 4).
+- [ ] Component sets use only the declared variant axes; logos live as
+      `Brand` component sets in `01 Foundations`; media ratios are tokens (§ 3).
+- [ ] Text-bearing components verified with the longest shipped locale; every
+      font family loadable by `listAvailableFontsAsync`, or named as a blocker
+      (§ 3, § 5).
+- [ ] Design-first file: every root frame on platform and behaviour pages
+      badged `Implemented` / `Designed` / `Changed` with a spec ID, and
+      `00 Cover` summary current (§ 6).
+- [ ] Rebuild: originals renamed `[OLD]`, before/after in `## Design`, deleted
+      only after human confirmation (§ 6).
 - [ ] No tool-default layer names (`Frame`/`Group`/`Cell`) on structural or
       reused layers; recurring structures componentized, not hand-renamed.
 - [ ] `00 Cover` set as the file thumbnail with a status legend.
@@ -556,7 +795,8 @@ links truthful again.
       IDs (§ 5) — one row per screen in screen order, that screen's states left
       to right in state order — and the section grown to the result.
 - [ ] `assertPlacement()` (§ 5) called before hand-over and its return recorded:
-      two-part IDs, one `.01` per screen, each screen's states in one ordered row,
+      two-part IDs, one `.01` per screen per breakpoint, each screen's frames in one
+      row ordered by state then breakpoint,
       child containment, no section overlap, one left edge and one gutter for
       every section — grid defects corrected in the same run, then re-asserted.
 - [ ] Every Figma frame in `## Design` is a link-wrapped image whose alt text

@@ -2,11 +2,55 @@
 
 *Last updated: YYYY-MM-DD*
 
-The design system for <surface> (<stack>). State whether **Figma is the
-source of truth** (design-first) or the code is (code-first) — the loop
-differs, and every later decision hangs off it.
+The design system for <surface> (<stack>).
 
 ---
+
+## Source-of-truth mode
+
+**Mode:** `code-first` | `design-first` <!-- pick one -->
+
+- `code-first` — the product leads; a frame that differs from it is a defect.
+  No implementation badges; delete the *Implementation status legend* below.
+- `design-first` — the design leads; every root frame on platform and
+  behaviour pages carries a `status/implementation` badge, flipped at spec
+  closure.
+
+Semantics: `<system>/prompts/references/figma-file-organization.md` § 6.
+
+## Breakpoints
+
+<!-- Narrow to wide. These names are the frame suffix `· <bp>` (§ 4) and the
+     only values of a breakpoint variant axis. A single-breakpoint (e.g.
+     desktop-only) product writes "None — single breakpoint" and uses no
+     suffix. Names, never widths. -->
+
+| Order | Name | Frame width | Applies from |
+|---|---|---|---|
+| 1 | `base` | 320 | 0 px |
+| 2 | `md` | 768 | 768 px |
+| 3 | `lg` | 1024 | 1024 px |
+
+## Variant-axis vocabulary
+
+<!-- Every component set uses only the properties and values declared here;
+     add an axis or value here before using it in Figma. -->
+
+| Property | Values | Used for |
+|---|---|---|
+| `state` | `default` · `hover` · `focused` · `disabled` | interaction state |
+| `breakpoint` | the names from *Breakpoints*, in order | responsive component variants |
+| `<property>` | `<values>` | <meaning> |
+
+## Implementation status legend
+
+<!-- Design-first only. Values of the `status/implementation` badge. -->
+
+| Badge | Meaning |
+|---|---|
+| `Implemented · <spec-id>` | the product matches the frame |
+| `Designed · <spec-id or —>` | drawn, not yet built |
+| `Changed · <spec-id>` | built, then redrawn; the product shows the earlier design |
 
 ## Figma version table
 

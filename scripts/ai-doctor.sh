@@ -9,7 +9,7 @@
 #   1. instruction-file symlink resolves
 #      (CLAUDE.md / copilot-instructions.md / AGENTS.md)
 #   2. framework reference symlinks resolve:
-#      spec-workflows prompts templates skills agents upstream boundaries.md
+#      spec-workflows prompts templates skills agents upstream boundaries.md docs
 #   3. ~/.<tool>/.active-manifest (when present): `profile` matches the
 #      requested profile and `target` resolves.
 #
@@ -65,6 +65,7 @@ for tool in claude copilot codex; do
 
   if [ "$FAST" -eq 0 ]; then
     check_link "$tool_dir/boundaries.md"
+    [ -e "$AI_DOTFILES/docs" ] && check_link "$tool_dir/docs"
     for ref in $REFS; do
       # Only require refs that exist in the framework source tree.
       if [ -e "$AI_DOTFILES/framework/$ref" ]; then

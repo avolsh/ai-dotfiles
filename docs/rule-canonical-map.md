@@ -1,6 +1,6 @@
 # Rule Canonical Map
 
-*Last updated: 2026-09-02*
+*Last updated: 2026-09-17*
 
 > **Machine-read by `scripts/lint-rules.py` — not human-maintained prose.**
 > Parser contract: a rule section starts with `### R<N> —`; it must contain a
@@ -22,8 +22,7 @@
 | **Canonical location** | `framework/boundaries.md § Never do #2` |
 
 Verbatim phrases observed:
-- boundaries (post-IMP-20260514-trivial-lane T3): *"Never skip the Specify stage — even a trivial bug needs confirmed understanding via the question round. The Trivial lane"*
-- boundaries (pre-IMP-20260514-trivial-lane T3 — kept tracked to catch reverts): *"Never skip the Specify stage — even a trivial bug needs confirmed understanding via the question round."*
+- boundaries (current; also the pre-IMP-20260514-trivial-lane wording, restored by IMP-20260917-remove-trivial-lane): *"Never skip the Specify stage — even a trivial bug needs confirmed understanding via the question round."*
 - spec-lifecycle (pre-D3): *"Never skip the Specify stage — even for a one-line bug. Confirm understanding with the ≤10 questions from the relevant question list."*
 - create-spec.prompt (pre-D3): *"Never skip the question round — even trivial CRs get one."*
 
@@ -215,3 +214,105 @@ Verbatim phrases observed:
 Verbatim phrases observed:
 - figma-file-organization § 6 (rule statement): *"**The checkable half — a dotted configuration path in a frame is one the"*
 - figma-file-organization § 6 (per-project clause): *"project**, because only the project has the schema; the framework states the"*
+
+### R21 — A responsive frame shares its ID across declared breakpoints
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 4` |
+
+Verbatim phrases observed:
+- figma-file-organization § 4 (rule statement): *"**Breakpoints — one ID, one frame per breakpoint.**"*
+- figma-file-organization § 4 (declaration clause): *"**The project declares the breakpoints.**"*
+
+### R22 — A drawing's home is decided by two questions
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 4` |
+
+Verbatim phrases observed:
+- figma-file-organization § 4 (question 1): *"**Is the surface reused on several pages?**"*
+- figma-file-organization § 4 (question 2): *"**Is the change specific to one route?**"*
+- figma-file-organization § 4 (behaviour clause): *"Either answer may add a third home, never replace it:"*
+
+### R23 — A behaviour row is one flow at one breakpoint
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 4` |
+
+Verbatim phrases observed:
+- figma-file-organization § 4 (numbering clause): *"**Steps are numbered independently per breakpoint.**"*
+- figma-file-organization § 4 (layout clause): *"**Layout: a row is one flow at one breakpoint.**"*
+
+### R24 — Component sets use only the declared variant axes
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 3` |
+
+Verbatim phrases observed:
+- figma-file-organization § 3 (breakpoint axis): *"**A breakpoint-valued axis reuses the frame breakpoint names.**"*
+- figma-file-organization § 3 (one-property clause): *"**One concept, one property.**"*
+- figma-file-organization § 3 (brand clause): *"**UI components instance the `Brand` sets rather than redraw them.**"*
+
+### R25 — Text survives the longest locale, and every font is loadable
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 3` |
+
+Verbatim phrases observed:
+- figma-file-organization § 3 (locale rule): *"string, without auto-layout overflow.**"*
+- figma-file-organization § 5 (font rule): *"**Every font family a file uses is loadable by the write runtime.**"*
+
+### R26 — A design-first file badges implementation status, flipped at closure
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 6` |
+
+Verbatim phrases observed:
+- figma-file-organization § 6 (badge rule): *"with a `status/implementation` instance.**"*
+- figma-file-organization § 6 (code-first clause): *"**Code-first files omit the badge and the Cover summary.**"*
+
+### R27 — Rebuild beside the originals, never rename in place
+
+| | |
+|---|---|
+| **Canonical location** | `framework/prompts/references/figma-file-organization.md § 6` |
+
+Verbatim phrases observed:
+- figma-file-organization § 6 (rule statement): *"**The originals stay beside the rebuild, renamed `[OLD] <name>`.**"*
+- figma-file-organization § 6 (deletion clause): *"**`[OLD]` content is deleted only after the human confirms**"*
+
+### R28 — Closing a design-first spec flips its implementation badges
+
+| | |
+|---|---|
+| **Canonical location** | `framework/spec-workflows/spec-lifecycle.md § Rules #15` |
+
+Verbatim phrases observed:
+- spec-lifecycle Rules #15 (rule statement): *"**Flip the implementation badges.**"*
+
+### R29 — A high-tier closure records the cold review, run or waived
+
+| | |
+|---|---|
+| **Canonical location** | `framework/spec-workflows/spec-lifecycle.md § Reviewer sub-step` |
+
+Verbatim phrases observed:
+- spec-lifecycle (tier rule): *"the run is a closure precondition.**"*
+- spec-lifecycle (cap disposition): *"still open at the cycle cap are dispositioned `rejected` with the reason,"*
+- spec-lifecycle (waiver restraint): *"The agent never suggests the waiver and never"*
+
+### R30 — A spec states its baseline impact as a delta or a marker
+
+| | |
+|---|---|
+| **Canonical location** | `framework/spec-workflows/spec-lifecycle.md § Rules #13` |
+
+Verbatim phrases observed:
+- spec-lifecycle #13 (baseline deltas): *"**A spec that changes a baseline carries `## Baseline Deltas`; a spec that changes none sets `baseline-impact: none — <reason>`.**"*
+- spec-lifecycle #13 (hand-edit boundary): *"**A closure edits a baseline by hand only where no delta can address it — an un-numbered entry or a duplicated ID — and cites that edit in `## Closure Evidence`.**"*

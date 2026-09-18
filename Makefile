@@ -1,4 +1,4 @@
-.PHONY: help install install-check profile-init reset project workspace links-check validate-specs lint-rules validate-anchors sync-system-templates sync-agents-check check doctor doctor-fast install-git-hooks tests spec-metrics
+.PHONY: help install install-check profile-init reset project workspace links-check validate-specs baseline-check lint-rules validate-anchors sync-system-templates sync-agents-check check doctor doctor-fast install-git-hooks tests spec-metrics specs-view consolidation-due
 
 help:
 	@echo "Targets:"
@@ -12,8 +12,10 @@ help:
 	@echo "  install-git-hooks          Point this repo's core.hooksPath at scripts/git-hooks"
 	@echo "  tests                      Run all script self-tests (hooks, doctor, pre-commit, metrics)"
 	@echo "  spec-metrics               Report framework-vs-product spec share by month"
+	@echo "  specs-view                 Active specs grouped by status, blocked ones flagged (PROJECT=path, TODAY=YYYY-MM-DD)"
 	@echo "  links-check                Verify markdown link integrity"
 	@echo "  validate-specs             Validate spec corpus (front-matter, deps, naming, etc.)"
+	@echo "  baseline-check             Preflight every active spec's Baseline Deltas against docs/domain/"
 	@echo "  lint-rules                 Flag verbatim canonical-rule duplicates outside their canonical files"
 	@echo "  validate-anchors           Verify markdown #fragment links resolve to existing anchors"
 	@echo "  sync-system-templates      Regenerate framework/templates/system/{claude,copilot,codex}/* from _canonical.md"
@@ -56,11 +58,32 @@ tests:
 	./scripts/test/pre-commit.test.sh
 	./scripts/test/spec-metrics.test.sh
 	./scripts/test/validate-specs.test.sh
+	./scripts/test/lifecycle-mutations.test.sh
+	python3 ./scripts/validate-anchors.py --self-test
+	./scripts/test/spec-next.test.sh
+	./scripts/test/baseline-merge.test.sh
+	./scripts/test/spec-status.test.sh
+	./scripts/test/validate-quality-gates.test.sh
+	./scripts/test/consolidation-due.test.sh
+	./scripts/test/report-duplication.test.sh
 	./scripts/test/profile-links.test.sh
 	./scripts/test/ai-switch.test.sh
+	./scripts/test/ai-project.test.sh
 
 spec-metrics:
 	python3 ./scripts/spec-metrics.py
+
+# PROJECT points at another project's corpus; TODAY pins the ages (snapshot tests).
+PROJECT ?= .
+TODAY ?=
+specs-view:
+	@python3 ./scripts/spec-status.py --view $(if $(TODAY),--today $(TODAY)) "$(PROJECT)"
+
+# CLOSED limits the report to one spec's contexts; CONTEXT prints that context's recommendation.
+CLOSED ?=
+CONTEXT ?=
+consolidation-due:
+	@python3 ./scripts/consolidation-due.py $(if $(CLOSED),--closed $(CLOSED)) $(if $(CONTEXT),--recommend "$(CONTEXT)") "$(PROJECT)"
 
 doctor:
 	./scripts/ai-doctor.sh
@@ -73,6 +96,9 @@ links-check:
 
 validate-specs:
 	python3 ./scripts/validate-specs.py
+
+baseline-check:
+	python3 ./scripts/baseline-merge.py --check
 
 lint-rules:
 	python3 ./scripts/lint-rules.py
