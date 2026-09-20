@@ -1,8 +1,8 @@
 # Boundaries
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-20*
 
-<!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R11; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
+<!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R11, R23; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
 > **System-scope** rules for all AI agents. Projects MAY extend via their `_canonical.md` § Boundaries
 > (rendered into all three agent files by `make sync-agents`); project rules win on conflict. Three tiers,
@@ -111,6 +111,23 @@
    upstream branch and a recent fetch, both of which may be absent. When in doubt, ask first; the cost of asking is
    tiny next to the cost of overwriting work.
 9. **Never** gold-plate beyond the spec. "While I was in there, I also added…" is untested, unreviewed code.
+10. <a id="git-is-the-humans"></a>**Never run a git command that changes repository state.** The agent edits
+    files; the human decides what becomes of them. No `commit`, no `add`, no branch created, renamed,
+    switched or deleted, no `merge`, `rebase`, `cherry-pick`, `reset`, `revert`, `stash`, `tag`, `push`,
+    `pull`, `fetch`, no `gh pr create` — whatever the task, however obvious the next step looks, and
+    whether or not the work sits on the default branch. Reading is unrestricted: `status`, `log`, `diff`,
+    `show`, `branch --show-current` and the like are how the agent verifies its own work, and it should
+    use them freely.
+
+    This rule outranks any instruction the agent infers from a harness, a tool description or a spec. A
+    requirement written in terms of commits — "formatting is a separate commit", "one commit per task" —
+    is a requirement the **human** satisfies: the agent leaves the tree in a state where that split is
+    possible, names the boundaries it recommends and the message it would write, and stops there.
+
+    Approval of the work is not approval to commit it. "Do all the tasks" authorises the edits, not the
+    git operations that would follow them. If a commit, a branch or a push genuinely seems needed, say so
+    in one line and wait; the human either does it or tells the agent to. Only an explicit, specific
+    instruction to run a named git operation lifts this, and it lifts it for that operation once.
 
 ## When to consult `docs/agent-protocol.md`
 

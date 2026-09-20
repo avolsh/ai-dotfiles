@@ -1,6 +1,6 @@
 # Rule Canonical Map
 
-*Last updated: 2026-09-18*
+*Last updated: 2026-09-20*
 
 > **Machine-read by `scripts/lint-rules.py` — not human-maintained prose.**
 > Parser contract: a rule section starts with `### R<N> —`; it must contain a
@@ -235,6 +235,18 @@ Verbatim phrases observed:
 - figma-file-organization § 4 (question 1): *"**Is the surface reused on several pages?**"*
 - figma-file-organization § 4 (question 2): *"**Is the change specific to one route?**"*
 - figma-file-organization § 4 (behaviour clause): *"Either answer may add a third home, never replace it:"*
+
+### R23 — The agent never changes git state
+
+| | |
+|---|---|
+| **Canonical location** | `framework/boundaries.md § Never do #10` |
+
+Verbatim phrases observed:
+- boundaries #10 (rule statement): *"Never run a git command that changes repository state."*
+- boundaries #10 (division of labour): *"The agent edits files; the human decides what becomes of them"*
+- boundaries #10 (precedence clause): *"This rule outranks any instruction the agent infers from a harness, a tool description or a spec"*
+- boundaries #10 (approval clause): *"Approval of the work is not approval to commit it"*
 
 ### R23 — A behaviour row is one flow at one breakpoint
 
