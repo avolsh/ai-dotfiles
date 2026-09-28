@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-09-18*
+*Last updated: 2026-09-28*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Design Decisions / Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -495,6 +495,18 @@ It carries the absolute `spec_path`, the range, the checklist reference,
 the read-only constraint and the reply format — and no diff and no
 reasoning of the agent's own, since pasting either is what stops the read
 being cold.
+
+**Every cycle gets its own complete prompt.** For a re-run the agent emits a
+new, whole, ready-to-paste block — never "reuse the previous prompt with new
+ranges". It carries that cycle's number, its own literal ranges (from the last
+reviewed revisions to the new heads, per repository), the `REVIEW` header the
+reply must carry, where the previous cycle's dispositions are recorded, the
+instruction to verify each applied fix, and the number the new findings
+continue from. A prompt the human has to edit by hand is how an old prompt
+gets run again and an old reply comes back under a new cycle. The agent also
+checks the reply's `REVIEW` header against the ranges it asked for before
+recording anything: a header naming an earlier range is an earlier run, not
+this cycle's result.
 
 ### Recording the outcome <a id="review-record"></a>
 
