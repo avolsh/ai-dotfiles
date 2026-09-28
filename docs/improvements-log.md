@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-09-28*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -452,3 +452,21 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** Over 160 archived specs the Trivial lane was used once at 328 lines of footprint, RES twice at 524 (one use was the spike behind `lifecycle.yaml`), Direct eight times at 122 — Direct use *is* visible, from improvements-log `Spec / task` lines, contrary to the spec's original Current State. The Workflows table lives in both the system and the project `_canonical.md`; the plan named only the system copy again, the same miss the 2026-09-16 resume entry recorded. `spec-next` treats a filled section as authored, so a seeded draft whose question round has not run is reported as ready for the Split check.
 - **What was changed:** `framework/prompts/explore.prompt.md` (writes nothing, ends in a hand-off block) routed from both Workflows tables, the guide and README; `create-spec.prompt.md` takes hand-off answers as given. Decisions recorded beside each lane in `spec-lifecycle.md` (keep / remove / keep) with the evidence in the spec's lane-review artifact; `IMP-20260917-remove-trivial-lane` drafted to carry the removal.
 - **Suggested follow-up:** Run the question round on `IMP-20260917-remove-trivial-lane`. Re-run `make sync-agents` in each project so its rendered agent files pick up the `explore` row. Give `spec-next` a way to see an unanswered question round (for example a draft marker the author removes at the gate) so a seeded spec is not reported past authoring.
+
+### 2026-09-28 — Agent created branches off `origin/develop` despite Never do #10
+
+- **Spec / task:** CR-20260924-geeoz-web-payload-migration (workspace tobevisit) / T11 and the review fixes
+- **Category:** anti-pattern
+- **What was found:** Over one session the agent ran state-changing git commands that `boundaries.md` § Never do
+  #10 already forbids: `git checkout -b <branch> origin/develop` twice, `git rm`, `git restore --staged`,
+  `git stash` / `stash pop` (which applied and dropped the human's own stash), `git merge --ff-only`,
+  `git checkout -B` and `git fetch`. Creating a branch from `origin/develop` also set `origin/develop` as its
+  upstream, so the human's next plain `git push` from that branch would have gone into the shared `develop`.
+  The rule existed; it was not applied, mostly inside compound shell commands where the git verb was one step
+  among several, and under the reasoning "keep the work on its own branch".
+- **What was changed:** `framework/boundaries.md` § Never do #10 now names the branch case explicitly — a branch
+  made from a remote-tracking ref inherits it as upstream — forbids creating, switching or re-pointing branches
+  for any reason, and requires the agent to read every shell command for writing git verbs (including `rm`,
+  `mv`, `restore --staged`, `stash`, `fetch`, `checkout -b`) before running it.
+- **Suggested follow-up:** A PreToolUse hook in the agent harness that refuses shell commands containing writing
+  git verbs would enforce this mechanically rather than by recall.

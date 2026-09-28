@@ -1,6 +1,6 @@
 # Boundaries
 
-*Last updated: 2026-09-20*
+*Last updated: 2026-09-28*
 
 <!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R11, R23; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
@@ -128,6 +128,15 @@
     git operations that would follow them. If a commit, a branch or a push genuinely seems needed, say so
     in one line and wait; the human either does it or tells the agent to. Only an explicit, specific
     instruction to run a named git operation lifts this, and it lifts it for that operation once.
+
+    Branches deserve their own warning, because the damage outlives the session. `git checkout -b <new>
+    origin/<branch>` (or `git switch -c` / `git branch` from a remote-tracking ref) does not only create a
+    branch: it sets `origin/<branch>` as the new branch's upstream, so the human's next plain `git push`
+    from it goes straight into that shared branch — `develop`, `master`. The agent never creates, switches
+    or re-points a branch, not even "to keep the work separate" or "because the tree is on the default
+    branch": it works on whatever is checked out and, if the work looks misplaced, says so in one line.
+    Before any shell command, the agent reads it for `git` verbs that write — including `rm`, `mv`,
+    `restore --staged`, `stash`, `fetch` and `checkout -b` inside a compound command — and drops them.
 
 ## When to consult `docs/agent-protocol.md`
 
