@@ -1,6 +1,6 @@
 # framework/hooks/ — canonical hook scripts
 
-*Last updated: 2026-08-27*
+*Last updated: 2026-09-29*
 
 Single-source enforcement scripts for the rules in
 [`boundaries.md`](../boundaries.md) that all three harnesses (Claude Code,
@@ -36,25 +36,50 @@ errors and rely on the git pre-commit backstop (FR-2) as the second line.
 must stay editable during Specify/Plan); `stamp-refresh.sh` skips `_legacy/`,
 `upstream/`, and `docs/specs/archived/` trees and always exits 0.
 
+### `spec-status-guard.sh` spec trees
+
+The guard walks up from the edited file and collects **every** ancestor owning
+`docs/specs/active`, nearest first. A single-project repository yields exactly
+one. A repository checked out inside a multi-project workspace yields two: its
+own tree, and the workspace tree that governs cross-repo work — the shape
+`<workspace>/` describes in
+[`agent-protocol.md § Path prefixes`](../../docs/agent-protocol.md).
+
+Each spec is matched against the path **as its own tree spells it**, so a
+workspace spec leasing `src/<host>/<org>/<repo>/_cms` and a project spec leasing
+`_cms` both match the same edit. Without this, a cross-repo spec governing the
+change is invisible to the guard and every allow condition below fails on a path
+its own repository's `specify`-stage specs lease
+(`IMP-20260929-spec-guard-workspace-scope`).
+
+The Markdown and `docs/` exemption is decided against the nearest tree, as
+before.
+
 ### `spec-status-guard.sh` allow conditions
 
-The guard evaluates **every** active spec before deciding — it does not stop at
-the first `affected-code` match. A path leased by one or more specs at
-`specify`/`plan` is still allowed when either condition holds:
+The guard evaluates **every** active spec in **every** collected tree before
+deciding — it does not stop at the first `affected-code` match. A path leased by
+one or more specs at `specify`/`plan` is still allowed when either condition
+holds:
 
-1. **A governing spec is past its gate** — an active spec at `in-progress` lists
-   the same path in `affected-code`. The edit then has a spec whose plan the
-   human approved, which is what the rule protects.
+1. **A governing spec is past its gate** — an active spec at `in-progress`, in
+   any collected tree, lists the same path in `affected-code`. The edit then has
+   a spec whose plan the human approved, which is what the rule protects.
 2. **The blocker is waiting on the edit** — the blocking spec's `depends-on:`
-   names an active spec at `in-progress`. Safe by construction: a spec with an
-   unmet `depends-on:` cannot advance past `specify`
+   names an active spec at `in-progress`, again from any collected tree. Safe by
+   construction: a spec with an unmet `depends-on:` cannot advance past `specify`
    ([Rule #10](../spec-workflows/spec-lifecycle.md#depends-on-blocks-plan)), so
    it cannot hold a lease against the work it declared it cannot start without.
 
-Otherwise the guard denies, naming the blocker with the earliest `date:` and
-restating both conditions on stderr. A genuine sequencing conflict — several
-`specify`-stage specs that each really will rewrite the file, with no dependency
-between them — still denies; that is a decision for the human, not the hook.
+Otherwise the guard denies, naming the blocker with the earliest `date:`, the
+tree that holds it, and both conditions on stderr. A genuine sequencing conflict
+— several `specify`-stage specs that each really will rewrite the file, with no
+dependency between them — still denies; that is a decision for the human, not
+the hook.
+
+The guard is matched on `Edit`/`Write`/`MultiEdit`, so a write made through a
+shell command (`cp`, `sed`, a heredoc) never reaches it. The lease is enforced
+for the file tools only.
 
 ## Tests
 

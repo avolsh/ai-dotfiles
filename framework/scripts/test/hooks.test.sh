@@ -213,6 +213,52 @@ replay o8 src/config.ts 2 <<'EOF'
 IMP-20260813-layered-configuration.md|specify|2026-08-13|src/config.ts
 EOF
 
+# --- IMP-20260929: a workspace spec tree enclosing a project one (FR-1, FR-2, FR-3) ---
+# The shape that found the gap: a cross-repo spec lives in the workspace root's tree and leases the
+# path as that tree spells it (`repo/<path>`), while the repository owns a tree of its own whose
+# specify-stage specs lease the same files under their repo-relative names.
+ws="$TMP/ws"
+mkdir -p "$ws/docs/specs/active" "$ws/repo/docs/specs/active" "$ws/repo/src"
+echo "x" > "$ws/repo/src/app.ts"
+mkspec "$ws/repo" "CR-20260901-repo-plan.md" specify 2026-09-01 "src"
+
+# AC-1 — the governing spec sits in the enclosing tree, at in-progress, leasing the workspace-relative
+# path. Before this change the guard never read that tree and denied the edit.
+mkspec "$ws" "CR-20260929-cross-repo.md" in-progress 2026-09-29 "repo/src"
+set +e
+payload "$ws/repo/src/app.ts" "$ws/repo" | "$GUARD" 2>/dev/null; rc=$?
+set -e
+expect "guard allows an edit governed from the enclosing workspace tree" 0 "$rc"
+
+# AC-2 — the same shape with nothing at in-progress: a genuine conflict, and the message must say
+# which tree the blamed spec came from, since two trees can hold blockers.
+sed -i.bak 's/^status: in-progress/status: specify/' "$ws/docs/specs/active/CR-20260929-cross-repo.md"
+rm -f "$ws/docs/specs/active/CR-20260929-cross-repo.md.bak"
+set +e
+out="$(payload "$ws/repo/src/app.ts" "$ws/repo" | "$GUARD" 2>&1)"; rc=$?
+set -e
+expect "guard denies when no tree has a governing spec" 2 "$rc"
+echo "$out" | grep -q "CR-20260901-repo-plan" \
+  || { echo "FAIL: nested deny must blame the earliest spec by date" >&2; fails=$((fails+1)); }
+echo "$out" | grep -q "spec tree: $ws/repo/docs/specs/active" \
+  || { echo "FAIL: nested deny must name the blocker's spec tree" >&2; fails=$((fails+1)); }
+
+# FR-3 — depends-on reaches across trees: the project blocker declares it cannot start without the
+# cross-repo spec, which is active at in-progress in the enclosing tree and leases nothing here.
+mkspec "$ws" "CR-20260929-cross-repo.md" in-progress 2026-09-29 "repo/elsewhere"
+mkspec "$ws/repo" "CR-20260901-repo-plan.md" specify 2026-09-01 "src" "CR-20260929-cross-repo"
+set +e
+payload "$ws/repo/src/app.ts" "$ws/repo" | "$GUARD" 2>/dev/null; rc=$?
+set -e
+expect "guard clears a project blocker waiting on a workspace spec" 0 "$rc"
+
+# FR-5 — the enclosing tree only ever adds specs; a path no spec leases stays allowed.
+echo "z" > "$ws/repo/README.other"
+set +e
+payload "$ws/repo/README.other" "$ws/repo" | "$GUARD" 2>/dev/null; rc=$?
+set -e
+expect "guard allows an ungoverned path under a nested workspace" 0 "$rc"
+
 # ---------- secrets-scan.sh ----------
 SCAN="$HOOKS_DIR/secrets-scan.sh"
 repo="$TMP/repo"
