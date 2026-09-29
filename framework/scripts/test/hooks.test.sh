@@ -259,6 +259,84 @@ payload "$ws/repo/README.other" "$ws/repo" | "$GUARD" 2>/dev/null; rc=$?
 set -e
 expect "guard allows an ungoverned path under a nested workspace" 0 "$rc"
 
+# ---------- bash-write-guard.sh ----------
+# IMP-20260929-guarded-writes-through-bash. The suite replays the ten commands on record — the two shell
+# writes of 2026-09-29 and the eight git verbs of 2026-09-28 — against the read-only commands the same
+# sessions ran, because a guard that denied those would be switched off within a day.
+BWG="$HOOKS_DIR/bash-write-guard.sh"
+bwg="$TMP/bwg"
+mkdir -p "$bwg/docs/specs/active" "$bwg/src/foo" "$bwg/docs"
+mkspec "$bwg" "CR-20260101-leased.md" specify 2026-01-01 "src/foo"
+
+cmd_payload() { # $1 command, $2 cwd
+  printf '{"tool_name":"Bash","tool_input":{"command":%s},"cwd":"%s"}' \
+    "$(python3 -c 'import json,sys;print(json.dumps(sys.argv[1]))' "$1")" "$2"
+}
+
+bwg_expect() { # $1 expected rc, $2 command
+  set +e
+  cmd_payload "$2" "$bwg" | "$BWG" >/dev/null 2>&1
+  local rc=$?
+  set -e
+  expect "bash-write-guard: $2" "$1" "$rc"
+}
+
+# AC-1 — the two doors agree. Each verb writes a leased path that no in-progress spec governs.
+bwg_expect 2 "cp /tmp/x src/foo/b"
+bwg_expect 2 "sed -i '' s/x/y/ src/foo/b"
+bwg_expect 2 "echo x > src/foo/b"
+bwg_expect 2 "cat >> src/foo/b"
+bwg_expect 2 "rm src/foo/b"
+bwg_expect 2 "mkdir -p src/foo/deeper"
+bwg_expect 2 "touch src/foo/b"
+bwg_expect 2 "mv /tmp/x src/foo/b"
+bwg_expect 2 "tee src/foo/b"
+# A write is a write wherever it sits in a compound command.
+bwg_expect 2 "npm test && cp /tmp/x src/foo/b"
+
+# AC-1 — an unleased path, and the docs / Markdown exemptions the file tools have.
+bwg_expect 0 "echo x > src/other.ts"
+bwg_expect 0 "cp /tmp/x src/other.ts"
+bwg_expect 0 "echo x > docs/note.md"
+bwg_expect 0 "echo x > docs/specs/active/CR-20260101-leased.md"
+
+# AC-1 — the denial names the verb, the path and the spec.
+set +e
+bwg_out="$(cmd_payload "cp /tmp/x src/foo/b" "$bwg" | "$BWG" 2>&1 >/dev/null)"
+set -e
+echo "$bwg_out" | grep -q "cp" || { echo "FAIL: bash deny must name the verb" >&2; fails=$((fails+1)); }
+echo "$bwg_out" | grep -q "src/foo/b" || { echo "FAIL: bash deny must name the path" >&2; fails=$((fails+1)); }
+echo "$bwg_out" | grep -q "CR-20260101-leased" || { echo "FAIL: bash deny must name the spec" >&2; fails=$((fails+1)); }
+
+# AC-2 — the eight recorded git verbs, alone and inside a compound command.
+for verb in "checkout -b feat origin/develop" "checkout -B feat" "rm x" "restore --staged _cms" \
+            "stash" "stash pop" "merge --ff-only develop" "fetch"; do
+  bwg_expect 2 "git $verb"
+  bwg_expect 2 "cd /tmp && git $verb"
+done
+
+# AC-2 — the reading commands the same sessions ran stay unrestricted.
+for verb in "status" "log --oneline -3" "diff" "show HEAD:package.json" "branch --show-current" "branch" \
+            "stash list" "config --get user.name" "remote -v" "rev-parse HEAD"; do
+  bwg_expect 0 "git $verb"
+done
+
+# AC-3 — unreadable commands are allowed, on purpose (FR-4).
+bwg_expect 0 "echo x > \$TARGET/src/foo/b"
+bwg_expect 0 "cp /tmp/x \"\$(dirname src/foo/b)\""
+bwg_expect 0 "bash -c 'rm src/foo/b'"
+bwg_expect 0 "python3 scripts/write.py"
+bwg_expect 0 "find . -name x -exec rm {} ;"
+bwg_expect 0 "cp /tmp/x src/foo/*.ts"
+set +e
+printf 'not json' | "$BWG" >/dev/null 2>&1; rc=$?
+set -e
+expect "bash-write-guard fails open on a malformed payload" 0 "$rc"
+set +e
+printf '{"tool_name":"Bash","tool_input":{}}' | "$BWG" >/dev/null 2>&1; rc=$?
+set -e
+expect "bash-write-guard fails open when there is no command" 0 "$rc"
+
 # ---------- secrets-scan.sh ----------
 SCAN="$HOOKS_DIR/secrets-scan.sh"
 repo="$TMP/repo"

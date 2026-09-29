@@ -1,6 +1,6 @@
 # Boundaries
 
-*Last updated: 2026-09-28*
+*Last updated: 2026-09-29*
 
 <!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R11, R23; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
@@ -137,6 +137,11 @@
     branch": it works on whatever is checked out and, if the work looks misplaced, says so in one line.
     Before any shell command, the agent reads it for `git` verbs that write — including `rm`, `mv`,
     `restore --staged`, `stash`, `fetch` and `checkout -b` inside a compound command — and drops them.
+
+    `framework/hooks/bash-write-guard.sh` refuses the common forms of this mechanically, and refuses a shell
+    write to a path no active spec governs as well. It **fails open** on any command it cannot read
+    confidently, so it narrows the gap rather than closing it: this rule binds in full wherever the guard is
+    silent, and a command the guard passes is not thereby approved.
 
 ## When to consult `docs/agent-protocol.md`
 

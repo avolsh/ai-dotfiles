@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-09-28*
+*Last updated: 2026-09-29*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -482,3 +482,20 @@ own `docs/improvements-log.md` for project-specific findings.
   complete prompt (cycle number, literal ranges per repository, expected header, where the previous dispositions
   live, verify applied fixes, continued numbering), and the agent checks the reply's `REVIEW` header against the
   requested ranges before recording it.
+
+### 2026-09-29 — Shell writes reached governed files that `spec-status-guard` had just refused
+
+- **Spec / task:** CR-20260924-tobevisit-web-payload-migration (workspace tobevisit) / T1 and T12
+- **Category:** anti-pattern
+- **What was found:** `spec-status-guard.sh` is wired to `PreToolUse` on `Edit|Write|MultiEdit`, so a write made
+  by a shell command never reaches it. Twice in one session the agent created governed files through Bash —
+  `cp` to scaffold nine files under `_cms/` (a path three `specify`-stage specs lease), and `sed >` to create
+  `_dev/environment/.env.example` (leased by another) — the second time minutes after the guard had refused a
+  `Write` to the same tree. Neither was deliberate evasion: the shell was the shorter route for a copy and for a
+  filtered rewrite. The same session also showed the sibling case the 2026-09-28 entry predicted: nothing stops a
+  writing git verb inside a compound shell command either.
+- **What was changed:** Nothing yet in the framework — the gap is recorded in
+  `IMP-20260929-guarded-writes-through-bash`, which covers both families (file writes and git verbs) in one
+  guard, since they are the same hole: a `Bash` tool call is unguarded where the file tools are guarded.
+- **Suggested follow-up:** Tracked by that spec. A guard that fails open on anything it cannot parse is still
+  worth having: both incidents used plain, easily-recognised verbs.

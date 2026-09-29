@@ -29,6 +29,7 @@ errors and rely on the git pre-commit backstop (FR-2) as the second line.
 | Script | Event | Enforces |
 |---|---|---|
 | `spec-status-guard.sh` | PreToolUse (Edit/Write) | No code edits while the governing spec (matched via `affected-code`) is at `specify`/`plan`, subject to the allow conditions below — [`spec-lifecycle.md § Status transitions`](../spec-workflows/spec-lifecycle.md) |
+| `bash-write-guard.sh` | PreToolUse (Bash) | The same lease decision for a write made by a shell command, and no state-changing git verb — [`boundaries.md § Never do #10`](../boundaries.md#git-is-the-humans). Fails open, see below |
 | `secrets-scan.sh` | PreToolUse (`git commit`) and git pre-commit | No secrets or `.env` / `.env.*` / `.dev.vars` in commits — [`boundaries.md § Never do #1`](../boundaries.md) |
 | `stamp-refresh.sh` | PostToolUse (Edit/Write on `*.md`) | `*Last updated:*` stamp refreshed automatically — [`boundaries.md § Always do #10`](../boundaries.md#last-updated-stamp) |
 
@@ -77,9 +78,26 @@ tree that holds it, and both conditions on stderr. A genuine sequencing conflict
 dependency between them — still denies; that is a decision for the human, not
 the hook.
 
-The guard is matched on `Edit`/`Write`/`MultiEdit`, so a write made through a
-shell command (`cp`, `sed`, a heredoc) never reaches it. The lease is enforced
-for the file tools only.
+### `bash-write-guard.sh`
+
+The same decision, at the other door. `spec-status-guard.sh` is matched on the
+file tools, so a write made through a shell command (`cp`, `sed -i`, a heredoc)
+used to reach no guard at all; twice in one session it reached a leased path
+minutes after a `Write` to the same tree had been refused
+(`IMP-20260929-guarded-writes-through-bash`). This guard reads the command,
+resolves what each write lands on, and asks the **same** decision — both doors
+share `lib/spec-lease.sh`, so a path cannot be governed at one and free at the
+other. It also refuses a state-changing git verb wherever it appears, including
+inside a compound command, while leaving `status`, `log`, `diff`, `show` and
+`branch --show-current` unrestricted.
+
+**It fails open.** Anything it cannot read confidently — a path built from a
+variable, a glob, a write inside an invoked script or interpreter — is allowed,
+and it says nothing. This is deliberate: the guard is a backstop for convenience
+mistakes, not a sandbox, and an agent that means to evade it can always write a
+script and run it. A guard that denied what it did not understand would be
+switched off within a day. The rules in `boundaries.md` still bind wherever it
+fails open; this only makes the common case mechanical instead of remembered.
 
 ## Tests
 
