@@ -6,7 +6,7 @@
     "preToolUse": [
       {
         "type": "command",
-        "bash": "@AI_DOTFILES@/framework/hooks/adapters/copilot-pretooluse.sh @AI_DOTFILES@/framework/hooks/spec-status-guard.sh @AI_DOTFILES@/framework/hooks/test-rerun-guard.sh @AI_DOTFILES@/framework/hooks/preflight-reminder.sh",
+        "bash": "@AI_DOTFILES@/framework/hooks/adapters/copilot-pretooluse.sh @AI_DOTFILES@/framework/hooks/spec-status-guard.sh @AI_DOTFILES@/framework/hooks/bash-write-guard.sh @AI_DOTFILES@/framework/hooks/test-rerun-guard.sh @AI_DOTFILES@/framework/hooks/preflight-reminder.sh",
         "timeoutSec": 20
       }
     ],
