@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-09-28*
+*Last updated: 2026-10-02*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Design Decisions / Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -144,6 +144,16 @@ for the full rule set and Iteration Log mandate.
     Re-verification is a read, not a rewrite: where the section still
     holds, re-date it and record what was checked, so the next reader can
     tell a verified section from an unexamined one.
+
+    Reading settles structure only. Where the spec rests on what an external
+    system *does* — a field a write accepts, a permission a credential
+    carries, a value that survives being stored — re-verification also runs
+    the probe that
+    [`boundaries.md § Always do #22`](../boundaries.md#probe-before-planning)
+    requires, and records what it returned. A section verified by reading
+    alone says so, and every requirement standing on an unproven behaviour
+    is named in `## Open Questions` before the requirements gate, not
+    discovered during implementation.
 11. **Never** request the requirements gate without completing the Split check; record the outcome under
     `## Split Decision` first.
 12. **Never** bundle independently-testable features into one spec — split per [

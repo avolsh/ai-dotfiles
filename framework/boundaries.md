@@ -1,6 +1,6 @@
 # Boundaries
 
-*Last updated: 2026-09-29*
+*Last updated: 2026-10-02*
 
 <!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R11, R23; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
@@ -70,6 +70,21 @@
     defect it was meant to catch leaves no trace. Formatting, code generation and autofix are
     developer commands, run deliberately and on their own; a verification sequence only reads and
     judges.
+22. <a id="probe-before-planning"></a>**Prove an external system's behaviour with the smallest call that would fail, before planning
+    on it.** Reading code establishes structure, never behaviour: whether an API accepts a field,
+    whether a credential carries a permission, whether a write persists what it echoed back. A
+    requirement that rests on an unproven assumption does not fail at the gate that approved it —
+    it fails during implementation, after a task table was built on it, and every correction then
+    costs a re-plan. One curl, one query or one throwaway record, run before the table exists, is
+    the cheapest step in the whole lifecycle; the same evidence gathered afterwards is the most
+    expensive. Probe the write path, not only the read path — a system that answers a read can
+    still discard a field on write.
+23. <a id="verified-recommendation"></a>**A recommendation between options is verified before it is offered, or it is offered as
+    unverified.** A recommendation moves a decision that belongs to the human, so an assumption
+    inside one is worse than an assumption kept to yourself: it is adopted and acted on, and the
+    cost lands on work already done against it. Before naming a preferred option, run the check
+    that would eliminate it. Where that check is not available, say which part is unproven and
+    what would settle it, so the choice is made on what is actually known.
 
 ## Ask first
 

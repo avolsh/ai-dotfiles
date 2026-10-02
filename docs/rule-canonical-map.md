@@ -1,6 +1,6 @@
 # Rule Canonical Map
 
-*Last updated: 2026-09-20*
+*Last updated: 2026-10-02*
 
 > **Machine-read by `scripts/lint-rules.py` — not human-maintained prose.**
 > Parser contract: a rule section starts with `### R<N> —`; it must contain a
@@ -338,3 +338,21 @@ Verbatim phrases observed:
 Verbatim phrases observed:
 - spec-lifecycle (arbiter): *"The owner is the arbiter; the agent proposes."*
 - spec-lifecycle (no fix before decision): *"The agent never edits a file to resolve a finding before the"*
+
+### R32 — Prove external behaviour with a call before planning on it
+
+| | |
+|---|---|
+| **Canonical location** | `framework/boundaries.md § Always do #22` |
+
+Verbatim phrases observed:
+- boundaries: *"Prove an external system's behaviour with the smallest call that would fail, before planning on it."*
+
+### R33 — A recommendation is verified before it is offered
+
+| | |
+|---|---|
+| **Canonical location** | `framework/boundaries.md § Always do #23` |
+
+Verbatim phrases observed:
+- boundaries: *"A recommendation between options is verified before it is offered, or it is offered as unverified."*
