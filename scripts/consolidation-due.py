@@ -7,7 +7,7 @@ contexts by its `affected-code` paths through `docs/architecture/module-map.md`
 `docs/consolidation-log.md` — or the log's `since:` — and marks a context due at
 `threshold:` closures (default 5) or on one large closure (FR-2, FR-9). A spec
 named as an accepted IMP in the log never counts (FR-10). Paths no context owns
-count under `unknown` (OS-3).
+count under `unknown` (OS-3), which is reported but never due.
 
 `--recommend <context>` gathers what a consolidation IMP's `## Current State` cites
 (FR-3, FR-7): accepted-duplication bullets and rejected reviewer findings from the
@@ -306,7 +306,9 @@ def _count(root: Path, closed_filter: str | None = None) -> tuple[dict[str, obje
                 **record,
                 "count": count,
                 "threshold": log.threshold,
-                "due": bool(triggers),
+                # `unknown` is reported, never due: no IMP can own it and no log entry resets it, so a
+                # due flag there would ask for a decision nobody can record.
+                "due": bool(triggers) and name != UNKNOWN,
                 "triggers": triggers,
                 "lastOutcome": last[name].as_json() if name in last else None,
             }

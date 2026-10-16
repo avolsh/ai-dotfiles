@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-09-29*
+*Last updated: 2026-10-16*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -499,3 +499,11 @@ own `docs/improvements-log.md` for project-specific findings.
   guard, since they are the same hole: a `Bash` tool call is unguarded where the file tools are guarded.
 - **Suggested follow-up:** Tracked by that spec. A guard that fails open on anything it cannot parse is still
   worth having: both incidents used plain, easily-recognised verbs.
+
+### 2026-10-16 — A framework fix edited in during a project's consolidation pass, ahead of any spec
+
+- **Spec / task:** tobevisit-content consolidation pass after IMP-20261015-admin-taxonomy-and-process-design (owner said "fix it right away")
+- **Category:** `process`
+- **What was found:** `consolidation-due` reported `unknown 10/5 due`, which no log entry can reset. The agent edited `scripts/consolidation-due.py`, its self-test and `framework/spec-workflows/spec-lifecycle.md` straight into the working tree to stop `unknown` being due. That is not a Direct-lane change — Direct lane excludes `spec-lifecycle.md` — and no spec existed; the agent noticed only afterwards and told the owner. The project-side instruction ("fix it right away") was about the project's log and module map, not about changing the framework.
+- **What was changed:** `IMP-20261016-consolidation-unknown-never-due` now records the change; the edit stays uncommitted as input to its Plan.
+- **Suggested follow-up:** before editing anything under `framework/` or `scripts/` of ai-dotfiles from a project session, check the lane first — the edit is in another repository with its own lifecycle, and a fix that feels small in the project is a framework change there.

@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-10-02*
+*Last updated: 2026-10-16*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Design Decisions / Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -381,6 +381,9 @@ closure gate only.
    contexts the closed spec maps to, each with its count since that context's last checkpoint and whether it is
    due — at the log's `threshold` (default 5), or at once when the closed spec has `risk: high`, more than 8 tasks,
    or more than 15 `affected-code` entries.
+   `unknown` — paths no context owns — is listed with its count but is never due: no IMP can own it and no
+   log entry resets it. A path that keeps landing there wants a row in the project's
+   `docs/architecture/module-map.md`, not a decision.
 2. **Nothing due → nothing posted.** Otherwise, for each due context run
    `make consolidation-due PROJECT=<project> CONTEXT="<name>"` and post its recommendation **after** the closure
    summary: the trigger, the accepted-duplication bullets, the rejected reviewer findings, the improvements-log

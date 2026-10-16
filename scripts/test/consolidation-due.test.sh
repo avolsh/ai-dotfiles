@@ -88,6 +88,10 @@ ctx_ok "AC-1 OS-3 an unmapped path counts under unknown" "$out" unknown "c['coun
 spec "$P" "IMP-20260914-beta-risky" 2026-09-14 high 'src/contexts/beta/d.ts' </dev/null
 out="$(python3 "$SUT" --json "$P")"
 ctx_ok "AC-1 a risk: high closure makes Beta due" "$out" Beta "c['due'] and c['count'] == 3 and c['triggers'] == ['large IMP-20260914-beta-risky (risk: high)']"
+spec "$P" "IMP-20260914-wiring-risky" 2026-09-14 high 'Makefile' </dev/null
+out="$(python3 "$SUT" --json "$P")"
+ctx_ok "OS-3 unknown keeps its trigger but is never due" "$out" unknown "c['triggers'] == ['large IMP-20260914-wiring-risky (risk: high)'] and c['due'] is False"
+ctx_ok "OS-3 a named context in the same report keeps its due rule" "$out" Beta "c['due'] is True"
 
 # More than 15 affected-code entries, and more than 8 tasks, are large too.
 paths=(); for i in $(seq 1 16); do paths+=("src/contexts/beta/many-$i.ts"); done
