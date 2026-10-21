@@ -1,6 +1,6 @@
 # Boundaries
 
-*Last updated: 2026-10-02*
+*Last updated: 2026-10-21*
 
 <!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R11, R23; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
@@ -157,6 +157,19 @@
     write to a path no active spec governs as well. It **fails open** on any command it cannot read
     confidently, so it narrows the gap rather than closing it: this rule binds in full wherever the guard is
     silent, and a command the guard passes is not thereby approved.
+11. <a id="environments-are-the-humans"></a>**Never run a command that reaches a deployed environment
+    without the human's permission for that exact command — reads included.** A cluster, a cloud account, a
+    deployed host or a production database is the human's, and so is every command that touches it:
+    `kubectl` of any kind (`get`, `logs` and `exec` too), `helm` / `helmfile` / `terraform` against a live
+    target, a project's environment targets (`make env-*`), image or package pushes, and requests to a
+    deployed host. Write the command for the human to run, or ask and wait for a yes. "It only reads", "it is
+    harmless" and "the human pasted it" are not permission: a pasted command with no output is a request to
+    look at its output, not to run it. A permission covers the one command it names, not the next one.
+
+    Local copies are not environments: a local database, a `localhost` server, the project's build and test
+    targets, and a contract suite against a local server need no permission. When a target could be either
+    — a connection string, a `--context`, an `ENV=` — the agent treats it as deployed until it has read
+    that it is local.
 
 ## When to consult `docs/agent-protocol.md`
 

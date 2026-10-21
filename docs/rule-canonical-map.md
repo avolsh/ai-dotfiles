@@ -1,6 +1,6 @@
 # Rule Canonical Map
 
-*Last updated: 2026-10-02*
+*Last updated: 2026-10-21*
 
 > **Machine-read by `scripts/lint-rules.py` — not human-maintained prose.**
 > Parser contract: a rule section starts with `### R<N> —`; it must contain a
@@ -356,3 +356,14 @@ Verbatim phrases observed:
 
 Verbatim phrases observed:
 - boundaries: *"A recommendation between options is verified before it is offered, or it is offered as unverified."*
+
+### R34 — The agent never touches a deployed environment unasked
+
+| | |
+|---|---|
+| **Canonical location** | `framework/boundaries.md § Never do #11` |
+
+Verbatim phrases observed:
+- boundaries #11 (rule statement): *"Never run a command that reaches a deployed environment without the human's permission for that exact command — reads included."*
+- boundaries #11 (pasted commands): *"a pasted command with no output is a request to look at its output, not to run it"*
+- boundaries #11 (scope): *"Local copies are not environments"*
