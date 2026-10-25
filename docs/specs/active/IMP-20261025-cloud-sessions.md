@@ -9,7 +9,7 @@ affected-repos:
   - ai-dotfiles
   - tobevisit-content
   - tobevisit-docs
-branches: {ai-dotfiles: TBV-83-cloud-setup, tobevisit-content: TBV-83-new-categories, tobevisit-docs: TBV-83-cloud-setup}
+branches: {ai-dotfiles: TBV-83-cloud-setup-1, tobevisit-content: TBV-83-new-categories, tobevisit-docs: TBV-83-cloud-setup}
 affected-docs:
   - README.md
   - docs/ai-agent-framework.md
@@ -24,6 +24,7 @@ affected-code:
   - scripts/ai-workspace-link.sh
   - scripts/lib/workspace-layout.sh
   - scripts/ai-doctor.sh
+  - scripts/ai-install.sh
   - scripts/ai-workspace.sh
   - scripts/ai-project.sh
   - scripts/lib/profile-links.sh
@@ -49,7 +50,7 @@ baseline-impact: none — no docs/domain baselines in ai-dotfiles; tobevisit-con
 ## Summary
 > Over the 120-line budget: the human kept setup, git rule, links, workspace root and project start in one spec (§ Split Decision).
 - **Goal:** A Claude Code cloud session (Projects threads) runs under the same AI Framework as the local profile: system layer, skills, hooks, git backstop, Docker.
-- **Scope:** A setup script and a cloud doctor in `ai-dotfiles`; the workspace root files, kept in `tobevisit-docs`, linked into the root locally and in the cloud; a cloud exception to the git rule with its two guards; the `branches:` front-matter key; a link check that refuses links leaving the repo; removal of the unused `preferences.md`; starting a project and its repos from a cloud thread; a README section; three links in `tobevisit-content`.
+- **Scope:** A setup script and a cloud doctor in `ai-dotfiles`; the workspace root files, kept in `tobevisit-docs`, linked into the root locally and in the cloud; a cloud exception to the git rule with its two guards; the `branches:` front-matter key; a link check that refuses links leaving the repo; removal of the unused `preferences.md`; starting a project and its repos from a cloud thread; a README section; three links in `tobevisit-content`; what the first cloud thread found: closing a spec whose AC is observed after `master`, `install-check` in the cloud, tests isolated from the session's variables.
 - **Out of scope:** Cluster access from the cloud, the other site repos, and changing local behaviour.
 
 ## Current State
@@ -84,6 +85,9 @@ baseline-impact: none — no docs/domain baselines in ai-dotfiles; tobevisit-con
 - FR-15: `ai-doctor` MUST note, without failing, each project clone under `src/` without `_canonical.md` and its three renders (a research clone is read, not initialised) and a docs clone without `workspace/CLAUDE.md` as "not initialised", and in the cloud each `docs/workspace/.mrconfig` section with no clone; `--docs` naming a clone without `workspace/CLAUDE.md` MUST link `docs` and warn, not stop.
 - FR-16: `ai-project.sh [<dir>]` and `ai-workspace.sh [<dir>]` MUST scaffold `<dir>` (default the cwd), never overwriting a file; `ai-workspace.sh --docs <clone>` MUST write the root files to `<clone>/workspace/` and the template's `docs/` to `<clone>/`; the cloud exception MUST say that on a "not initialised" note the agent asks the human once per repo and, on yes, scaffolds it on `claude/*`, adds its `.mrconfig` section, opens the PR, and shows rather than merges a `CLAUDE.md` it did not write; `docs/workspace-bootstrap-guide.md` MUST say how a repo, empty or with code, joins the workspace and how it leaves it: the human's steps and the agent's.
 - FR-17: `docs/workspace/.mrconfig` (myrepos format: a section per repo, its path relative to the root — `docs`, `env/ai-dotfiles`, `src/<host>/<org>/<repo>`, `research/<name>` — and a `checkout = git clone '<url>' '<dir>'`) MUST list the workspace's repos; on a laptop `~/.mrconfig` chains to it and `mr checkout` builds the layout, then `ai-workspace-link.sh` links the root; in the cloud `ai-workspace-link.sh` places each clone at the path of the section whose URL matches its origin (else `src/<host>/<org>/<repo>`), the doctor notes sections with no clone with the owner's two steps (the Claude GitHub App's access, the project's repositories) and the agent reminds the owner of them, and a section path that is not plain is refused (FR-13).
+- FR-18: `spec-lifecycle.md` and the cloud exception MUST say: a spec with an AC observable only after its work reaches `master` stays `in-progress` across that merge, and its base branch is kept until the closing PR merges — the agent never asks for it to be deleted; the closing PR is opened before the `done` + archive commit, since `pr-base-guard` reads the base from an `in-progress` spec; a base found gone is asked for again and recorded under `branches:`.
+- FR-19: `ai-install.sh --check` MUST, with `CLAUDE_CODE_REMOTE=true` and no `--rc-file`, exit 0 with a note that the shell block is the laptop's, so `make check` runs in a cloud session.
+- FR-20: Every shell test suite MUST source one prelude that unsets `AI_DOTFILES`, `AI_PROFILE`, `CLAUDE_CODE_REMOTE` and the `GIT_CONFIG_COUNT` rewrites, so a suite passes the same in a wired session and a bare shell.
 - FR-12: README MUST gain a "Cloud sessions" section: one environment per profile, the Setup script line, network (`mirror.gcr.io`), no `CLAUDE_CONFIG_DIR`, dev keys only and no kubeconfig, the mixed cloud/local workflow on one `claude/*` branch, and that the agent, not the UI's PR button, opens PRs.
 
 ## Acceptance Criteria
@@ -126,6 +130,15 @@ Given a `.mrconfig` with `[docs]`, `[env/ai-dotfiles]`, one cloned `src/` sectio
 When the cloud doctor runs, and `mr checkout` then `ai-workspace-link.sh` run on the laptop root
 Then the cloud links the cloned `research/` repo at its section path, the doctor notes the missing one with the owner's two steps and refuses the `..` one; on the laptop each repo lands at its path and the root `.mrconfig` is the link
 
+### AC-10: A cloud session can run `make check` (FR-19, FR-20)
+Given `CLAUDE_CODE_REMOTE=true`, `AI_DOTFILES` and `AI_PROFILE` exported and no `~/.zshrc`
+When `make check` runs, and `make tests` runs again with those variables unset
+Then both exit 0; `ai-install.sh --check --rc-file <drifted>` still exits 1 in cloud mode, and without the variable the missing `~/.zshrc` still fails
+### AC-11: The closure rule is written where an agent reads it (FR-18)
+Given `spec-lifecycle.md` § Status transitions and `boundaries.md` § Never do #10 cloud exception
+When an agent closes a spec whose AC needs `master`
+Then both say to keep the base until the closing PR merges, to open that PR before the archive commit, and to ask again for a base found gone; this spec's own closure followed it (PR opened, then archived)
+
 ## Design
 ### Decisions
 - D1: `<system>/` = `~/.claude`, entries linked in — rejected: `CLAUDE_CONFIG_DIR` (hides the harness's own settings, plugins and synced skills).
@@ -156,6 +169,7 @@ flowchart LR
 - Triggers: T1 (setup and git clusters test independently), T3 (FR-10 is `tobevisit-content`). Exceptions: none applies.
 - Recommendation: `split-recommended` (T1) — siblings `cloud-setup-script`, `cloud-git-rule`, `links-inside-repo`.
 - Human decision, 2026-10-25: keep-as-one ("all in one, to close the question"); FR-5–FR-8 ship together in any case. Workspace root (FR-13, FR-14) added in-spec, 2026-10-25, back at `plan`. Starting a project from the cloud (FR-15–FR-17) added in-spec, 2026-10-25 14:40 ("within the current one"), back at `plan`.
+- Human decision, 2026-10-25 20:04 ("fit it in", in the AC-6 thread): what the first cloud thread found goes into this spec, not a new IMP — FR-18–FR-20, AC-10, AC-11, Tasks 14–16; the closing PR's base is `TBV-83-cloud-setup-1`, cut by Alex from `master` after `TBV-83-cloud-setup` was deleted on merge at the agent's word.
 - Plan override, 2026-10-25: P3 fires (Tasks 5 and 6 depend on no other task); it repeats Specify trigger T1 on the links cluster, which the human kept in this spec.
 
 ## Tasks
@@ -170,12 +184,15 @@ flowchart LR
 | 5 | Link check refuses links leaving the repo; `writing-docs` cites framework files as `<system>/…`; fix `docs/baseline-citations.md:50` (FR-9, FR-10; AC-5) | `framework/scripts/check-md-links.sh`, `framework/scripts/test/check-md-links.test.sh`, `framework/skills/writing-docs/SKILL.md`, `docs/baseline-citations.md` | — | — | writing-docs | default | ☑ done |
 | 6 | `tobevisit-content`: the three local-layout links as `<system>/…` citations, PR into `TBV-83-new-categories` (FR-10; AC-5) | `tobevisit-content/docs/improvements-log.md`, `tobevisit-content/docs/specs/archived/CR-20260625-step-9-enrich-catalog-ops-ui.md`, `tobevisit-content/docs/specs/archived/IMP-20260617-admin-ui-design-system.md` | `tobevisit-content/src/scripts/check-md-links.sh` | — | writing-docs | fast | ☑ done |
 | 7 | Remove `profiles/*/preferences.md`; README "Cloud sessions" section; framework overview updated (FR-11, FR-12) | `profiles/personal/preferences.md`, `profiles/work/preferences.md`, `README.md`, `docs/ai-agent-framework.md` | `.gitignore` | 1, 2, 3, 4 | writing-docs | default | ☑ done |
-| 8 | `make check`, review and the fixes the human decided, PR into `TBV-83-cloud-setup`; AC-6 is observed after Alex takes it to `master` and creates the environment, then Closure Evidence | `docs/specs/active/IMP-20261025-cloud-sessions.md`, `docs/improvements-log.md`, `framework/hooks/bash-write-guard.sh`, `framework/hooks/README.md`, `framework/scripts/test/hooks.test.sh`, `scripts/ai-doctor.sh`, `scripts/test/ai-doctor.test.sh`, `framework/templates/system/claude/hooks.json`, `framework/templates/workspace/.github/scripts/sync-agents.sh`, `scripts/test/ai-workspace.test.sh`, `README.md`, `docs/workspace-bootstrap-guide.md`, `tobevisit-docs/workspace/.github/scripts/sync-agents.sh` | — | 1–7, 9–13 | reviewing-changes | default | ☐ pending |
+| 8 | `make check`, review and the fixes the human decided, PR into `TBV-83-cloud-setup` (the closing PR: `TBV-83-cloud-setup-1`, FR-18); AC-6 is observed after Alex takes it to `master` and creates the environment, then Closure Evidence | `docs/specs/active/IMP-20261025-cloud-sessions.md`, `docs/improvements-log.md`, `framework/hooks/bash-write-guard.sh`, `framework/hooks/README.md`, `framework/scripts/test/hooks.test.sh`, `scripts/ai-doctor.sh`, `scripts/test/ai-doctor.test.sh`, `framework/templates/system/claude/hooks.json`, `framework/templates/workspace/.github/scripts/sync-agents.sh`, `scripts/test/ai-workspace.test.sh`, `README.md`, `docs/workspace-bootstrap-guide.md`, `tobevisit-docs/workspace/.github/scripts/sync-agents.sh` | — | 1–7, 9–16 | reviewing-changes | default | ☐ pending |
 | 9 | `tobevisit-docs`: Alex sends the root files in the thread; the agent commits them under `workspace/` with Alex's `.mrconfig`, adds its README line, PR into the recorded base; the doctor checks the renders against `_canonical.md` (FR-14, FR-17; AC-7) | `tobevisit-docs/workspace/` *(new)*, `tobevisit-docs/README.md`, `scripts/ai-doctor.sh`, `scripts/test/ai-doctor.test.sh`, `README.md`, `docs/workspace-bootstrap-guide.md` | `framework/templates/workspace/.github/scripts/sync-agents.sh` | 13 | writing-docs | fast | ☑ done |
 | 10 | `ai-workspace-link.sh`, the cloud layout links in `ai-cloud-setup.sh`, the doctor check, README (FR-13; AC-7) | `scripts/ai-workspace-link.sh` *(new)*, `scripts/lib/workspace-layout.sh` *(new)*, `scripts/ai-cloud-setup.sh`, `scripts/ai-doctor.sh`, `scripts/test/ai-workspace-link.test.sh` *(new)*, `scripts/test/ai-cloud-setup.test.sh`, `scripts/test/ai-doctor.test.sh`, `Makefile`, `README.md` | `scripts/lib/profile-links.sh` | 1, 2 | writing-docs | default | ☑ done |
 | 11 | Doctor notes repos without the framework (by the files the four project repos carry today); `--docs` on a clone without `workspace/CLAUDE.md` warns (FR-15; AC-8) | `scripts/ai-doctor.sh`, `scripts/ai-workspace-link.sh`, `scripts/lib/workspace-layout.sh`, `scripts/test/ai-doctor.test.sh`, `scripts/test/ai-workspace-link.test.sh` | `scripts/ai-cloud-setup.sh` | 10 | writing-specs | default | ☑ done |
 | 12 | `ai-project.sh` and `ai-workspace.sh` take a target, `ai-workspace.sh --docs`; the ask-then-scaffold rule in the cloud exception; the guide's "add a repo to the workspace" (empty or with code) (FR-16; AC-8) | `scripts/ai-project.sh`, `scripts/ai-workspace.sh`, `scripts/test/ai-project.test.sh`, `scripts/test/ai-workspace.test.sh` *(new)*, `Makefile`, `framework/boundaries.md`, `docs/workspace-bootstrap-guide.md` | `framework/templates/workspace/`, `framework/templates/project/` | 11 | writing-docs, reviewing-changes | default | ☑ done |
 | 13 | `.mrconfig` sections read by the layout lib, placed by `ai-workspace-link.sh` and checked by the doctor, whose note on a listed repo with no clone names the owner's two steps and the agent reminds the owner of them; README: `mr checkout`, then `make workspace-link` (FR-17; AC-9) | `scripts/lib/workspace-layout.sh`, `scripts/ai-workspace-link.sh`, `scripts/ai-doctor.sh`, `scripts/test/ai-doctor.test.sh`, `scripts/test/ai-workspace-link.test.sh`, `README.md`, `framework/boundaries.md`, `docs/workspace-bootstrap-guide.md` | — | 11 | writing-docs | default | ☑ done |
+| 14 | Closing a spec whose AC is observed after `master`: keep the base until the closing PR merges, open that PR before the archive commit, ask again for a base found gone (FR-18; AC-11) | `framework/spec-workflows/spec-lifecycle.md`, `framework/boundaries.md` | `framework/hooks/pr-base-guard.sh` | — | writing-specs | default | ☐ pending |
+| 15 | `ai-install.sh --check` passes in a cloud session on the default rc file, with a note (FR-19; AC-10) | `scripts/ai-install.sh`, `scripts/test/ai-install.test.sh` *(new)*, `Makefile` | — | — | writing-docs | fast | ☐ pending |
+| 16 | One test prelude sourced by every shell suite, clearing the session's framework variables and git rewrites (FR-20; AC-10) | `scripts/test/lib/test-env.sh` *(new)*, `scripts/test/*.test.sh`, `framework/scripts/test/*.test.sh` | — | — | writing-specs | fast | ☐ pending |
 
 ## Closure Evidence
 
@@ -205,3 +222,4 @@ Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
 
 ## Rollout / migration notes
 - Merge to `TBV-83-cloud-setup`, then Alex takes it to `master`; only then the environment is created with the README line. Revert: the PR, and clear the Setup script.
+- AC-6 needs `master`, so the spec stays `in-progress` across that merge and closes in a second PR (FR-18): into `TBV-83-cloud-setup-1`, then Alex takes it to `master`. Keep that branch until the closing PR merges.
