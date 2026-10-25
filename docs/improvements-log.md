@@ -556,3 +556,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was changed:** all findings of the three cycles applied, each pinned by a test and a mutation check; the owner stopped the cycles there.
 - **Suggested follow-up:** an IMP turning the cloud rules into an allowlist — `commit` only with `-m`/`-a`/`-F` and their long forms, `push` only `[-u] origin claude/<current>` — so an unknown option is refused rather than passed.
 
+
+### 2026-10-25 — The workspace template's Makefile help still describes the old one-file sync
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 9 (preparing the workspace root files)
+- **Category:** `drift`
+- **What was found:** `framework/templates/workspace/Makefile` says `sync-agents` regenerates `AGENTS.md` from `.github/copilot-instructions.md`; the template's own `sync-agents.sh` renders all three files from `_canonical.md`. The owner's workspace root already carries the corrected help text, so a new workspace scaffolded today starts with the stale one.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** copy the owner's two help lines into the template (Task 12 touches `ai-workspace.sh` and can carry it).
