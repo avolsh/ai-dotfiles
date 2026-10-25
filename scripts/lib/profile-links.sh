@@ -76,8 +76,14 @@ _ai_links_place() { # $1 src, $2 dst
 
 # Wire one tool subdir of a profile: instruction file, boundaries, refs.
 ai_links_wire_tool() { # $1 dotfiles root, $2 profile_dir, $3 tool
-  local df="$1" pdir="$2" tool="$3" tdir iname ref
-  tdir="$pdir/$tool"
+  ai_links_wire_dir "$1" "$2/$3" "$3"
+}
+
+# Wire the system layer of one tool into any directory: a profile's tool
+# subdir, or a CLI home such as ~/.claude in a cloud session
+# (IMP-20261025-cloud-sessions FR-1).
+ai_links_wire_dir() { # $1 dotfiles root, $2 target dir, $3 tool
+  local df="$1" tdir="$2" tool="$3" iname ref
   mkdir -p "$tdir" || return 1
 
   iname="$(_ai_links_instruction_name "$tool")" || return 1
@@ -137,6 +143,40 @@ if settings.get("hooks") != hooks:
 PY
   fi
   return 0
+}
+
+# Merge the rendered Claude hooks and the framework env into a settings.json
+# the CLI also writes to: a missing hook group is appended, nothing present is
+# removed or reordered, every other key is kept (IMP-20261025-cloud-sessions FR-2).
+ai_links_merge_claude_settings() { # $1 dotfiles root, $2 settings.json, $3 profile
+  local df="$1" settings="$2" profile="$3"
+  local template="$df/framework/templates/system/claude/hooks.json"
+  [ -f "$template" ] || return 0
+  mkdir -p "${settings%/*}" || return 1
+  AI_LINKS_DF="$df" python3 - "$template" "$settings" "$profile" <<'PY'
+import json, os, sys
+template_path, settings_path, profile = sys.argv[1:]
+df = os.environ["AI_LINKS_DF"]
+with open(template_path, encoding="utf-8") as fh:
+    hooks = json.loads(fh.read().replace("@AI_DOTFILES@", df))["hooks"]
+settings = {}
+if os.path.exists(settings_path):
+    with open(settings_path, encoding="utf-8") as fh:
+        settings = json.load(fh)
+before = json.dumps(settings, sort_keys=True)
+settings.setdefault("env", {}).update({"AI_DOTFILES": df, "AI_PROFILE": profile})
+merged = settings.setdefault("hooks", {})
+for event, groups in hooks.items():
+    present = merged.setdefault(event, [])
+    for group in groups:
+        if group not in present:
+            present.append(group)
+if json.dumps(settings, sort_keys=True) != before:
+    with open(settings_path, "w", encoding="utf-8") as fh:
+        json.dump(settings, fh, indent=2)
+        fh.write("\n")
+    print(f"profile-links: merged hooks and env into: {settings_path}", file=sys.stderr)
+PY
 }
 
 # Wire a whole profile: every tool subdir + hook adapters.

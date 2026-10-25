@@ -7,6 +7,8 @@
 set -euo pipefail
 
 HOOKS_DIR="$(cd "$(dirname "$0")/../../hooks" && pwd)"
+# The cloud exception is opted into per case below; a cloud session's own env must not leak into the rest.
+unset CLAUDE_CODE_REMOTE
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -328,6 +330,21 @@ bwg_expect 0 "bash -c 'rm src/foo/b'"
 bwg_expect 0 "python3 scripts/write.py"
 bwg_expect 0 "find . -name x -exec rm {} ;"
 bwg_expect 0 "cp /tmp/x src/foo/*.ts"
+# outside the cloud an expansion still leaves the command alone, a git write included; a heredoc body and a
+# `$` the shell keeps as it is are no expansion, so the write is read (review cycle 5)
+bwg_expect 0 'git push origin TBV-1 $X'
+bwg_expect 2 $'# note\ngit push origin TBV-1'
+bwg_expect 0 $'git status <<EOF\ngit merge x\nEOF'
+bwg_expect 2 $'cat > src/foo/b <<\'EOF\'\n$HOME\nEOF'
+bwg_expect 2 "echo x > 'src/foo/\$b'"
+bwg_expect 2 'echo x > src/foo/\$b'
+set +e
+bwg_out="$(cmd_payload "echo x > 'src/foo/\$b'" "$bwg" | "$BWG" 2>&1 >/dev/null)"
+set -e
+echo "$bwg_out" | grep -qF 'src/foo/$b' || { echo "FAIL: a quoted \$ must stay in the path named" >&2; fails=$((fails+1)); }
+# local mode keeps resolving a write against the payload cwd, a preceding cd included: the cloud spec
+# changes nothing here (IMP-20261025-cloud-sessions, review cycle 2 finding 5; the gap is logged)
+bwg_expect 0 "cd src && touch foo/b"
 set +e
 printf 'not json' | "$BWG" >/dev/null 2>&1; rc=$?
 set -e
@@ -336,6 +353,225 @@ set +e
 printf '{"tool_name":"Bash","tool_input":{}}' | "$BWG" >/dev/null 2>&1; rc=$?
 set -e
 expect "bash-write-guard fails open when there is no command" 0 "$rc"
+
+# ---------- bash-write-guard.sh, cloud exception (IMP-20261025-cloud-sessions AC-3) ----------
+cloudrepo="$TMP/cloudrepo"
+git init -q "$cloudrepo"
+git -C "$cloudrepo" checkout -q -b claude/x
+cloud_expect() { # $1 expected rc, $2 command, $3 CLAUDE_CODE_REMOTE value ("" = unset)
+  set +e
+  if [ -n "$3" ]; then
+    cmd_payload "$2" "$cloudrepo" | CLAUDE_CODE_REMOTE="$3" "$BWG" >/dev/null 2>&1
+  else
+    cmd_payload "$2" "$cloudrepo" | "$BWG" >/dev/null 2>&1
+  fi
+  local rc=$?
+  set -e
+  expect "bash-write-guard cloud=${3:-unset}: $2" "$1" "$rc"
+}
+for c in "git add -A" "git commit -m x" "git push origin claude/x" "git push -u origin claude/x" \
+         "git push origin HEAD:refs/heads/claude/x" "git pull --ff-only origin claude/x" "git fetch origin" \
+         "git fetch origin TBV-1" "git checkout -b claude/y --no-track origin/TBV-1" \
+         "git switch -c claude/y --no-track origin/TBV-1" "cd ../cloudrepo && git commit -m x" \
+         "git push origin claude/x 2>&1 | tail -1" "git push origin claude/x |& tail -1" \
+         "git commit -m x 2>/dev/null" "! git commit -m x" \
+         "time git commit -m x" "if true; then git commit -m x; fi" $'git status\ngit commit -m x'; do
+  cloud_expect 0 "$c" true
+  cloud_expect 2 "$c" ""
+done
+for c in "git push origin TBV-1" "git push --force origin claude/x" "git push --force-with-lease origin claude/x" \
+         "git push origin +claude/x" "git push origin claude/x:TBV-1" "git push origin claude/other" "git push" \
+         "git push origin --delete claude/x" "git merge TBV-1" "git commit --amend" "git pull origin claude/x" \
+         "git pull --ff-only --rebase origin claude/x" "git fetch origin TBV-1:TBV-1" "git rebase TBV-1" \
+         "git reset --hard" "git checkout -b claude/y origin/TBV-1" "git checkout -b feat --no-track origin/TBV-1" \
+         "git tag v1" "git checkout -B claude/x --no-track origin/master" \
+         "git switch -C claude/x --no-track origin/master" "gh pr create --base master" \
+         "gh pr edit 12 --base TBV-1" "gh pr merge 12" \
+         "git pull --ff-only origin TBV-1:TBV-1" "git commit --no-verify -m x" "git commit -n -m x" \
+         "git commit -anm x" "git -c core.hooksPath=/dev/null commit -m x" \
+         "git --config-env=core.hooksPath=H commit -m x" "GIT_CONFIG_COUNT=1 git commit -m x" \
+         "git checkout -f -b claude/y --no-track origin/TBV-1" \
+         "git switch --discard-changes -c claude/y --no-track origin/TBV-1" \
+         "git commit --no-verif -m x" "git commit --amen -m x" "git push origin :claude/x" \
+         "git push origin --del claude/x" "git push --forc origin claude/x" "gh pr new --base master" \
+         "gh pr revert 12" "gh pr update-branch 12" "gh pr update-branch 12 --rebase" \
+         "git commit 2>&1 -n -m x" "git commit -m x >&2 --no-verify" "git push origin claude/x >&2 --force" \
+         "git push origin claude/x >&2 :TBV-1" "git push origin claude/x &>/dev/null --force" \
+         $'git status\ngit push origin TBV-1' $'git add -A\ngit push origin TBV-1' \
+         $'git fetch\ngit merge origin/master' "if true; then git push origin TBV-1; fi" \
+         "for i in 1; do git merge origin/master; done" "! git push origin TBV-1" "time git push origin TBV-1" \
+         "gh pr -R o/r merge 12" "gh -R o/r pr create --base master" "gh --repo o/r pr merge 12" \
+         "gh pr --repo=o/r merge 12" "git status |& git push origin TBV-1" \
+         "export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/dev/null; git commit -m x" \
+         "git checkout --forc -b claude/y --no-track origin/TBV-1"; do
+  cloud_expect 2 "$c" true
+done
+# a commit message that merely contains n is not -n, and an allowed long option is no abbreviation of a denied one
+cloud_expect 0 "git commit -am note" true
+cloud_expect 0 "git commit --no-edit -m x" true
+cloud_expect 0 "git push --set-upstream origin claude/x" true
+# gh is not a git verb: outside the cloud the guard leaves it alone, and reading a PR is never refused
+cloud_expect 0 "gh pr create --base master" ""
+cloud_expect 0 "gh pr view 12" true
+cloud_expect 0 "gh -R o/r pr view 12" true
+# a redirection to a descriptor writes no file, and a read on its own line stays a read (review cycle 4)
+for c in "echo hi >&2" $'git status\ngit log' "if true; then git status; fi"; do
+  cloud_expect 0 "$c" true
+  cloud_expect 0 "$c" ""
+done
+cloud_expect 2 "git >&2 push origin master" ""
+cloud_expect 2 "FOO=1 git commit -m x" ""
+# the pre-pass: a comment, a line continuation, a heredoc body and a descriptor glued to an operator hide
+# nothing, and `time -p` and `coproc` stand before the command they run (review cycle 5)
+for c in $'# note\ngit push origin TBV-1' "git commit -m a#b -n" "true;2>/dev/null git push origin TBV-1" \
+         "(2>&1 git push origin TBV-1)" "git status|2>&1 git push origin TBV-1" $'git commit -m x \\\n --no-verify' \
+         "time -p git push origin TBV-1" "coproc git push origin TBV-1" \
+         $'cat <<EOF\nx\nEOF\ngit status\ngit push origin TBV-1'; do
+  cloud_expect 2 "$c" true
+done
+for c in "git commit -m x # a comment" "git push origin claude/x # not TBV-1" $'git commit -F - <<\'EOF\'\nfix\ngit merge origin/master\nEOF' \
+         $'cat <<EOF\ncd /tmp\nEOF\ngit commit -m x' $'gh pr view 12 <<EOF\ngh pr merge 12\nEOF' \
+         $'cat > notes.md <<\'EOF\'\ngit push origin TBV-1\nEOF'; do
+  cloud_expect 0 "$c" true
+done
+# a git write or gh pr verb with a word the shell decides is denied in the cloud, a substitution body is read
+# as a command, and reads, a quoted commit message, a glob inside a path and a path write pass (FR-6)
+for c in 'git push origin TBV-1 $X' 'git push -u origin "$(git branch --show-current)"' \
+         'git push -u origin `git branch --show-current`' 'git add *.md && git push origin claude/x' \
+         'git commit -m $MSG' 'git commit -m fix$X' 'git -C "$D" commit -m x' 'git $SUB origin claude/x' \
+         'cd "$(git rev-parse --show-toplevel)" && git commit -m x' 'gh pr $V 12' 'gh $X merge 12' \
+         'for b in TBV-1; do git push origin $b; done' 'echo "$(git push origin TBV-1)"' \
+         'echo `git push origin TBV-1`' 'X=$(git merge origin/master)' 'git commit -m "$(git push origin TBV-1)"' \
+         'git checkout -b claude/y --no-track "$BASE"' 'git commit -m $(cat msg)' \
+         'cd ../otherrepo && echo "$(git commit -m x)"' $'git push origin TBV-1\necho "x' \
+         'git commit -m x --no-verify \' 'export $K=1; git commit -m x'; do
+  cloud_expect 2 "$c" true
+done
+for c in 'git log -1 $REF' 'git log --oneline "$(git merge-base HEAD origin/main)"..HEAD' 'git add src/*.ts' \
+         'git commit -m "fix $X"' 'git commit -am "$MSG"' 'git commit --message="$MSG"' "git commit -m 'costs \$5'" \
+         $'git commit -m "$(cat <<\'EOF\'\nSubject (with parens) and "quotes"\n\nit\'s $5 and `code`\nEOF\n)"' \
+         'git push origin claude/x && echo "$(date)"' 'cd "$D" && git status' 'gh pr view "$N"' \
+         'echo x > $TARGET/src/foo/b' 'git push origin claude/x < /dev/null' 'git commit -m"$MSG"' \
+         'git commit -m costs\$5' 'git commit -m "fix: a=$b"' 'echo "x' "cat .gitignore 'x" \
+         'git status \'; do
+  cloud_expect 0 "$c" true
+done
+# the denial names the word, and the cloud exception
+for c in 'git push origin TBV-1 $X|git push|$X' 'cd "$D" && git commit -m x|git commit|$D' \
+         'git $SUB origin claude/x|git|$SUB'; do
+  IFS='|' read -r cmd what word <<< "$c"
+  set +e
+  bwg_out="$(cmd_payload "$cmd" "$cloudrepo" | CLAUDE_CODE_REMOTE=true "$BWG" 2>&1 >/dev/null)"
+  set -e
+  echo "$bwg_out" | grep -qF "'$what' depends on '$word'" || { echo "FAIL: $cmd must name '$word'" >&2; fails=$((fails+1)); }
+  echo "$bwg_out" | grep -q "cloud exception" || { echo "FAIL: $cmd must name the cloud exception" >&2; fails=$((fails+1)); }
+done
+# in the cloud a literal path write is read as everywhere, while one the shell decides, or one inside a
+# substitution, still fails open
+for c in 'touch src/foo/b|2' 'echo "$(touch src/foo/b)"|0' 'cp /tmp/x src/foo/*.ts|0'; do
+  set +e
+  cmd_payload "${c%|*}" "$bwg" | CLAUDE_CODE_REMOTE=true "$BWG" >/dev/null 2>&1; rc=$?
+  set -e
+  expect "bash-write-guard cloud: ${c%|*}" "${c##*|}" "$rc"
+done
+# a cd or --git-dir moving the write to another repository (review finding 1)
+otherrepo="$TMP/otherrepo"
+git init -q "$otherrepo"
+git -C "$otherrepo" checkout -q -b TBV-1
+for c in "cd ../otherrepo && git commit -m x" "cd ../otherrepo && git add -A" \
+         "git --git-dir=../otherrepo/.git commit -m x" "git --work-tree ../otherrepo add -A" \
+         "cd - && git commit -m x" "cd && git add -A" "git -C ../otherrepo commit -m x" \
+         "(cd ../otherrepo && git commit -m x)" "{ cd ../otherrepo; git add -A; }" \
+         "(cd ../otherrepo)&& git commit -m x"; do
+  cloud_expect 2 "$c" true
+done
+# a cd inside a group moves only the group: the write after it lands in the payload cwd (review cycle 3 finding 1)
+set +e
+cmd_payload "(cd ../cloudrepo) && git commit -m x" "$otherrepo" | CLAUDE_CODE_REMOTE=true "$BWG" >/dev/null 2>&1; rc=$?
+set -e
+expect "bash-write-guard cloud: a cd inside a group is not followed out of it" 2 "$rc"
+# a group with no cd moves nothing; its git write is still read, in both modes (review cycle 3 finding 1)
+cloud_expect 0 "(git commit -m x)" true
+cloud_expect 2 "(git commit -m x)" ""
+cloud_expect 2 "git commit -m x" false
+git -C "$cloudrepo" checkout -q -b TBV-1
+cloud_expect 2 "git commit -m x" true
+cloud_expect 2 "git push origin TBV-1" true
+cloud_expect 0 "git checkout -b claude/z --no-track origin/TBV-1" true
+cloud_expect 2 "cd ../cloudrepo && git commit -m x" true
+set +e
+bwg_out="$(cmd_payload "git push origin TBV-1" "$cloudrepo" | CLAUDE_CODE_REMOTE=true "$BWG" 2>&1 >/dev/null)"
+set -e
+echo "$bwg_out" | grep -q "cloud exception" || { echo "FAIL: cloud deny must name the cloud exception" >&2; fails=$((fails+1)); }
+
+# ---------- pr-base-guard.sh (IMP-20261025-cloud-sessions AC-4) ----------
+PRG="$HOOKS_DIR/pr-base-guard.sh"
+prws="$TMP/prws"
+mkdir -p "$prws/ai-dotfiles/docs/specs/active" "$prws/other/docs/specs/active"
+cat > "$prws/ai-dotfiles/docs/specs/active/IMP-20261025-x.md" <<'EOF2'
+---
+id: IMP-20261025-x
+status: in-progress
+branches: {ai-dotfiles: TBV-83-cloud-setup, other: TBV-9-a}
+---
+# x
+EOF2
+pr_payload() { # $1 tool, $2 repo, $3 base ("" = none), $4 cwd
+  python3 -c 'import json,sys
+ti={"owner":"o","repo":sys.argv[2],"head":"claude/x"}
+if sys.argv[3]: ti["base"]=sys.argv[3]
+print(json.dumps({"tool_name":sys.argv[1],"tool_input":ti,"cwd":sys.argv[4]}))' "$1" "$2" "$3" "$4"
+}
+prg_expect() { # $1 expected rc, $2 repo, $3 base, [$4 tool], [$5 cwd]
+  set +e
+  pr_payload "${4:-mcp__github__create_pull_request}" "$2" "$3" "${5:-$TMP}" \
+    | CLAUDE_CODE_REMOTE=true AI_DOTFILES="$prws/ai-dotfiles" "$PRG" >/dev/null 2>&1
+  local rc=$?
+  set -e
+  expect "pr-base-guard: $2 -> ${3:-<none>} (${4:-create})" "$1" "$rc"
+}
+prg_expect 0 ai-dotfiles TBV-83-cloud-setup
+prg_expect 2 ai-dotfiles master
+prg_expect 2 ai-dotfiles develop
+prg_expect 2 ai-dotfiles TBV-99
+prg_expect 0 other TBV-9-a
+prg_expect 2 unrecorded TBV-83-cloud-setup
+prg_expect 2 ai-dotfiles master mcp__github__update_pull_request
+prg_expect 0 ai-dotfiles TBV-83-cloud-setup mcp__github__update_pull_request
+prg_expect 0 ai-dotfiles "" mcp__github__update_pull_request
+# only an in-progress spec counts, and two of them disagreeing deny (review finding 4)
+cat > "$prws/other/docs/specs/active/CR-20261025-y.md" <<'EOF2'
+---
+id: CR-20261025-y
+status: plan
+branches: {ai-dotfiles: TBV-7-planned}
+---
+# y
+EOF2
+prg_expect 2 ai-dotfiles TBV-7-planned
+prg_expect 0 ai-dotfiles TBV-83-cloud-setup
+sed -i 's/^status: plan$/status: in-progress/' "$prws/other/docs/specs/active/CR-20261025-y.md"
+prg_expect 2 ai-dotfiles TBV-7-planned
+prg_expect 2 ai-dotfiles TBV-83-cloud-setup
+rm "$prws/other/docs/specs/active/CR-20261025-y.md"
+# a spec tree above cwd is found without AI_DOTFILES
+set +e
+pr_payload mcp__github__create_pull_request other TBV-9-a "$prws/ai-dotfiles/docs" | CLAUDE_CODE_REMOTE=true "$PRG" >/dev/null 2>&1; rc=$?
+set -e
+expect "pr-base-guard: ancestor spec tree" 0 "$rc"
+# outside a cloud session the guard is silent; a malformed payload allows
+set +e
+pr_payload mcp__github__create_pull_request ai-dotfiles master "$TMP" | "$PRG" >/dev/null 2>&1; rc=$?
+set -e
+expect "pr-base-guard: silent outside the cloud" 0 "$rc"
+set +e
+printf 'not json' | CLAUDE_CODE_REMOTE=true "$PRG" >/dev/null 2>&1; rc=$?
+set -e
+expect "pr-base-guard: fails open on a malformed payload" 0 "$rc"
+set +e
+prg_out="$(pr_payload mcp__github__create_pull_request ai-dotfiles TBV-99 "$TMP" | CLAUDE_CODE_REMOTE=true AI_DOTFILES="$prws/ai-dotfiles" "$PRG" 2>&1 >/dev/null)"
+set -e
+echo "$prg_out" | grep -q "TBV-83-cloud-setup" || { echo "FAIL: pr-base-guard deny must name the recorded base" >&2; fails=$((fails+1)); }
 
 # ---------- secrets-scan.sh ----------
 SCAN="$HOOKS_DIR/secrets-scan.sh"

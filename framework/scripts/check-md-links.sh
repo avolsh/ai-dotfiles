@@ -17,6 +17,11 @@
 #   - reference-style links ([text][ref])
 #   - links inside fenced code blocks and inline code spans
 #
+# A relative link that resolves outside the git repository its source file sits in is reported too, even
+# when the target exists: it only resolves under one checkout layout (~/src/<host>/<org>/<repo> beside
+# ~/env/ai-dotfiles), and a cloud session clones the repos elsewhere. Cite a framework file as
+# `<system>/...` and another repo's file by its repo name instead (IMP-20261025-cloud-sessions FR-9).
+#
 # Exit 0 if all links resolve, exit 1 with a per-link report otherwise.
 
 set -euo pipefail
@@ -46,7 +51,14 @@ trap 'rm -f "$TMP_OUT"' EXIT
 
 for src in "${files[@]}"; do
   [[ -f "$src" ]] || continue
-  src_dir="$(dirname "$src")"  # Strip fenced code blocks AND HTML comments, then emit "lineno:linecontent".
+  src_dir="$(dirname "$src")"
+  # Relative links resolve from the physical source directory, as the filesystem resolves `..`, and git
+  # reports the top level with symlinks resolved, so both sides of the "leaves the repo" test are physical
+  # (a repo reached through a symlink, or macOS /var -> /private/var). The target itself is not resolved.
+  repo_root="$(git -C "$src_dir" rev-parse --show-toplevel 2>/dev/null || true)"
+  [[ -n "$repo_root" ]] && repo_root="$(cd "$repo_root" && pwd -P)"
+  src_dir_phys="$(cd "$src_dir" && pwd -P)"
+  # Strip fenced code blocks AND HTML comments, then emit "lineno:linecontent".
   # Multi-line <!-- ... --> blocks are removed before line splitting.
   perl -0777 -ne 's/<!--.*?-->//gs; print' "$src" | \
   awk '
@@ -72,12 +84,14 @@ for src in "${files[@]}"; do
     if [[ "$path" = /* ]]; then
       candidate="$ROOT$path"
     else
-      candidate="$src_dir/$path"
+      candidate="$src_dir_phys/$path"
     fi
     resolved="$(python3 -c 'import os,sys; print(os.path.normpath(sys.argv[1]))' "$candidate")"
+    rel_src="${src#"$ROOT"/}"
     if [[ ! -e "$resolved" ]]; then
-      rel_src="${src#"$ROOT"/}"
       echo "$rel_src:$line -> $target" >> "$TMP_OUT"
+    elif [[ -n "$repo_root" && "$path" != /* && "$resolved" != "$repo_root" && "$resolved" != "$repo_root"/* ]]; then
+      echo "$rel_src:$line -> $target (leaves the repo: cite it as <system>/... or by repo name)" >> "$TMP_OUT"
     fi
   done
 done

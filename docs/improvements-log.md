@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-10-16*
+*Last updated: 2026-10-25*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -507,3 +507,108 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** `consolidation-due` reported `unknown 10/5 due`, which no log entry can reset. The agent edited `scripts/consolidation-due.py`, its self-test and `framework/spec-workflows/spec-lifecycle.md` straight into the working tree to stop `unknown` being due. That is not a Direct-lane change — Direct lane excludes `spec-lifecycle.md` — and no spec existed; the agent noticed only afterwards and told the owner. The project-side instruction ("fix it right away") was about the project's log and module map, not about changing the framework.
 - **What was changed:** `IMP-20261016-consolidation-unknown-never-due` now records the change; the edit stays uncommitted as input to its Plan.
 - **Suggested follow-up:** before editing anything under `framework/` or `scripts/` of ai-dotfiles from a project session, check the lane first — the edit is in another repository with its own lifecycle, and a fix that feels small in the project is a framework change there.
+
+### 2026-10-25 — `validate-specs` reads only a flow map, and nothing checks what `branches:` holds
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 3
+- **Category:** `tooling`
+- **What was found:** The new front-matter key `branches:` maps a repo to the base branch the human named. Written as a YAML block map (one `repo: base` per line), `validate-specs.py` could not parse the front-matter at all; only the flow map `branches: {repo: base, other: base}` validates. Nor does any check look at the value: a scalar, an empty map or a misspelt repo name passes, and `pr-base-guard.sh` then finds no recorded base and denies every PR.
+- **What was changed:** `spec-lifecycle.md` documents the flow-map form, and `scripts/test/validate-specs.test.sh` pins it. No type check added — out of this spec's scope.
+- **Suggested follow-up:** a `branches_shape` rule in `validate-specs.py` (a flow map of repo name to non-empty branch name, never `master` or `develop`), so the guard's input is checked where the spec is written.
+
+### 2026-10-25 — README described rendering that `ai-profile-init.sh` no longer does
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 7
+- **Category:** `anti-pattern`
+- **What was found:** README § `ai-profile-init.sh` said the script renders the system instruction files through `envsubst` and appends `profiles/<profile>/preferences.md`. The script links the templates instead and reads no `preferences.md`, so the two hand-written preference files had been doing nothing. Nothing compares a README's description of a script with the script.
+- **What was changed:** both `preferences.md` removed; README step 2 now describes the linking, and the overview and `.gitignore` no longer mention the files.
+- **Suggested follow-up:** when a script's behaviour changes, grep README for its name in the same change; the writing-docs freshness rules could say so for script-describing sections.
+
+### 2026-10-25 — `validate-anchors` does not scan the root README
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 7
+- **Category:** `tooling`
+- **What was found:** `validate-anchors.py` scans `framework/**/*.md` and `docs/**/*.md`; `check-md-links.sh` also scans `README.md`. A broken `#fragment` in README (tried: `#cloud-git-exceptionX`) passes both, because links-check checks the file and anchors are not its job.
+- **What was changed:** none — the README link to `boundaries.md#cloud-git-exception` was checked by hand.
+- **Suggested follow-up:** add `README.md` to `SEARCH_GLOBS`, matching the links-check scope.
+
+### 2026-10-25 — `CLAUDE_CODE_REMOTE=true` leaked from the cloud container into local-mode tests
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Tasks 2 and 3
+- **Category:** `tooling`
+- **What was found:** Once `ai-doctor.sh` and `bash-write-guard.sh` switch mode on `CLAUDE_CODE_REMOTE`, the self-tests written for the local profile inherited the cloud container's `CLAUDE_CODE_REMOTE=true` and asserted the wrong mode, so they failed in the cloud and would have passed on a laptop.
+- **What was changed:** `ai-doctor.test.sh`, `ai-switch.test.sh` and `hooks.test.sh` unset it at the top; the cloud cases set it per call.
+- **Suggested follow-up:** any test of a script that reads an ambient mode variable sets or unsets it explicitly, never inherits it.
+
+### 2026-10-25 — `bash-write-guard` resolves a write after `cd` against the wrong directory
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 8, review cycle 2
+- **Category:** `tooling`
+- **What was found:** The guard resolves every write path against the payload `cwd`, so `cd src && touch foo/b` is checked as `<cwd>/foo/b`, not `<cwd>/src/foo/b`, and a write to a governed file behind a `cd` passes. The cloud spec now follows `cd` to pick the repository whose branch it checks, but changing how local writes resolve was out of its scope, so a local-mode test pins the old behaviour.
+- **What was changed:** none for local mode — logged for review.
+- **Suggested follow-up:** resolve write paths against the `cd`-tracked directory in both modes, and replace the pinning test in `framework/scripts/test/hooks.test.sh` with one that expects the governed write to be refused.
+
+### 2026-10-25 — Three review cycles kept finding narrower ways around the cloud git denylist
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 8, review cycles 1–3
+- **Category:** `anti-pattern`
+- **What was found:** The cloud exception in `bash-write-guard.sh` allows `commit`, `push` and the rest unless an argument is on a deny list. Each cold review found forms the list missed: `-B` resetting a branch, a `cd` into another repo, `--no-verify` / `-n` / `git -c`, then the abbreviations git accepts (`--no-verif`, `--del`), an exported `GIT_CONFIG_*`, an empty-source refspec and `gh pr new`. Every round closed its own findings; none could show the list complete, because git's option surface is open-ended.
+- **What was changed:** all findings of the three cycles applied, each pinned by a test and a mutation check; the owner stopped the cycles there.
+- **Suggested follow-up:** an IMP turning the cloud rules into an allowlist — `commit` only with `-m`/`-a`/`-F` and their long forms, `push` only `[-u] origin claude/<current>` — so an unknown option is refused rather than passed.
+
+
+### 2026-10-25 — The workspace template's Makefile help still describes the old one-file sync
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 9 (preparing the workspace root files)
+- **Category:** `drift`
+- **What was found:** `framework/templates/workspace/Makefile` says `sync-agents` regenerates `AGENTS.md` from `.github/copilot-instructions.md`; the template's own `sync-agents.sh` renders all three files from `_canonical.md`. The owner's workspace root already carries the corrected help text, so a new workspace scaffolded today starts with the stale one.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** copy the owner's two help lines into the template (Task 12 touches `ai-workspace.sh` and can carry it).
+
+### 2026-10-25 — A mutation of a scaffold script wrote the project template into the repo and into /
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 12, mutation checks
+- **Category:** `test-isolation`
+- **What was found:** `ai-project.test.sh` ran a scaffold with `cd /` and another from the caller's cwd. With the target argument mutated away, the scaffold wrote the template into `/` and into the ai-dotfiles checkout; removing the copies needs the owner, and until then `links-check` fails in that checkout on the stray `docs/specs/active/README.md`.
+- **What was changed:** both scaffold tests now run from an empty scratch cwd inside their temp dir and fail if it is written to; the mutation runner runs tests from a scratch cwd.
+- **Suggested follow-up:** a lint rule (or a `make tests` wrapper) that runs every self-test from an empty temp cwd, so no test can write outside its own temp dir.
+
+### 2026-10-25 — The owner's cloud steps for a new repo were written only where the owner reads
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 13
+- **Category:** `protocol`
+- **What was found:** the guide listed the owner's two cloud settings for a new repo (the Claude GitHub App's access, the project's repositories), but nothing the agent sees in a session did. A repo the agent adds to `.mrconfig` stayed uncloned in every later session with only a bare "not cloned" note, and the owner had to ask which actions were theirs.
+- **What was changed:** the doctor's note names both steps; the cloud exception in `boundaries.md` has the agent remind the owner of them; the guide and README say the owner's whole part in the cloud.
+- **Suggested follow-up:** when a framework step can only be done by the human, put it in the output the agent reads at that moment (a doctor note, a hook message), not only in a guide.
+
+### 2026-10-25 — A SessionStart hook that fails hides its notes from the agent
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 8, review finding 4
+- **Category:** `protocol`
+- **What was found:** the doctor printed its notes on stdout for the agent, but Claude Code adds a SessionStart hook's stdout to the context only when the hook exits 0. Any failure in the same run (an unreachable Docker daemon, say) exited 1, so the agent never saw the notes it had to act on.
+- **What was changed:** the Claude SessionStart hook runs `ai-doctor.sh --fast --hook`, which writes the whole report to stdout and exits 0; a manual run keeps exit 1.
+- **Suggested follow-up:** any hook that talks to the agent must state which of its streams and exit codes reach the agent, and test that path.
+
+### 2026-10-25 — The shell reader in bash-write-guard took a bracket for the command
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 8, review finding 1
+- **Category:** `tooling`
+- **What was found:** in `(git commit -m x)` or `{ cd ../other; git add -A; }` the guard read `(` or `{` as the verb, so the git write went unread, in a local session too, and a `cd` inside a group was not followed.
+- **What was changed:** `( ) { }` separate commands, runs of operator characters are split, and a command with both a group and a `cd` leaves the branch unknown, so a cloud git write in it is refused.
+- **Suggested follow-up:** feed the guard's tests from a list of bash grammar forms (subshell, group, pipeline, `&&` glued to a bracket) rather than from commands seen so far.
+
+### 2026-10-25 — A fix to the guard's tokenizer opened a hole a second review caught
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 8, review cycle 2
+- **Category:** `anti-pattern`
+- **What was found:** splitting runs of operator characters, the fix for subshells, also split `>&` and `2>&1` into `>` and `&`; `&` is a separator, so `git commit 2>&1 -n` ended at the redirection and the `-n` went unread. The same review found three older holes of one kind: a newline, a reserved word (`if`, `then`, `!`, `time`) and `gh -R` each hid the command from the reader.
+- **What was changed:** redirections stay whole and a descriptor in front of one is dropped; a newline separates commands; reserved words before a command are skipped; `gh` flags are skipped before `pr` and its verb. Each form has a test, and each change was checked by a mutant the tests kill.
+- **Suggested follow-up:** the grammar-forms test list proposed above would have caught the regression before the push; until it exists, a change to the reader runs a second review.
+
+### 2026-10-25 — The guard's reader read heredoc bodies as commands and comments as the rest of the line
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 8, review cycle 3
+- **Category:** `tooling`
+- **What was found:** once a newline separated commands, `shlex` read each line of a heredoc body as a command, so a commit message mentioning `git merge` was refused; its comment rule ate the newline after `# note` and the rest of a word after `a#b`, hiding the next command; a descriptor glued to an operator (`true;2>/dev/null git push`), a line continuation, `time -p` and `coproc` each hid the git verb. Separately, any `$` left the whole command unread, so `git push -u origin "$(git branch --show-current)"` passed in the cloud wherever `HEAD` stood.
+- **What was changed:** a quote-aware pre-pass drops comments, continuations, heredoc bodies and the descriptor before `shlex` reads; in the cloud a git write or `gh pr` command with a word the shell decides is refused, except a quoted commit message, each substitution body is read as a command, and a command naming git or gh that does not tokenise is refused, because bash runs the lines before an unclosed quote. Each form has a test and a mutant the tests kill.
+- **Suggested follow-up:** the grammar-forms list proposed above now has a natural home: the pre-pass, tested against bash itself (`bash -n`, `set -x` traces) rather than against the forms a reviewer happened to find.

@@ -1,6 +1,6 @@
 # framework/hooks/ — canonical hook scripts
 
-*Last updated: 2026-09-29*
+*Last updated: 2026-10-25*
 
 Single-source enforcement scripts for the rules in
 [`boundaries.md`](../boundaries.md) that all three harnesses (Claude Code,
@@ -29,7 +29,8 @@ errors and rely on the git pre-commit backstop (FR-2) as the second line.
 | Script | Event | Enforces |
 |---|---|---|
 | `spec-status-guard.sh` | PreToolUse (Edit/Write) | No code edits while the governing spec (matched via `affected-code`) is at `specify`/`plan`, subject to the allow conditions below — [`spec-lifecycle.md § Status transitions`](../spec-workflows/spec-lifecycle.md) |
-| `bash-write-guard.sh` | PreToolUse (Bash) | The same lease decision for a write made by a shell command, and no state-changing git verb — [`boundaries.md § Never do #10`](../boundaries.md#git-is-the-humans). Fails open, see below |
+| `bash-write-guard.sh` | PreToolUse (Bash) | The same lease decision for a write made by a shell command, and no state-changing git verb — [`boundaries.md § Never do #10`](../boundaries.md#git-is-the-humans) — except, in a cloud session, the writes its [cloud exception](../boundaries.md#cloud-git-exception) allows on the agent's own `claude/*` branch; there it also refuses a `gh pr` verb that opens or changes a PR. Fails open, see below |
+| `pr-base-guard.sh` | PreToolUse (`mcp__github__create_pull_request`, `mcp__github__update_pull_request`) | Cloud sessions only (`CLAUDE_CODE_REMOTE=true`): a PR's base is the one an in-progress spec records for that repo under `branches:`, never `master` or `develop`, and two in-progress specs disagreeing deny; a call naming no base passes — [`boundaries.md § Never do #10`](../boundaries.md#cloud-git-exception) |
 | `secrets-scan.sh` | PreToolUse (`git commit`) and git pre-commit | No secrets or `.env` / `.env.*` / `.dev.vars` in commits — [`boundaries.md § Never do #1`](../boundaries.md) |
 | `stamp-refresh.sh` | PostToolUse (Edit/Write on `*.md`) | `*Last updated:*` stamp refreshed automatically — [`boundaries.md § Always do #10`](../boundaries.md#last-updated-stamp) |
 
@@ -98,6 +99,24 @@ mistakes, not a sandbox, and an agent that means to evade it can always write a
 script and run it. A guard that denied what it did not understand would be
 switched off within a day. The rules in `boundaries.md` still bind wherever it
 fails open; this only makes the common case mechanical instead of remembered.
+
+**In a cloud session a git write must be readable.** There the guard is what
+keeps the agent on its own `claude/*` branch, so a git write or a `gh pr`
+command with a word the shell decides — a variable, a substitution, a glob at
+the start of a word — is denied, and the denial names the word:
+`git push -u origin "$(git branch --show-current)"` pushes wherever `HEAD`
+happens to be. The one exception is a quoted `-m` or `-F` value of
+`git commit`, which stays one word, so a message written with a heredoc
+substitution still commits. A git read keeps its variables, a path write with
+one still fails open, and the body of each substitution is read as a command
+of its own. A command that names git or gh and does not tokenise — an
+unclosed quote on a later line, say — is denied too, since bash runs the lines
+before the error.
+
+Before it reads, a pre-pass does what `shlex` cannot: it drops comments, line
+continuations and heredoc bodies, and the descriptor in front of a
+redirection, so `# note` on one line does not hide the next, and a `git push`
+inside a heredoc is text, not a command.
 
 ## Tests
 
