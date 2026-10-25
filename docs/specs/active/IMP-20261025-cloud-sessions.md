@@ -63,14 +63,14 @@ baseline-impact: none — no docs/domain baselines in ai-dotfiles; tobevisit-con
 - FR-2: The script MUST merge the rendered hooks and `env` (`AI_DOTFILES`, `AI_PROFILE`) into `~/.claude/settings.json`, keeping every other key, and be idempotent.
 - FR-3: The script MUST set `core.hooksPath` to the framework git hooks in every cloned repo and start `dockerd` with the `mirror.gcr.io` registry mirror when it is not running.
 - FR-4: `ai-doctor.sh --cloud` MUST name each missing `~/.claude` link, missing hook, repo without `core.hooksPath` and an unreachable Docker daemon, and exit 1; SessionStart runs it when `CLAUDE_CODE_REMOTE=true`.
-- FR-5: `boundaries.md` § Never do #10 MUST gain a cloud exception: with `CLAUDE_CODE_REMOTE=true` the agent asks the human for the base branch of each repo before creating `claude/*` from it (`--no-track`), records it under `branches:`, may commit, `fetch`, `pull --ff-only` and push only that branch, opens PRs only into that base, and never merges, force-pushes or writes any other branch.
+- FR-5: `boundaries.md` § Never do #10 MUST gain a cloud exception: with `CLAUDE_CODE_REMOTE=true` the agent asks the human for the base branch of each repo before creating `claude/*` from it (`--no-track`), records it under `branches:`, may commit, `fetch`, `pull --ff-only` and push only that branch, opens its draft PR itself after the first push and only into that base, retargets a PR from its branch whose base differs to that base, and never merges, force-pushes or writes any other branch.
 - FR-6: `bash-write-guard.sh` MUST, in cloud mode only, allow `add`, `commit`, `fetch`, `pull --ff-only` and `push` when the current branch and the push target are `claude/*`, and keep denying every other git write.
 - FR-7: A new PreToolUse hook `pr-base-guard.sh` on GitHub PR-creation tools MUST deny a PR whose base is `master`, `develop`, or differs from the governing spec's `branches:` entry for that repo.
 - FR-8: The front-matter schema MUST define optional `branches:` (repo → base branch), and `validate-specs.py` MUST accept it.
 - FR-9: `framework/scripts/check-md-links.sh` MUST report a relative link that resolves outside the repo root; `writing-docs` MUST say framework files are cited as `<system>/…`.
 - FR-10: The local-layout links (`../…/env/ai-dotfiles/…`, `../…/src/github.com/…`) MUST read as `<system>/…` or repo-name citations: three in `tobevisit-content`, one in `ai-dotfiles` `docs/baseline-citations.md:50`.
 - FR-11: `profiles/*/preferences.md` MUST be removed, with README and `docs/ai-agent-framework.md` no longer describing them.
-- FR-12: README MUST gain a "Cloud sessions" section: one environment per profile, the Setup script line, network (`mirror.gcr.io`), no `CLAUDE_CONFIG_DIR`, dev keys only and no kubeconfig, and the mixed cloud/local workflow on one `claude/*` branch.
+- FR-12: README MUST gain a "Cloud sessions" section: one environment per profile, the Setup script line, network (`mirror.gcr.io`), no `CLAUDE_CONFIG_DIR`, dev keys only and no kubeconfig, the mixed cloud/local workflow on one `claude/*` branch, and that the agent, not the UI's PR button, opens PRs.
 
 ## Acceptance Criteria
 ### AC-1: Setup wires a clean home (FR-1, FR-2, FR-3)
@@ -96,7 +96,7 @@ Then the fixture is reported, and `make links-check` passes in both repos
 ### AC-6: A fresh cloud thread runs the framework (FR-11, FR-12)
 Given an environment whose Setup script is the README line, after this IMP reaches `master`
 When a new thread starts
-Then `ai-doctor --cloud` exits 0, a framework skill is listed, and an edit no `in-progress` spec governs is denied
+Then `ai-doctor --cloud` exits 0, a framework skill is listed, an edit no `in-progress` spec governs is denied, and the thread's PR targets the spec's base
 Evidence: manual (observation, Projects thread, agent + Alex, date of first run)
 
 ## Design
@@ -136,7 +136,7 @@ flowchart LR
 |---|---|---|---|---|---|---|---|
 | 1 | Setup script wiring a profile into `~/.claude` and the repos, idempotent; `make cloud-setup` (FR-1, FR-2, FR-3; AC-1) | `scripts/ai-cloud-setup.sh` *(new)*, `scripts/lib/profile-links.sh`, `scripts/test/ai-cloud-setup.test.sh` *(new)*, `Makefile` | `scripts/ai-profile-init.sh`, `framework/templates/system/claude/hooks.json` | — | writing-specs | default | ◐ awaiting approval |
 | 2 | `ai-doctor.sh --cloud`, run by the SessionStart hook when `CLAUDE_CODE_REMOTE=true` (FR-4; AC-2) | `scripts/ai-doctor.sh`, `scripts/test/ai-doctor.test.sh` | `scripts/ai-cloud-setup.sh` | 1 | writing-specs | default | ☐ pending |
-| 3 | Cloud exception to § Never do #10, `branches:` in the front-matter schema, cloud mode of `bash-write-guard` (FR-5, FR-6, FR-8; AC-3) | `framework/boundaries.md`, `framework/spec-workflows/spec-lifecycle.md`, `framework/hooks/bash-write-guard.sh`, `framework/scripts/test/hooks.test.sh`, `scripts/test/validate-specs.test.sh` | `scripts/validate-specs.py`, `framework/hooks/lib` | — | writing-specs, reviewing-changes | default | ☐ pending |
+| 3 | Cloud exception to § Never do #10 (incl. agent-opened draft PR and base retarget), `branches:` in the front-matter schema, cloud mode of `bash-write-guard` (FR-5, FR-6, FR-8; AC-3) | `framework/boundaries.md`, `framework/spec-workflows/spec-lifecycle.md`, `framework/hooks/bash-write-guard.sh`, `framework/scripts/test/hooks.test.sh`, `scripts/test/validate-specs.test.sh` | `scripts/validate-specs.py`, `framework/hooks/lib` | — | writing-specs, reviewing-changes | default | ☐ pending |
 | 4 | `pr-base-guard.sh` on GitHub PR-creation tools, wired in `hooks.json` and documented (FR-7; AC-4) | `framework/hooks/pr-base-guard.sh` *(new)*, `framework/templates/system/claude/hooks.json`, `framework/hooks/README.md`, `framework/scripts/test/hooks.test.sh` | `framework/hooks/spec-status-guard.sh` | 3 | writing-specs, reviewing-changes | default | ☐ pending |
 | 5 | Link check refuses links leaving the repo; `writing-docs` cites framework files as `<system>/…`; fix `docs/baseline-citations.md:50` (FR-9, FR-10; AC-5) | `framework/scripts/check-md-links.sh`, `framework/scripts/test/check-md-links.test.sh`, `framework/skills/writing-docs/SKILL.md`, `docs/baseline-citations.md` | — | — | writing-docs | default | ☐ pending |
 | 6 | `tobevisit-content`: the three local-layout links as `<system>/…` citations, PR into `TBV-83-new-categories` (FR-10; AC-5) | `tobevisit-content/docs/improvements-log.md`, `tobevisit-content/docs/specs/archived/CR-20260625-step-9-enrich-catalog-ops-ui.md`, `tobevisit-content/docs/specs/archived/IMP-20260617-admin-ui-design-system.md` | `tobevisit-content/src/scripts/check-md-links.sh` | — | writing-docs | fast | ☐ pending |
