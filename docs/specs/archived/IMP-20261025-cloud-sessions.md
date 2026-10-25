@@ -2,7 +2,8 @@
 id: IMP-20261025-cloud-sessions
 type: IMP
 date: 2026-10-25
-status: in-progress
+status: done
+closed: 2026-10-25
 owner: avolsh
 risk: medium
 affected-repos:
