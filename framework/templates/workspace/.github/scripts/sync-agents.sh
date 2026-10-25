@@ -18,7 +18,7 @@
 
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+ROOT="$(cd -P "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 CHECK=0

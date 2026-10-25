@@ -1,16 +1,15 @@
 #!/usr/bin/env bash
 # scripts/ai-project.sh
 #
-# Scaffold the current directory as a new project repo by copying every
-# template under framework/templates/project/ into the current working
-# directory, preserving the relative directory structure. Existing files
-# are skipped (never overwritten).
+# Scaffold a project repo — <dir>, or the current directory — by copying every
+# template under framework/templates/project/ into it, preserving the relative
+# directory structure. Existing files are skipped (never overwritten), so a
+# repo that already holds code keeps it (IMP-20261025-cloud-sessions FR-16).
 #
 # Does NOT run `make sync-agents` — fill in placeholders in _canonical.md
 # first, then run it manually. The three agent files are its renders.
 #
-# Usage (from the target project root):
-#   ai-project
+# Usage: ai-project [<dir>]
 
 set -euo pipefail
 
@@ -32,7 +31,10 @@ if [ ! -d "$src_root" ]; then
   exit 2
 fi
 
-target_root="$PWD"
+case "${1:-}" in -*) _err "unknown option '$1'"; exit 2 ;; esac
+target_root="${1:-$PWD}"
+[ -d "$target_root" ] || { _err "not a directory: $target_root"; exit 2; }
+target_root="$(cd "$target_root" && pwd)"
 copied=0
 skipped=0
 

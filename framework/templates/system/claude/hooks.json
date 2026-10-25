@@ -27,6 +27,15 @@
             "command": "@AI_DOTFILES@/framework/hooks/test-rerun-guard.sh"
           }
         ]
+      },
+      {
+        "matcher": "mcp__github__create_pull_request|mcp__github__update_pull_request",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "@AI_DOTFILES@/framework/hooks/pr-base-guard.sh"
+          }
+        ]
       }
     ],
     "Stop": [
@@ -55,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "@AI_DOTFILES@/scripts/ai-doctor.sh --fast"
+            "command": "@AI_DOTFILES@/scripts/ai-doctor.sh --fast --hook"
           }
         ]
       }

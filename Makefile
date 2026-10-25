@@ -1,10 +1,12 @@
-.PHONY: help install install-check profile-init reset project workspace links-check validate-specs baseline-check lint-rules validate-anchors sync-system-templates sync-agents-check check doctor doctor-fast install-git-hooks tests spec-metrics specs-view consolidation-due
+.PHONY: help install install-check profile-init cloud-setup workspace-link reset project workspace links-check validate-specs baseline-check lint-rules validate-anchors sync-system-templates sync-agents-check check doctor doctor-fast install-git-hooks tests spec-metrics specs-view consolidation-due
 
 help:
 	@echo "Targets:"
 	@echo "  install                    Run ai-install.sh (idempotent ~/.zshrc setup)"
 	@echo "  install-check              Check ~/.zshrc managed block for drift"
 	@echo "  profile-init PROFILE=name  Initialize a profile's tool subdirs"
+	@echo "  cloud-setup PROFILE=name   Wire a profile into a cloud session's ~/.claude and repos"
+	@echo "  workspace-link             Link docs/workspace/* into the workspace root (once per laptop)"
 	@echo "  reset                      Remove active-profile env (ai-switch --reset)"
 	@echo "  project                    Scaffold current dir as a project repo"
 	@echo "  workspace                  Scaffold current dir as a workspace root"
@@ -38,6 +40,16 @@ profile-init:
 	fi
 	./scripts/ai-profile-init.sh "$(PROFILE)"
 
+cloud-setup:
+	@if [ -z "$(PROFILE)" ]; then \
+		echo "usage: make cloud-setup PROFILE=<name>" >&2; \
+		exit 2; \
+	fi
+	./scripts/ai-cloud-setup.sh "$(PROFILE)"
+
+workspace-link:
+	./scripts/ai-workspace-link.sh
+
 reset:
 	./scripts/ai-switch.sh --reset
 
@@ -70,6 +82,9 @@ tests:
 	./scripts/test/profile-links.test.sh
 	./scripts/test/ai-switch.test.sh
 	./scripts/test/ai-project.test.sh
+	./scripts/test/ai-cloud-setup.test.sh
+	./scripts/test/ai-workspace-link.test.sh
+	./scripts/test/ai-workspace.test.sh
 
 spec-metrics:
 	python3 ./scripts/spec-metrics.py

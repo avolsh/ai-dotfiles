@@ -1,6 +1,6 @@
 # ai-dotfiles
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-10-25*
 
 Personal AI Agent Framework dotfiles — skills, spec-workflows, prompts, and
 identity profiles for GitHub Copilot, Claude Code, and OpenAI Codex CLI.
@@ -29,13 +29,13 @@ ai-dotfiles/
 ├── profiles/               ← Per-identity overlays
 │   ├── personal/
 │   │   ├── profile.env     ← AI_PROFILE
-│   │   ├── preferences.md  ← Identity content appended on render
 │   │   ├── claude/         ← Pre-built Claude Code config (CLAUDE_CONFIG_DIR target)
 │   │   ├── copilot/        ← Pre-built Copilot config (COPILOT_HOME target)
 │   │   └── codex/          ← Pre-built Codex config (CODEX_HOME target)
 │   └── work/               ← Same shape as personal/
 ├── scripts/
 │   ├── ai-switch.sh        ← Switches active profile, persists env, links shared state
+│   ├── ai-cloud-setup.sh   ← Wires a profile into a cloud session's ~/.claude (§ Cloud sessions)
 │   └── ai-profile-init.sh  ← Renders profile tool subdirs (one-time per profile)
 ├── Makefile                ← Entry-point wrapper; run `make help`
 ├── docs/
@@ -162,8 +162,8 @@ ai-profile-init personal
 The script:
 
 1. Sources `profiles/<profile>/profile.env` to set `$AI_PROFILE`
-2. Renders `framework/templates/system/{claude/CLAUDE.md, copilot/copilot-instructions.md, codex/AGENTS.md}` via allowlisted `envsubst` (only `$AI_PROFILE`), appends `profiles/<profile>/preferences.md`, and writes to `profiles/<profile>/{claude,copilot,codex}/`
-3. Creates per-tool symlinks for `boundaries.md`, `skills/`, `prompts/`, `spec-workflows/`, `templates/` inside each tool subdir
+2. Links `framework/templates/system/{claude/CLAUDE.md, copilot/copilot-instructions.md, codex/AGENTS.md}` into `profiles/<profile>/{claude,copilot,codex}/`
+3. Creates per-tool symlinks for `boundaries.md`, `docs/`, `skills/`, `prompts/`, `spec-workflows/`, `templates/` inside each tool subdir, and renders the hook configs (Claude's merged into `settings.json`)
 
 Shared user-level state such as auth, history, projects, and plugins is
 linked by `ai-switch.sh` on each successful switch, not by
@@ -211,13 +211,126 @@ The script copies all 10 required artifacts (`CLAUDE.md`, `AGENTS.md`,
 ensures `docs/` exists. Re-running on an already-scaffolded project is
 a no-op.
 
+## Workspace root
+
+The workspace root (the directory above `env/ai-dotfiles`) holds no git repository of its own. Its
+files (`CLAUDE.md`, `_canonical.md`, `AGENTS.md`, …: which repo is where, where cross-repo specs live)
+are kept in the docs repo under `workspace/`, and the root carries relative links to them:
+
+```
+<root>/CLAUDE.md -> docs/workspace/CLAUDE.md   (one link per entry of docs/workspace/)
+<root>/docs                                    the docs repo (tobevisit-docs)
+<root>/env/ai-dotfiles
+<root>/src/<host>/<org>/<repo>
+```
+
+Run `make workspace-link` (`scripts/ai-workspace-link.sh`) once on a laptop: it links every entry of
+`docs/workspace/` into the root, replaces a real file identical to its source, and keeps and reports
+one that differs, so you merge it into `docs/workspace/` and run it again. A cloud session runs it with
+`--cloud --docs <docs repo>`, which first builds `docs`, `env/ai-dotfiles` and `src/<host>/<org>/<repo>`
+(from each clone's `origin`) out of the clones the session put side by side. `docs` is the clone
+`--docs` names; without it, the only clone holding `workspace/CLAUDE.md`, and none when several do,
+since its files become every session's rules. A clone whose `origin` gives no plain
+`<host>/<org>/<repo>` path (a `..`, a space, a port) stays out of `src/` with a warning.
+`ai-doctor.sh` names any root entry left unlinked, and why `docs` is missing.
+
+`CLAUDE.md`, `AGENTS.md` and `.github/copilot-instructions.md` in `docs/workspace/` are renders of its
+`_canonical.md`, committed like those of every repo, because an agent reads its file before anything
+could render it. Edit `_canonical.md`, then run `make -C docs/workspace sync-agents`. The docs repo has
+no build of its own, so the doctor runs that drift check in both modes and names a stale render; it runs
+the docs repo's `sync-agents.sh` only when that file is the framework's own, and otherwise says so.
+
+`docs/workspace/.mrconfig` lists the workspace's repos for [myrepos](https://myrepos.branchable.com/)
+(`mr`): one section per repo, its path relative to the root (`docs`, `env/ai-dotfiles`,
+`src/<host>/<org>/<repo>`, `research/<name>`), with `checkout = git clone '<url>' '<dir>'`. It is linked
+into the root like the other entries, and `mr` reads it there, resolving the paths against the root. Run
+`mr` from the root or from a repo, never from inside `docs/workspace/`: there it finds the file itself and
+resolves the paths from that directory, so `mr checkout` clones every repo into the docs repo. In a
+cloud session `--cloud` places each clone at the section its URL matches (else under `src/`), and the
+doctor notes a listed repo the session did not clone. A new laptop:
+
+1. clone the docs repo to `<root>/docs` and ai-dotfiles to `<root>/env/ai-dotfiles`;
+2. run `make workspace-link` in `env/ai-dotfiles`;
+3. add to `~/.mrconfig` a section for the root, relative to your home, with `chain = true`
+   (`[vcs/<org>/<workspace>]`) — no `~/.mrtrust` entry is needed for plain `git clone` checkouts;
+4. run `mr checkout`.
+
+Adding a repo, empty or with code: `docs/workspace-bootstrap-guide.md` § Adding a repo to the workspace.
+In a cloud project your part is the repo with its working branch, the Claude GitHub App's access to it,
+the repo in the project's repositories, and the merge; the doctor's note on a `.mrconfig` repo the
+session did not clone names the two settings, and the agent reminds you of them.
+
+## Cloud sessions
+
+A Claude Code cloud session (a claude.ai project thread, or claude.ai/code) clones the repos fresh into
+a container whose `~/.claude` belongs to the harness: its own hooks, skills and sign-in live there.
+`scripts/ai-cloud-setup.sh` wires the framework into that directory in place of `ai <profile>`, so
+`<system>/` is `~/.claude` in the cloud. Never set `CLAUDE_CONFIG_DIR` there: the CLI would
+no longer find the harness's files, so the script links and merges beside them instead.
+
+### One environment per profile
+
+The setup script cannot read the environment's variables, so the profile is its argument and each
+profile gets a cloud environment of its own. Open the project's settings, open the **Cloud environment**
+menu and choose **Add cloud environment**, which also selects it for the project; sessions started
+after that run on it. The project's repositories must include `ai-dotfiles`: the script treats the
+directory holding it as the workspace.
+
+| Field | Value |
+|---|---|
+| Setup script | `bash ai-dotfiles/scripts/ai-cloud-setup.sh personal --docs <docs repo>` (`work` for the other profile; the docs repo is the clone holding `workspace/`, e.g. `tobevisit-docs`) |
+| Network access | Limited, with **Allow package managers** ticked and `mirror.gcr.io` under Allowed domains |
+| Environment variables | Development keys only. No production key, no kubeconfig, nothing that reaches a cluster |
+
+The script, idempotent:
+
+1. runs `ai-profile-init.sh <profile>`;
+2. links `CLAUDE.md`, `boundaries.md`, `docs/` and every framework skill into `~/.claude`, keeping each
+   entry the harness owns;
+3. merges the framework hooks and `AI_DOTFILES` / `AI_PROFILE` into `~/.claude/settings.json`, beside
+   the harness's own hooks;
+4. points `core.hooksPath` of every cloned repo at the pre-commit backstop;
+5. builds the laptop's workspace layout from the flat clones and links the workspace root files
+   (§ Workspace root below);
+6. starts `dockerd` with `mirror.gcr.io` as its registry mirror, because anonymous Docker Hub pulls from
+   the shared egress address are refused. `--no-docker` skips this step.
+
+The SessionStart hook runs `ai-doctor.sh --fast --hook`, which adds the cloud checks whenever
+`CLAUDE_CODE_REMOTE=true`; `scripts/ai-doctor.sh --cloud` prints the whole report. SessionStart adds a
+hook's stdout to the agent's context only when it exits 0, so `--hook` writes the whole report there and
+exits 0: the agent sees the failures and the notes, and tells you. A session uses the
+framework as it is on the default branch of `ai-dotfiles` when the session starts, so a framework change
+reaches the cloud once it is merged there, in the next new session.
+
+### Git in a cloud session
+
+You own the task branch of each repo and name it. In the cloud the agent asks you which branch to start
+from in each repo, records the answers under the spec's `branches:`, works on its own `claude/*` branch
+cut from it, and opens the draft PR into that branch itself after its first push. It never merges,
+never force-pushes and never opens a PR into `master` or `develop`
+([`boundaries.md` § Never do #10, cloud exception](framework/boundaries.md#cloud-git-exception));
+`bash-write-guard.sh` and `pr-base-guard.sh` enforce it. Leave the UI's **Create draft PR** button
+alone: it opens the PR into the default branch.
+
+### Cloud and local on one branch
+
+Work that needs an integration (the cluster, real keys) runs on your machine; the rest can stay in the
+cloud. Both sides share the one `claude/*` branch and its one PR:
+
+1. The cloud session does its tasks and pushes.
+2. Locally: `git fetch origin <claude-branch>`, `git switch <claude-branch>`, `git pull --ff-only`, do
+   the local task, push.
+3. Back in the cloud the agent runs `git pull --ff-only` and carries on.
+
+One side works at a time and nobody force-pushes. When `git pull --ff-only` refuses, the branch has
+diverged: the agent stops and asks, and you decide how to bring the two together.
+
 ---
 
 ## Profile semantics
 
-Profiles carry identity-level content: `AI_PROFILE` (in `profile.env`) and
-optional tone/style preferences (in `preferences.md`). They do not carry
-workspace or project rules (those belong in per-repo
+Profiles carry identity-level content: `AI_PROFILE` (in `profile.env`). They do
+not carry workspace or project rules (those belong in per-repo
 `.github/copilot-instructions.md`) and they do not carry auth credentials
 (those belong in your shell env).
 

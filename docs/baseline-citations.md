@@ -1,6 +1,6 @@
 # Baseline Citations
 
-*Last updated: 2026-09-16*
+*Last updated: 2026-10-25*
 
 How to read, write, and cite **per-feature domain baselines** under `<project>/docs/domain/`: file structure, ID convention, verification pointers, citation format, current-state authority, ownership, and anti-patterns.
 
@@ -47,7 +47,7 @@ keyword: `MUST`, `MUST NOT`, `SHOULD`, `MAY`. Every entry is
 addressable by a heading slug or an explicit ID.
 
 Seed example:
-[`tobevisit-content/docs/domain/place-catalog-enrichment.md`](../../../src/github.com/tobeverse/tobevisit-content/docs/domain/place-catalog-enrichment.md).
+`docs/domain/place-catalog-enrichment.md` in the `tobevisit-content` repo.
 
 ---
 

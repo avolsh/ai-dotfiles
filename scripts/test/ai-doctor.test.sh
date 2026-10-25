@@ -9,6 +9,10 @@
 set -euo pipefail
 
 SUT="$(cd "$(dirname "$0")/.." && pwd)/ai-doctor.sh"
+LIB="$(cd "$(dirname "$0")/.." && pwd)/lib/profile-links.sh"
+# Cases 1-7 are the local profile; a cloud session's own env must not turn
+# on the cloud checks for them.
+unset CLAUDE_CODE_REMOTE
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -27,6 +31,9 @@ mkdir -p "$DF/framework/spec-workflows" "$DF/framework/prompts" \
          "$DF/framework/agents" "$DF/framework/upstream"
 echo "# b" > "$DF/framework/boundaries.md"
 echo "# c" > "$DF/framework/templates/system/claude/CLAUDE.md"
+mkdir -p "$DF/framework/templates/workspace/.github/scripts"
+cp "$(cd "$(dirname "$0")/../.." && pwd)/framework/templates/workspace/.github/scripts/sync-agents.sh" \
+   "$DF/framework/templates/workspace/.github/scripts/"
 mkdir -p "$DF/docs" && echo "# ap" > "$DF/docs/agent-protocol.md"
 
 P="$DF/profiles/test/claude"
@@ -98,6 +105,239 @@ set +e
 AI_DOTFILES="$DF" "$SUT" nosuch >/dev/null 2>&1; rc=$?
 set -e
 expect "missing profile dir fails" 1 "$rc"
+
+# --- cloud session (IMP-20261025-cloud-sessions AC-2) ---
+mkdir -p "$DF/framework/skills/writing-specs" "$DF/scripts/git-hooks"
+printf '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"@AI_DOTFILES@/framework/hooks/stop-build-check.sh"}]}]}}\n' \
+  > "$DF/framework/templates/system/claude/hooks.json"
+CFG="$TMP/cloud-home/.claude"
+mkdir -p "$CFG/skills/harness-skill"
+git init -q "$TMP/repo-a"
+# shellcheck source=../lib/profile-links.sh
+. "$LIB"
+ai_links_wire_dir "$DF" "$CFG" claude 2>/dev/null
+ai_links_merge_claude_settings "$DF" "$CFG/settings.json" test 2>/dev/null
+git -C "$TMP/repo-a" config core.hooksPath "$DF/scripts/git-hooks"
+git -C "$TMP/repo-a" remote add origin https://github.com/org/repo-a
+# the docs clone holding workspace/, linked into the root as a cloud setup does (FR-13)
+git init -q "$TMP/wsdocs"
+mkdir -p "$TMP/wsdocs/workspace"
+echo "# workspace" > "$TMP/wsdocs/workspace/CLAUDE.md"
+git -C "$TMP/wsdocs" config core.hooksPath "$DF/scripts/git-hooks"
+git -C "$TMP/wsdocs" remote add origin https://github.com/org/wsdocs  # docs, never also under src/
+WSL="$(cd "$(dirname "$0")/.." && pwd)/ai-workspace-link.sh"
+AI_DOTFILES="$DF" "$WSL" --cloud "$TMP" >/dev/null 2>&1
+cloud() { AI_DOTFILES="$DF" AI_CLOUD_HOME="$CFG" AI_DOCTOR_DOCKER="$1" "$SUT" --fast "${@:2}" test 2>&1; }
+
+# 8. a wired cloud session passes
+set +e
+cloud true --cloud >/dev/null; rc=$?
+set -e
+expect "wired cloud session passes" 0 "$rc"
+
+# 9. CLAUDE_CODE_REMOTE=true implies --cloud
+set +e
+CLAUDE_CODE_REMOTE=true cloud false >/dev/null; rc=$?
+set -e
+expect "CLAUDE_CODE_REMOTE turns on the cloud checks" 1 "$rc"
+
+# 10. one link, one hook, one repo's hooksPath and Docker missing: each named
+rm "$CFG/prompts"
+python3 - "$CFG/settings.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1])); d["hooks"] = {}
+json.dump(d, open(sys.argv[1], "w"))
+PY
+git -C "$TMP/repo-a" config --unset core.hooksPath
+set +e
+out="$(cloud false --cloud)"; rc=$?
+set -e
+expect "broken cloud session fails" 1 "$rc"
+for want in "$CFG/prompts" "hook missing: $DF/framework/hooks/stop-build-check.sh" "repo-a: core.hooksPath" "docker daemon"; do
+  echo "$out" | grep -qF "$want" || { echo "FAIL: cloud failure not named: $want" >&2; fails=$((fails+1)); }
+done
+
+# 10b. a real path standing where a framework link belongs is named, not passed (review finding 6)
+rm "$CFG/CLAUDE.md" "$CFG/skills/writing-specs"
+echo "harness-owned" > "$CFG/CLAUDE.md"
+mkdir "$CFG/skills/writing-specs"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "a real path in place of a framework link fails" 1 "$rc"
+for want in "$CFG/CLAUDE.md (a real path" "$CFG/skills/writing-specs (a real path"; do
+  echo "$out" | grep -qF "$want" || { echo "FAIL: real path not named: $want" >&2; fails=$((fails+1)); }
+done
+
+# 10c. a real dir the CLI owns (agents/) with the framework entries linked inside passes (review cycle 2 finding 6)
+rm -rf "$CFG"
+mkdir -p "$CFG/skills/harness-skill" "$CFG/agents" "$DF/framework/agents"
+echo "# reviewer" > "$DF/framework/agents/reviewer.md"
+echo "# mine" > "$CFG/agents/user-agent.md"
+ai_links_wire_dir "$DF" "$CFG" claude 2>/dev/null
+ai_links_merge_claude_settings "$DF" "$CFG/settings.json" test 2>/dev/null
+git -C "$TMP/repo-a" config core.hooksPath "$DF/scripts/git-hooks"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "a CLI-owned real dir with framework entries linked inside passes" 0 "$rc"
+[ "$rc" -eq 0 ] || echo "$out" >&2
+rm "$CFG/agents/reviewer.md"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "a framework entry missing inside a CLI-owned dir fails" 1 "$rc"
+echo "$out" | grep -qF "$CFG/agents/reviewer.md (missing" || { echo "FAIL: missing inner entry not named" >&2; fails=$((fails+1)); }
+rm "$CFG/prompts"
+
+# 10d. the workspace root: a removed root link and a removed src link are named (FR-13, AC-7)
+rm "$TMP/CLAUDE.md" "$TMP/src/github.com/org/repo-a"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "a broken workspace root fails" 1 "$rc"
+for want in "$TMP/CLAUDE.md (not linked" "$TMP/src/github.com/org/repo-a (missing"; do
+  echo "$out" | grep -qF "$want" || { echo "FAIL: workspace failure not named: $want" >&2; fails=$((fails+1)); }
+done
+AI_DOTFILES="$DF" "$WSL" --cloud "$TMP" >/dev/null 2>&1
+
+# 10e. a second clone holding workspace/CLAUDE.md and no docs link: the ambiguity is named; the
+#      link --docs makes passes
+git init -q "$TMP/wsdocs2"
+mkdir -p "$TMP/wsdocs2/workspace"
+echo "# other" > "$TMP/wsdocs2/workspace/CLAUDE.md"
+git -C "$TMP/wsdocs2" config core.hooksPath "$DF/scripts/git-hooks"
+rm "$TMP/docs"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "two docs candidates and no docs link fail" 1 "$rc"
+echo "$out" | grep -qF "several clones hold workspace/CLAUDE.md" || { echo "FAIL: docs ambiguity not named" >&2; fails=$((fails+1)); }
+AI_DOTFILES="$DF" "$WSL" --cloud --docs wsdocs "$TMP" >/dev/null 2>&1
+ai_links_wire_dir "$DF" "$CFG" claude 2>/dev/null  # the links 10c removed
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "the docs link --docs made passes beside a second candidate" 0 "$rc"
+[ "$rc" -eq 0 ] || echo "$out" >&2
+rm -rf "$TMP/wsdocs2"
+
+# 10f. not initialised for the framework: a noted project repo and a noted docs repo, the exit status unchanged (FR-15)
+# stdout only: it is what reaches the session at SessionStart
+stdout_of() { AI_DOTFILES="$DF" AI_CLOUD_HOME="$CFG" AI_DOCTOR_DOCKER=true "$SUT" --fast --cloud test 2>/dev/null; }
+set +e
+out="$(stdout_of)"; rc=$?
+set -e
+expect "a repo without the framework does not fail the doctor" 0 "$rc"
+echo "$out" | grep -qF "NOTE $TMP/src/github.com/org/repo-a: not initialised for the AI framework (missing: _canonical.md CLAUDE.md AGENTS.md .github/copilot-instructions.md)" \
+  || { echo "FAIL: uninitialised project repo not noted on stdout" >&2; fails=$((fails+1)); }
+for f in _canonical.md CLAUDE.md AGENTS.md .github/copilot-instructions.md; do
+  mkdir -p "$(dirname "$TMP/repo-a/$f")"; echo x > "$TMP/repo-a/$f"
+done
+out="$(stdout_of || true)"
+echo "$out" | grep -q "repo-a: not initialised" && { echo "FAIL: an initialised repo still noted" >&2; fails=$((fails+1)); }
+git init -q "$TMP/emptydocs"
+git -C "$TMP/emptydocs" config core.hooksPath "$DF/scripts/git-hooks"
+ln -sfn emptydocs "$TMP/docs"
+out="$(stdout_of || true)"
+echo "$out" | grep -qF "NOTE $TMP/emptydocs: not initialised for the AI framework (no workspace/CLAUDE.md)" \
+  || { echo "FAIL: uninitialised docs repo not noted" >&2; fails=$((fails+1)); }
+rm -rf "$TMP/emptydocs"
+AI_DOTFILES="$DF" "$WSL" --cloud --docs wsdocs "$TMP" >/dev/null 2>&1
+
+# 10g. .mrconfig: a clone at its section passes; a listed repo with no clone is a NOTE; an unsafe section fails (FR-17)
+cat > "$TMP/wsdocs/workspace/.mrconfig" <<'MR'
+[research/repo-a]
+checkout = git clone 'https://github.com/org/repo-a.git' 'repo-a'
+
+[src/github.com/org/missing]
+checkout = git clone 'git@github.com:org/missing.git' 'missing'
+MR
+AI_DOTFILES="$DF" "$WSL" --cloud --docs wsdocs "$TMP" >/dev/null 2>&1
+set +e
+out="$(stdout_of)"; rc=$?
+set -e
+expect "a clone at its .mrconfig section passes" 0 "$rc"
+echo "$out" | grep -qF "NOTE $TMP/src/github.com/org/missing: listed in .mrconfig, not cloned in this session (github.com/org/missing)" \
+  || { echo "FAIL: a listed repo with no clone not noted" >&2; fails=$((fails+1)); }
+echo "$out" | grep -qF "(github.com/org/missing) — remind the owner to give the Claude GitHub App access to it and add it to the project's repositories (Project settings)" \
+  || { echo "FAIL: the note on a listed repo with no clone names no owner steps" >&2; fails=$((fails+1)); }
+rm "$TMP/research/repo-a"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "a clone missing from its .mrconfig section fails" 1 "$rc"
+echo "$out" | grep -qF "$TMP/research/repo-a (missing" || { echo "FAIL: missing section link not named" >&2; fails=$((fails+1)); }
+printf "\n[src/../x]\ncheckout = git clone 'https://github.com/org/x' 'x'\n" >> "$TMP/wsdocs/workspace/.mrconfig"
+AI_DOTFILES="$DF" "$WSL" --cloud --docs wsdocs "$TMP" >/dev/null 2>&1
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "an unsafe .mrconfig section fails" 1 "$rc"
+echo "$out" | grep -qF "FAIL $TMP/wsdocs/workspace/.mrconfig: section [src/../x] is not a plain path" \
+  || echo "$out" | grep -qF "FAIL $TMP/docs/workspace/.mrconfig: section [src/../x] is not a plain path" \
+  || { echo "FAIL: unsafe section not named" >&2; fails=$((fails+1)); }
+rm "$TMP/wsdocs/workspace/.mrconfig" "$TMP/.mrconfig"
+
+# 10h. the root's agent files: renders of the current _canonical.md pass, a stale one fails and is named, and
+#      a sync-agents.sh that is not the framework's is a NOTE and never runs (FR-14)
+WS="$TMP/wsdocs/workspace"
+mkdir -p "$WS/.github/scripts"
+cp "$DF/framework/templates/workspace/.github/scripts/sync-agents.sh" "$WS/.github/scripts/"
+echo "# workspace rules" > "$WS/_canonical.md"
+bash "$WS/.github/scripts/sync-agents.sh" >/dev/null
+AI_DOTFILES="$DF" "$WSL" --cloud --docs wsdocs "$TMP" >/dev/null 2>&1
+set +e
+cloud true --cloud >/dev/null; rc=$?
+set -e
+expect "renders of the current _canonical.md pass" 0 "$rc"
+echo "more rules" >> "$WS/_canonical.md"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "renders older than _canonical.md fail" 1 "$rc"
+echo "$out" | grep -qF "FAIL $TMP/docs/workspace: CLAUDE.md AGENTS.md .github/copilot-instructions.md out of date with _canonical.md — run: make -C $TMP/docs/workspace sync-agents" \
+  || { echo "FAIL: stale renders not named" >&2; fails=$((fails+1)); }
+bash "$WS/.github/scripts/sync-agents.sh" >/dev/null
+echo "edited by hand" >> "$WS/AGENTS.md"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "a hand-edited render fails" 1 "$rc"
+echo "$out" | grep -qF "FAIL $TMP/docs/workspace: AGENTS.md out of date" || { echo "FAIL: the edited render not named alone" >&2; fails=$((fails+1)); }
+{ head -1 "$DF/framework/templates/workspace/.github/scripts/sync-agents.sh"; echo 'touch "$(dirname "$0")/ran"'
+  tail -n +2 "$DF/framework/templates/workspace/.github/scripts/sync-agents.sh"; } > "$WS/.github/scripts/sync-agents.sh"
+set +e
+out="$(stdout_of)"; rc=$?
+set -e
+expect "a sync-agents.sh that is not the framework's does not fail" 0 "$rc"
+echo "$out" | grep -qF "NOTE $TMP/docs/workspace/.github/scripts/sync-agents.sh: not the framework's script; renders not checked" \
+  || { echo "FAIL: a foreign sync-agents.sh not noted" >&2; fails=$((fails+1)); }
+[ ! -e "$WS/.github/scripts/ran" ] || { echo "FAIL: a foreign sync-agents.sh was run" >&2; fails=$((fails+1)); }
+cp "$DF/framework/templates/workspace/.github/scripts/sync-agents.sh" "$WS/.github/scripts/"
+bash "$WS/.github/scripts/sync-agents.sh" >/dev/null
+
+# 10i. --hook: a failing run exits 0 with its failures and notes on stdout, the SessionStart context (FR-4, FR-15)
+git init -q "$TMP/src/github.com/org/bare"
+set +e
+out="$(AI_DOTFILES="$DF" AI_CLOUD_HOME="$CFG" AI_DOCTOR_DOCKER=false "$SUT" --fast --cloud --hook test 2>/dev/null)"; rc=$?
+set -e
+expect "--hook exits 0 on a failing run" 0 "$rc"
+echo "$out" | grep -qF "FAIL docker daemon not reachable" || { echo "FAIL: --hook kept a failure off stdout" >&2; fails=$((fails+1)); }
+echo "$out" | grep -qF "ai-doctor: NOTE " || { echo "FAIL: --hook kept the notes off stdout" >&2; fails=$((fails+1)); }
+set +e
+AI_DOTFILES="$DF" AI_CLOUD_HOME="$CFG" AI_DOCTOR_DOCKER=false "$SUT" --fast --cloud test >/dev/null 2>&1; rc=$?
+set -e
+expect "without --hook the same run exits 1" 1 "$rc"
+rm -rf "$TMP/src/github.com/org/bare"
+grep -qF '"@AI_DOTFILES@/scripts/ai-doctor.sh --fast --hook"' "$(dirname "$SUT")/../framework/templates/system/claude/hooks.json" \
+  || { echo "FAIL: the Claude SessionStart hook does not run the doctor with --hook" >&2; fails=$((fails+1)); }
+
+# 11. without --cloud the same broken session is not checked
+set +e
+cloud false >/dev/null; rc=$?
+set -e
+expect "cloud checks are off locally" 0 "$rc"
 
 if [ "$fails" -ne 0 ]; then
   echo "$fails ai-doctor self-test(s) failed ✗" >&2

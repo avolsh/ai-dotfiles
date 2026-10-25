@@ -31,6 +31,9 @@ REPO="$(cd "$(dirname "$0")/../.." && pwd)"
 SWITCH="$REPO/scripts/ai-switch.sh"
 INIT="$REPO/scripts/ai-profile-init.sh"
 DOCTOR="$REPO/scripts/ai-doctor.sh"
+# These sequences are local profile switches; a cloud session's own env must
+# not turn on ai-doctor's cloud checks (IMP-20261025-cloud-sessions FR-4).
+unset CLAUDE_CODE_REMOTE
 # STRICT=1 (default since T3): ai-doctor must exit 0 after every active
 # sequence. STRICT=0 re-enables the pre-T3 characterization baseline.
 STRICT="${AI_SWITCH_TEST_STRICT:-1}"

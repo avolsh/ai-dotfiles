@@ -54,6 +54,23 @@ echo "sentinel" > "$CANON"
   || fail "second ai-project run exited non-zero"
 [ "$(cat "$CANON")" = "sentinel" ] || fail "second run overwrote _canonical.md"
 
+# A target directory, from elsewhere: a repo that already holds code and its own
+# CLAUDE.md keeps both (IMP-20261025-cloud-sessions FR-16, AC-8).
+REPO="$TMP/repo-with-code"
+mkdir -p "$REPO/src"
+echo "main" > "$REPO/src/main.go"
+echo "# hand-written" > "$REPO/CLAUDE.md"
+ELSEWHERE="$TMP/elsewhere"  # the cwd: a <dir> run must leave it empty
+mkdir -p "$ELSEWHERE"
+(cd "$ELSEWHERE" && AI_DOTFILES="$ROOT" "$ROOT/scripts/ai-project.sh" "$REPO") >/dev/null 2>&1 \
+  || fail "ai-project <dir> exited non-zero"
+[ -f "$REPO/_canonical.md" ] || fail "ai-project <dir> did not scaffold the directory"
+[ "$(cat "$REPO/src/main.go")" = "main" ] || fail "the repo's code changed"
+[ "$(cat "$REPO/CLAUDE.md")" = "# hand-written" ] || fail "the repo's own CLAUDE.md overwritten"
+(cd "$ELSEWHERE" && AI_DOTFILES="$ROOT" "$ROOT/scripts/ai-project.sh" "$TMP/missing") >/dev/null 2>&1 \
+  && fail "a missing <dir> accepted"
+[ -z "$(ls -A "$ELSEWHERE")" ] || fail "ai-project <dir> wrote to the cwd"
+
 if [ "$fails" -ne 0 ]; then
   echo "ai-project.test: $fails failure(s)" >&2
   exit 1

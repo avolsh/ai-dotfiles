@@ -1,6 +1,6 @@
 # AI Agent Framework — Overview
 
-*Last updated: 2026-09-18*
+*Last updated: 2026-10-25*
 
 This repo implements an **AI Agent Framework** — a set of conventions,
 skills, and guardrails that let AI coding agents (GitHub Copilot, Claude
@@ -34,14 +34,14 @@ ai-dotfiles/
 │       ├── workspace/             ← Workspace scaffold templates (used by ai-workspace)
 │       └── project/               ← Project scaffold templates (used by ai-project)
 ├── profiles/
-│   └── personal/                  ← Identity-level prefs + pre-built tool subdirs
+│   └── personal/                  ← Identity (profile.env) + pre-built tool subdirs
 │       ├── profile.env
-│       ├── preferences.md
 │       ├── claude/                ← Pre-built — CLAUDE_CONFIG_DIR target
 │       ├── copilot/               ← Pre-built — COPILOT_HOME target
 │       └── codex/                 ← Pre-built — CODEX_HOME target
 ├── scripts/
 │   ├── ai-switch.sh               ← Switches active profile, persists env, links shared state
+│   ├── ai-cloud-setup.sh          ← Same wiring for a cloud session's ~/.claude (README § Cloud sessions)
 │   ├── lib/profile-links.sh       ← Single source of truth for profile wiring (switch + init)
 │   └── ai-profile-init.sh         ← Renders profile tool subdirs (one-time per profile)
 ├── Makefile                       ← Entry-point wrapper; run `make help`

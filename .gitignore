@@ -17,8 +17,7 @@ research/**/.tmp/
 # framework wiring symlinks with absolute, host-specific targets, plus
 # shared tool-home state linked in by ai-switch. None of it is portable or
 # version-controllable — regenerate it, never commit it. Only the
-# hand-authored profile.env and preferences.md (at the profile root) are
-# tracked.
+# hand-authored profile.env (at the profile root) is tracked.
 profiles/*/claude/
 profiles/*/copilot/
 profiles/*/codex/
