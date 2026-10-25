@@ -107,6 +107,22 @@ the repo with its working branch, the two settings of step 2, and the merge.
    needs step 2 before any cloud session clones it: the doctor notes it as
    "not cloned in this session", and the agent reminds the owner of step 2.
 
+## Removing a repo from the workspace
+
+`.mrconfig` lists the repos the work needs now. A repo whose work is over,
+such as a finished research repo, leaves the list:
+
+1. **Agent or owner:** removes its section from `workspace/.mrconfig` in a PR
+   into the docs repo's working branch; the owner merges.
+2. **Owner, cloud:** removes the repo from the project's repositories, so new
+   sessions stop cloning it.
+3. **Owner, laptop:** deletes the clone or keeps it; `mr` never deletes one,
+   and a clone outside the list is not checked.
+
+Every listed repo is expected in cloud sessions too, so one listed for the
+laptop alone is noted in each cloud session. There is no laptop-only marker
+yet; add one to `ai_ws_mr_repos` when the first such repo appears.
+
 ## Anti-patterns
 
 - **Inlining framework prose** — descriptions of `<system>/`, the
