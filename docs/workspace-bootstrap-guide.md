@@ -1,6 +1,6 @@
 # Workspace Bootstrap Guide
 
-*Last updated: 2026-05-13*
+*Last updated: 2026-10-25*
 
 Authoring guidance for the workspace-root instruction file
 (`.github/copilot-instructions.md`) produced by `ai-workspace`. Conceptual
@@ -55,16 +55,50 @@ architecture at bootstrap time, leave the `docs/` subdirectories empty
 ## Multi-agent sync (workspace layer)
 
 A workspace root participates in the same three-tool fan-out as a
-project: `CLAUDE.md` is a one-line `@`-import of
-`.github/copilot-instructions.md`, `AGENTS.md` is a generated
-self-contained copy produced by `.github/scripts/sync-agents.sh`, and
-GitHub Copilot reads the source file directly. Edit only
-`.github/copilot-instructions.md`; run `make sync-agents` to regenerate
-`AGENTS.md`; never hand-edit `AGENTS.md`.
+project: `_canonical.md` is the one source, and
+`.github/scripts/sync-agents.sh` renders `CLAUDE.md`, `AGENTS.md` and
+`.github/copilot-instructions.md` from it. Edit only `_canonical.md`; run
+`make sync-agents` to regenerate the three; never hand-edit a rendered
+file.
 
 The workspace `Makefile` exposes only framework targets (`sync-agents`,
 `sync-agents-check`) — workspace roots have no build commands of their
 own.
+
+## Where the root files live
+
+The workspace root holds no git repository. Its files are kept in the docs
+repo under `workspace/` and linked into the root by
+`scripts/ai-workspace-link.sh` (README § Workspace root). Scaffold them there
+with `ai-workspace --docs <docs clone>`: the root files land in
+`<docs clone>/workspace/`, the template's `docs/` content at the clone's top.
+The repos of the workspace are listed in `workspace/.mrconfig` (myrepos), one
+section per repo with its path relative to the root.
+
+## Adding a repo to the workspace
+
+The same steps serve an empty repo and one that already holds code. The owner
+does the first three; the agent, in a cloud session or locally when asked,
+does the rest on its own branch.
+
+1. **Owner:** the repo exists and has the working branch the agent starts
+   from. For an empty repo, create it with a README so the branch has a commit.
+2. **Owner:** in a cloud project, give the Claude GitHub App access to the
+   repo and add it to the project's repositories; on a laptop, add its section
+   to `workspace/.mrconfig` and run `mr checkout`.
+3. **Owner:** start a session (cloud) or run `make workspace-link` (laptop).
+4. **Agent:** `ai-doctor` notes the repo as not initialised for the
+   framework. The agent asks the owner once whether to initialise it.
+5. **Agent, on yes:** creates `claude/*` from the working branch, runs
+   `ai-project.sh <repo>` (`ai-workspace.sh --docs <repo>` for a docs repo),
+   and adds the repo's section to `workspace/.mrconfig` if it is missing.
+   Nothing the repo holds is overwritten.
+6. **Agent:** if the repo already has its own `CLAUDE.md` or `AGENTS.md`, it
+   shows that file to the owner instead of running `make sync-agents`, which
+   would render over it; the owner decides what moves into `_canonical.md`.
+   Otherwise it fills `_canonical.md` and runs `make sync-agents`.
+7. **Agent:** opens the PRs into the working branches (the repo, and the docs
+   repo for `.mrconfig`); the owner merges.
 
 ## Anti-patterns
 

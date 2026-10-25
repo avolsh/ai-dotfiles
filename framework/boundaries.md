@@ -171,7 +171,12 @@
     branch, never force-pushes (§ Never do #8 still binds), and never opens a PR into `master` or `develop`.
     A diverged branch — the human pushed to it too — stops the work: the agent says so and waits. Outside a
     cloud session none of this applies and the rule above holds in full. `bash-write-guard.sh` and
-    `pr-base-guard.sh` enforce the shell and PR halves.
+    `pr-base-guard.sh` enforce the shell and PR halves. When `ai-doctor` notes a repo as not initialised for
+    the framework, the agent asks the human once per repo whether to initialise it; on yes it runs
+    `ai-project.sh <repo>` (`ai-workspace.sh --docs <repo>` for the docs repo) on its `claude/*` branch, adds
+    the repo's section to `docs/workspace/.mrconfig`, and opens the PRs. It never renders over an agent file it
+    did not write: a repo's own `CLAUDE.md` or `AGENTS.md` goes to the human to merge into `_canonical.md`
+    before `make sync-agents` runs (`<system>/docs/workspace-bootstrap-guide.md` § Adding a repo to the workspace).
 11. <a id="environments-are-the-humans"></a>**Never run a command that reaches a deployed environment
     without the human's permission for that exact command — reads included.** A cluster, a cloud account, a
     deployed host or a production database is the human's, and so is every command that touches it:

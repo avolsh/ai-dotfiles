@@ -84,6 +84,7 @@ tests:
 	./scripts/test/ai-project.test.sh
 	./scripts/test/ai-cloud-setup.test.sh
 	./scripts/test/ai-workspace-link.test.sh
+	./scripts/test/ai-workspace.test.sh
 
 spec-metrics:
 	python3 ./scripts/spec-metrics.py
