@@ -9,6 +9,10 @@
 set -euo pipefail
 
 SUT="$(cd "$(dirname "$0")/.." && pwd)/ai-doctor.sh"
+LIB="$(cd "$(dirname "$0")/.." && pwd)/lib/profile-links.sh"
+# Cases 1-7 are the local profile; a cloud session's own env must not turn
+# on the cloud checks for them.
+unset CLAUDE_CODE_REMOTE
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -98,6 +102,54 @@ set +e
 AI_DOTFILES="$DF" "$SUT" nosuch >/dev/null 2>&1; rc=$?
 set -e
 expect "missing profile dir fails" 1 "$rc"
+
+# --- cloud session (IMP-20261025-cloud-sessions AC-2) ---
+mkdir -p "$DF/framework/skills/writing-specs" "$DF/scripts/git-hooks"
+printf '{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"@AI_DOTFILES@/framework/hooks/stop-build-check.sh"}]}]}}\n' \
+  > "$DF/framework/templates/system/claude/hooks.json"
+CFG="$TMP/cloud-home/.claude"
+mkdir -p "$CFG/skills/harness-skill"
+git init -q "$TMP/repo-a"
+# shellcheck source=../lib/profile-links.sh
+. "$LIB"
+ai_links_wire_dir "$DF" "$CFG" claude 2>/dev/null
+ai_links_merge_claude_settings "$DF" "$CFG/settings.json" test 2>/dev/null
+git -C "$TMP/repo-a" config core.hooksPath "$DF/scripts/git-hooks"
+cloud() { AI_DOTFILES="$DF" AI_CLOUD_HOME="$CFG" AI_DOCTOR_DOCKER="$1" "$SUT" --fast "${@:2}" test 2>&1; }
+
+# 8. a wired cloud session passes
+set +e
+cloud true --cloud >/dev/null; rc=$?
+set -e
+expect "wired cloud session passes" 0 "$rc"
+
+# 9. CLAUDE_CODE_REMOTE=true implies --cloud
+set +e
+CLAUDE_CODE_REMOTE=true cloud false >/dev/null; rc=$?
+set -e
+expect "CLAUDE_CODE_REMOTE turns on the cloud checks" 1 "$rc"
+
+# 10. one link, one hook, one repo's hooksPath and Docker missing: each named
+rm "$CFG/prompts"
+python3 - "$CFG/settings.json" <<'PY'
+import json, sys
+d = json.load(open(sys.argv[1])); d["hooks"] = {}
+json.dump(d, open(sys.argv[1], "w"))
+PY
+git -C "$TMP/repo-a" config --unset core.hooksPath
+set +e
+out="$(cloud false --cloud)"; rc=$?
+set -e
+expect "broken cloud session fails" 1 "$rc"
+for want in "$CFG/prompts" "hook missing: $DF/framework/hooks/stop-build-check.sh" "repo-a: core.hooksPath" "docker daemon"; do
+  echo "$out" | grep -qF "$want" || { echo "FAIL: cloud failure not named: $want" >&2; fails=$((fails+1)); }
+done
+
+# 11. without --cloud the same broken session is not checked
+set +e
+cloud false >/dev/null; rc=$?
+set -e
+expect "cloud checks are off locally" 0 "$rc"
 
 if [ "$fails" -ne 0 ]; then
   echo "$fails ai-doctor self-test(s) failed ✗" >&2
