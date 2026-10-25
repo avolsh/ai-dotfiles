@@ -105,16 +105,19 @@ for t in tokens:
 if current:
     segments.append(current)
 
-# A `cd` earlier in the same command moves where the later segments run; None once it cannot be followed.
-here = cwd
-
 def absolute(path, base=None):
-    base = base or here or cwd
+    base = base or cwd
     return path if os.path.isabs(path) else os.path.normpath(os.path.join(base, path))
+
+# Cloud mode only: a `cd` earlier in the same command moves the repository a later git write lands in, so the
+# branch the cloud exception checks is read there. None once it cannot be followed. Write paths still resolve
+# against the payload cwd, as they always have.
+here = cwd
 
 CLOUD = os.environ.get("CLAUDE_CODE_REMOTE") == "true"
 AGENT = "claude/"
 GH_PR_WRITE = {"create", "edit", "merge", "ready", "close", "reopen"}
+CHECKOUT_DENY = {"-f", "--force", "--discard-changes", "-m", "--merge"}  # each discards or rewrites local work
 PUSH_DENY = {"-f", "--force", "--force-with-lease", "--force-if-includes", "-d", "--delete", "--mirror",
              "--all", "--tags", "--prune"}
 
@@ -131,6 +134,8 @@ def cloud_allows(sub, rest, where):
     if sub in ("checkout", "switch"):
         # Creating the agent branch from the human base, never tracking it. -B and -C are absent on purpose:
         # they reset a branch that already exists, unpushed commits and all.
+        if any(a in CHECKOUT_DENY for a in rest):
+            return False
         for k, a in enumerate(rest):
             if a in ("-b", "-c") and k + 1 < len(rest):
                 return rest[k + 1].startswith(AGENT) and "--no-track" in rest
@@ -143,10 +148,14 @@ def cloud_allows(sub, rest, where):
     if sub == "add":
         return True
     if sub == "commit":
-        return "--amend" not in rest
+        # --no-verify / -n skip the pre-commit backstop, the only secrets check on this path.
+        short = [a for a in rest if a.startswith("-") and not a.startswith("--")]
+        return not any(a in ("--amend", "--no-verify") for a in rest) and not any("n" in a[1:] for a in short)
     if sub == "fetch":
         return not any(":" in a for a in rest if not a.startswith("-"))
     if sub == "pull":
+        if any(":" in a for a in rest if not a.startswith("-")):
+            return False  # `pull origin X:X` writes the local branch X
         return "--ff-only" in rest and not any(a in ("-r", "--rebase") or a.startswith("--rebase=") for a in rest)
     if sub == "push":
         if any(a in PUSH_DENY or a.startswith("--force") for a in rest):
@@ -189,12 +198,17 @@ for seg in segments:
     words = trimmed
     if not words:
         continue
+    # Leading NAME=value assignments (GIT_CONFIG_COUNT=…, say) can reconfigure git for that one command.
+    assigned = 0
+    while CLOUD and assigned < len(words) - 1 and "=" in words[assigned] and not words[assigned].startswith("-"):
+        assigned += 1
+    words = words[assigned:]
     verb = os.path.basename(words[0])
     args = words[1:]
 
     if verb in ("cd", "pushd"):
         plain = [a for a in args if not a.startswith("-")]
-        here = absolute(plain[0]) if plain and here else None  # bare `cd` and `cd -` are not followed
+        here = absolute(plain[0], here) if plain and here else None  # bare `cd` and `cd -` are not followed
         continue
     if verb == "popd":
         here = None
@@ -210,7 +224,10 @@ for seg in segments:
 
     if verb == "git":
         sub, j, where = None, 0, here
+        configured = assigned > 0  # an env prefix or -c can switch the hooks off for this one command
         while j < len(args):  # skip the pre-command options that carry a value
+            if args[j] == "-c" or args[j].startswith("--config-env"):
+                configured = True
             if args[j] == "-C" and j + 1 < len(args):
                 where = absolute(args[j + 1], where) if where else None
             if args[j].startswith(("--git-dir", "--work-tree")):
@@ -230,7 +247,7 @@ for seg in segments:
                 continue
             if rest and any(r in readable for r in rest):
                 continue
-        if CLOUD and cloud_allows(sub, rest, where):
+        if CLOUD and not configured and cloud_allows(sub, rest, where):
             continue
         out("GIT", sub)
         continue

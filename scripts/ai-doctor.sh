@@ -96,11 +96,19 @@ for tool in claude copilot codex; do
   fi
 done
 
-# A cloud entry passes only as a link into ai-dotfiles: a real file or dir standing in its place is one the
-# setup script left alone ("real path in the way"), so the framework entry it should be is absent.
-check_cloud_link() { # $1 = path in ~/.claude, $2 = the framework source it must resolve to
+# A cloud entry passes as a link into ai-dotfiles. A real directory where a framework directory belongs is one
+# the harness or the CLI owns (skills/, agents/): the setup script links each framework entry inside it, so each
+# is checked there. Any other real path standing in a link's place is one the setup script left alone ("real
+# path in the way"), so the framework entry it should be is absent.
+check_cloud_link() { # $1 = path in ~/.claude, $2 = the framework source it must resolve to, $3 = "inner" one level down
+  local inner
   if [ -L "$1" ] && [ "$(readlink -f "$1")" = "$(readlink -f "$2")" ]; then
     return 0
+  elif [ -z "${3:-}" ] && [ -d "$1" ] && [ ! -L "$1" ] && [ -d "$2" ]; then
+    for inner in "$2"/* "$2"/.[!.]*; do
+      [ -e "$inner" ] || continue
+      check_cloud_link "$1/$(basename "$inner")" "$inner" inner
+    done
   elif [ -e "$1" ] && [ ! -L "$1" ]; then
     fail "$1 (a real path stands where the framework link belongs — move it aside, re-run: ai-cloud-setup.sh $PROFILE)"
   else
@@ -112,18 +120,12 @@ if [ "$CLOUD" -eq 1 ]; then
   cfg="${AI_CLOUD_HOME:-$HOME/.claude}"
   for entry in CLAUDE.md boundaries.md docs $REFS; do
     case "$entry" in
-      skills) continue ;;   # a harness-owned real dir; checked per skill below
       CLAUDE.md) src="$AI_DOTFILES/framework/templates/system/claude/CLAUDE.md" ;;
       docs) src="$AI_DOTFILES/docs" ;;
       *) src="$AI_DOTFILES/framework/$entry" ;;
     esac
     [ -e "$src" ] || continue
     check_cloud_link "$cfg/$entry" "$src"
-  done
-  for skill in "$AI_DOTFILES"/framework/skills/*/; do
-    [ -d "$skill" ] || continue
-    name="$(basename "$skill")"
-    check_cloud_link "$cfg/skills/$name" "$skill"
   done
   template="$AI_DOTFILES/framework/templates/system/claude/hooks.json"
   if [ -f "$template" ]; then

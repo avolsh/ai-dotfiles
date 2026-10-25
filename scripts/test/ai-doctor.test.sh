@@ -157,6 +157,27 @@ for want in "$CFG/CLAUDE.md (a real path" "$CFG/skills/writing-specs (a real pat
   echo "$out" | grep -qF "$want" || { echo "FAIL: real path not named: $want" >&2; fails=$((fails+1)); }
 done
 
+# 10c. a real dir the CLI owns (agents/) with the framework entries linked inside passes (review cycle 2 finding 6)
+rm -rf "$CFG"
+mkdir -p "$CFG/skills/harness-skill" "$CFG/agents" "$DF/framework/agents"
+echo "# reviewer" > "$DF/framework/agents/reviewer.md"
+echo "# mine" > "$CFG/agents/user-agent.md"
+ai_links_wire_dir "$DF" "$CFG" claude 2>/dev/null
+ai_links_merge_claude_settings "$DF" "$CFG/settings.json" test 2>/dev/null
+git -C "$TMP/repo-a" config core.hooksPath "$DF/scripts/git-hooks"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "a CLI-owned real dir with framework entries linked inside passes" 0 "$rc"
+[ "$rc" -eq 0 ] || echo "$out" >&2
+rm "$CFG/agents/reviewer.md"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "a framework entry missing inside a CLI-owned dir fails" 1 "$rc"
+echo "$out" | grep -qF "$CFG/agents/reviewer.md (missing" || { echo "FAIL: missing inner entry not named" >&2; fails=$((fails+1)); }
+rm "$CFG/prompts"
+
 # 11. without --cloud the same broken session is not checked
 set +e
 cloud false >/dev/null; rc=$?

@@ -164,7 +164,8 @@
     branch to start from, records the answer under the spec's `branches:` (repo → base), and creates
     `claude/<name>` from `origin/<base>` with `--no-track`, so no push of it can reach the base; it never
     resets a branch that already exists. On that
-    branch, and only there, it may `add`, `commit`, `fetch`, `pull --ff-only` and `push` it by name. It
+    branch, and only there, it may `add`, `commit`, `fetch`, `pull --ff-only` and `push` it by name, never
+    around the pre-commit hook (`--no-verify`, `git -c`). It
     opens its draft PR itself after the first push, with the recorded base, through the GitHub tools rather
     than `gh pr`, and retargets a PR from its branch whose base is anything else to that base. It never merges, never pushes to or rewrites any other
     branch, never force-pushes (§ Never do #8 still binds), and never opens a PR into `master` or `develop`.

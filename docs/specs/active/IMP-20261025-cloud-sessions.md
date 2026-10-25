@@ -64,8 +64,8 @@ baseline-impact: none — no docs/domain baselines in ai-dotfiles; tobevisit-con
 - FR-3: The script MUST set `core.hooksPath` to the framework git hooks in every cloned repo and start `dockerd` with the `mirror.gcr.io` registry mirror when it is not running.
 - FR-4: `ai-doctor.sh --cloud` MUST name each missing `~/.claude` link, missing hook, repo without `core.hooksPath` and an unreachable Docker daemon, and exit 1; SessionStart runs it when `CLAUDE_CODE_REMOTE=true`.
 - FR-5: `boundaries.md` § Never do #10 MUST gain a cloud exception: with `CLAUDE_CODE_REMOTE=true` the agent asks the human for the base branch of each repo before creating `claude/*` from it (`--no-track`), records it under `branches:`, may commit, `fetch`, `pull --ff-only` and push only that branch, opens its draft PR itself after the first push and only into that base, retargets a PR from its branch whose base differs to that base, and never merges, force-pushes or writes any other branch.
-- FR-6: `bash-write-guard.sh` MUST, in cloud mode only, allow `add`, `commit`, `fetch`, `pull --ff-only` and `push` when the current branch and the push target are `claude/*`, and keep denying every other git write.
-- FR-7: A new PreToolUse hook `pr-base-guard.sh` on GitHub PR-creation tools MUST deny a PR whose base is `master`, `develop`, or differs from the governing spec's `branches:` entry for that repo.
+- FR-6: `bash-write-guard.sh` MUST, in cloud mode only, allow creating a `claude/*` branch with `-b`/`-c` and `--no-track`, and `add`, `commit`, `fetch`, `pull --ff-only` and `push` when the current branch and the push target are `claude/*`, never around the pre-commit hook, and keep denying every other git write.
+- FR-7: A new PreToolUse hook `pr-base-guard.sh` on GitHub PR-creation tools MUST deny a PR whose base is `master`, `develop`, or differs from the governing spec's `branches:` entry for that repo; in cloud mode `bash-write-guard.sh` MUST deny the `gh pr` verbs that open or change a PR, so PRs go through those tools.
 - FR-8: The front-matter schema MUST define optional `branches:` (repo → base branch), and `validate-specs.py` MUST accept it.
 - FR-9: `framework/scripts/check-md-links.sh` MUST report a relative link that resolves outside the repo root; `writing-docs` MUST say framework files are cited as `<system>/…`.
 - FR-10: The local-layout links (`../…/env/ai-dotfiles/…`, `../…/src/github.com/…`) MUST read as `<system>/…` or repo-name citations: three in `tobevisit-content`, one in `ai-dotfiles` `docs/baseline-citations.md:50`.
@@ -87,7 +87,7 @@ When the guard sees `commit`, `push origin claude/x`, `push origin TBV-1`, `push
 Then only the first two pass in cloud mode, and none pass outside it
 ### AC-4: PR base is the named branch (FR-7)
 Given a spec with `branches: {ai-dotfiles: TBV-83-cloud-setup}`
-When PR creation is attempted with base `TBV-83-cloud-setup`, `master`, `develop`, `TBV-99`
+When PR creation is attempted with base `TBV-83-cloud-setup`, `master`, `develop`, `TBV-99`, and `gh pr create` runs in the shell
 Then only the first is allowed
 ### AC-5: Links stay inside the repo (FR-9, FR-10)
 Given a fixture doc with a `../../../../env/…` link, and `tobevisit-content` on this change

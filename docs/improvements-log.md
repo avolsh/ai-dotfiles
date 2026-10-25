@@ -539,3 +539,12 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** Once `ai-doctor.sh` and `bash-write-guard.sh` switch mode on `CLAUDE_CODE_REMOTE`, the self-tests written for the local profile inherited the cloud container's `CLAUDE_CODE_REMOTE=true` and asserted the wrong mode, so they failed in the cloud and would have passed on a laptop.
 - **What was changed:** `ai-doctor.test.sh`, `ai-switch.test.sh` and `hooks.test.sh` unset it at the top; the cloud cases set it per call.
 - **Suggested follow-up:** any test of a script that reads an ambient mode variable sets or unsets it explicitly, never inherits it.
+
+### 2026-10-25 — `bash-write-guard` resolves a write after `cd` against the wrong directory
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 8, review cycle 2
+- **Category:** `tooling`
+- **What was found:** The guard resolves every write path against the payload `cwd`, so `cd src && touch foo/b` is checked as `<cwd>/foo/b`, not `<cwd>/src/foo/b`, and a write to a governed file behind a `cd` passes. The cloud spec now follows `cd` to pick the repository whose branch it checks, but changing how local writes resolve was out of its scope, so a local-mode test pins the old behaviour.
+- **What was changed:** none for local mode — logged for review.
+- **Suggested follow-up:** resolve write paths against the `cd`-tracked directory in both modes, and replace the pinning test in `framework/scripts/test/hooks.test.sh` with one that expects the governed write to be refused.
+

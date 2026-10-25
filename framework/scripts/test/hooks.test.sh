@@ -330,6 +330,9 @@ bwg_expect 0 "bash -c 'rm src/foo/b'"
 bwg_expect 0 "python3 scripts/write.py"
 bwg_expect 0 "find . -name x -exec rm {} ;"
 bwg_expect 0 "cp /tmp/x src/foo/*.ts"
+# local mode keeps resolving a write against the payload cwd, a preceding cd included: the cloud spec
+# changes nothing here (IMP-20261025-cloud-sessions, review cycle 2 finding 5; the gap is logged)
+bwg_expect 0 "cd src && touch foo/b"
 set +e
 printf 'not json' | "$BWG" >/dev/null 2>&1; rc=$?
 set -e
@@ -368,9 +371,16 @@ for c in "git push origin TBV-1" "git push --force origin claude/x" "git push --
          "git reset --hard" "git checkout -b claude/y origin/TBV-1" "git checkout -b feat --no-track origin/TBV-1" \
          "git tag v1" "git checkout -B claude/x --no-track origin/master" \
          "git switch -C claude/x --no-track origin/master" "gh pr create --base master" \
-         "gh pr edit 12 --base TBV-1" "gh pr merge 12"; do
+         "gh pr edit 12 --base TBV-1" "gh pr merge 12" \
+         "git pull --ff-only origin TBV-1:TBV-1" "git commit --no-verify -m x" "git commit -n -m x" \
+         "git commit -anm x" "git -c core.hooksPath=/dev/null commit -m x" \
+         "git --config-env=core.hooksPath=H commit -m x" "GIT_CONFIG_COUNT=1 git commit -m x" \
+         "git checkout -f -b claude/y --no-track origin/TBV-1" \
+         "git switch --discard-changes -c claude/y --no-track origin/TBV-1"; do
   cloud_expect 2 "$c" true
 done
+# a commit message that merely contains n is not -n
+cloud_expect 0 "git commit -am note" true
 # gh is not a git verb: outside the cloud the guard leaves it alone, and reading a PR is never refused
 cloud_expect 0 "gh pr create --base master" ""
 cloud_expect 0 "gh pr view 12" true
