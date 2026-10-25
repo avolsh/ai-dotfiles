@@ -2,12 +2,13 @@
 id: IMP-20261025-cloud-sessions
 type: IMP
 date: 2026-10-25
-status: in-progress
+status: plan
 owner: avolsh
 risk: medium
 affected-repos:
   - ai-dotfiles
   - tobevisit-content
+  - tobevisit-docs
 branches: {ai-dotfiles: TBV-83-cloud-setup, tobevisit-content: TBV-83-new-categories}
 affected-docs:
   - README.md
@@ -19,6 +20,7 @@ affected-docs:
   - docs/baseline-citations.md
 affected-code:
   - scripts/ai-cloud-setup.sh
+  - scripts/ai-workspace-link.sh
   - scripts/ai-doctor.sh
   - scripts/lib/profile-links.sh
   - scripts/test
@@ -42,7 +44,7 @@ baseline-impact: none — no docs/domain baselines in ai-dotfiles; tobevisit-con
 
 ## Summary
 - **Goal:** A Claude Code cloud session (Projects threads) runs under the same AI Framework as the local profile: system layer, skills, hooks, git backstop, Docker.
-- **Scope:** A setup script and a cloud doctor in `ai-dotfiles`; a cloud exception to the git rule with its two guards; the `branches:` front-matter key; a link check that refuses links leaving the repo; removal of the unused `preferences.md`; a README section; three links in `tobevisit-content`.
+- **Scope:** A setup script and a cloud doctor in `ai-dotfiles`; the workspace root files, kept in `tobevisit-docs`, linked into the root locally and in the cloud; a cloud exception to the git rule with its two guards; the `branches:` front-matter key; a link check that refuses links leaving the repo; removal of the unused `preferences.md`; a README section; three links in `tobevisit-content`.
 - **Out of scope:** Cluster access from the cloud, the other site repos, and changing local behaviour.
 
 ## Current State
@@ -52,6 +54,7 @@ baseline-impact: none — no docs/domain baselines in ai-dotfiles; tobevisit-con
 - `dockerd` is installed but not running; anonymous Docker Hub pulls return 429, `mirror.gcr.io` pulls succeed.
 - Links written for the local layout break `links-check`: 3 in `tobevisit-content` (`../…/env/ai-dotfiles/…`), 1 in `ai-dotfiles` (`docs/baseline-citations.md:50`, `../…/src/github.com/…`).
 - `profiles/*/preferences.md`: README says it is appended on render; no script reads it, and its content is stale.
+- The workspace root (`CLAUDE.md`, `_canonical.md`, …: repo map, cross-repo spec location, § Shared safety) exists only on Alex's laptop, beside `src/<host>/<org>/<repo>`, `env/ai-dotfiles` and `docs` (= `tobevisit-docs`); the cloud root `/home/claude` has none of them.
 
 ## Proposed Improvement
 - One idempotent script wires the profile into `~/.claude` and the repos; the environment's Setup script becomes `bash ai-dotfiles/scripts/ai-cloud-setup.sh <profile>`.
@@ -70,6 +73,8 @@ baseline-impact: none — no docs/domain baselines in ai-dotfiles; tobevisit-con
 - FR-9: `framework/scripts/check-md-links.sh` MUST report a relative link that resolves outside the repo root; `writing-docs` MUST say framework files are cited as `<system>/…`.
 - FR-10: The local-layout links (`../…/env/ai-dotfiles/…`, `../…/src/github.com/…`) MUST read as `<system>/…` or repo-name citations: three in `tobevisit-content`, one in `ai-dotfiles` `docs/baseline-citations.md:50`.
 - FR-11: `profiles/*/preferences.md` MUST be removed, with README and `docs/ai-agent-framework.md` no longer describing them.
+- FR-13: `scripts/ai-workspace-link.sh <root>` MUST link every entry of `docs/workspace/` into `<root>` as a relative symlink, never replacing a real file that differs; in the cloud `ai-cloud-setup.sh` first links `docs` → the clone holding `workspace/`, `env/ai-dotfiles`, and `src/<host>/<org>/<repo>` from each clone's `origin`; `ai-doctor` names a missing root link in both modes.
+- FR-14: `tobevisit-docs` MUST hold the workspace root files under `workspace/`.
 - FR-12: README MUST gain a "Cloud sessions" section: one environment per profile, the Setup script line, network (`mirror.gcr.io`), no `CLAUDE_CONFIG_DIR`, dev keys only and no kubeconfig, the mixed cloud/local workflow on one `claude/*` branch, and that the agent, not the UI's PR button, opens PRs.
 
 ## Acceptance Criteria
@@ -98,6 +103,10 @@ Given an environment whose Setup script is the README line, after this IMP reach
 When a new thread starts
 Then `ai-doctor --cloud` exits 0, a framework skill is listed, an edit no `in-progress` spec governs is denied, and the thread's PR targets the spec's base
 Evidence: manual (observation, Projects thread, agent + Alex, date of first run)
+### AC-7: The workspace root resolves in both layouts (FR-13, FR-14)
+Given a flat fixture of clones (one holding `workspace/CLAUDE.md`) and a local-layout fixture whose root has a differing real `CLAUDE.md`
+When the cloud setup and `ai-workspace-link.sh` run twice
+Then the cloud root's `CLAUDE.md`, `docs`, `env/ai-dotfiles` and `src/github.com/<org>/<repo>` resolve; the local real file is reported, not replaced; the doctor names a removed root link
 
 ## Design
 ### Decisions
@@ -119,14 +128,15 @@ flowchart LR
 
 ## Out of Scope
 - OS-1: Cluster commands and kubeconfig in the cloud — § Never do #11 keeps them with the human.
-- OS-2: `geeoz-web`, `packages-next.js`, `tobevisit-web`, `tobevisit-docs` — no cloud-layout defects found.
+- OS-2: `geeoz-web`, `packages-next.js`, `tobevisit-web` — no cloud-layout defects found.
+- OS-4: A Go project needing its physical path under `src/github.com/…` — none of the six repos is one; revisit when one is.
 - OS-3: `tobevisit-content`'s own `check-md-links.sh` adopting FR-9 — that repo's checker, its own spec.
 
 ## Split Decision
 - Clusters: setup + doctor (FR-1–4), cloud git rule (FR-5–8), links (FR-9, FR-10), cleanup + docs (FR-11, FR-12).
 - Triggers: T1 (setup and git clusters test independently), T3 (FR-10 is `tobevisit-content`). Exceptions: none applies.
 - Recommendation: `split-recommended` (T1) — siblings `cloud-setup-script`, `cloud-git-rule`, `links-inside-repo`.
-- Human decision, 2026-10-25: keep-as-one ("all in one, to close the question"); FR-5–FR-8 ship together in any case.
+- Human decision, 2026-10-25: keep-as-one ("all in one, to close the question"); FR-5–FR-8 ship together in any case. Workspace root (FR-13, FR-14) added in-spec, 2026-10-25, back at `plan`.
 - Plan override, 2026-10-25: P3 fires (Tasks 5 and 6 depend on no other task); it repeats Specify trigger T1 on the links cluster, which the human kept in this spec.
 
 ## Tasks
@@ -141,7 +151,9 @@ flowchart LR
 | 5 | Link check refuses links leaving the repo; `writing-docs` cites framework files as `<system>/…`; fix `docs/baseline-citations.md:50` (FR-9, FR-10; AC-5) | `framework/scripts/check-md-links.sh`, `framework/scripts/test/check-md-links.test.sh`, `framework/skills/writing-docs/SKILL.md`, `docs/baseline-citations.md` | — | — | writing-docs | default | ☑ done |
 | 6 | `tobevisit-content`: the three local-layout links as `<system>/…` citations, PR into `TBV-83-new-categories` (FR-10; AC-5) | `tobevisit-content/docs/improvements-log.md`, `tobevisit-content/docs/specs/archived/CR-20260625-step-9-enrich-catalog-ops-ui.md`, `tobevisit-content/docs/specs/archived/IMP-20260617-admin-ui-design-system.md` | `tobevisit-content/src/scripts/check-md-links.sh` | — | writing-docs | fast | ☑ done |
 | 7 | Remove `profiles/*/preferences.md`; README "Cloud sessions" section; framework overview updated (FR-11, FR-12) | `profiles/personal/preferences.md`, `profiles/work/preferences.md`, `README.md`, `docs/ai-agent-framework.md` | `.gitignore` | 1, 2, 3, 4 | writing-docs | default | ☑ done |
-| 8 | `make check`, review, PR into `TBV-83-cloud-setup`; AC-6 is observed after Alex takes it to `master` and creates the environment, then Closure Evidence | `docs/specs/active/IMP-20261025-cloud-sessions.md`, `docs/improvements-log.md` | — | 1–7 | reviewing-changes | default | ☐ pending |
+| 8 | `make check`, review, PR into `TBV-83-cloud-setup`; AC-6 is observed after Alex takes it to `master` and creates the environment, then Closure Evidence | `docs/specs/active/IMP-20261025-cloud-sessions.md`, `docs/improvements-log.md` | — | 1–7, 9, 10 | reviewing-changes | default | ☐ pending |
+| 9 | `tobevisit-docs`: Alex commits the root files under `workspace/`; the agent adds its README line, PR into the recorded base (FR-14; AC-7) | `tobevisit-docs/workspace/` *(new)*, `tobevisit-docs/README.md` | — | — | writing-docs | fast | ☐ pending |
+| 10 | `ai-workspace-link.sh`, the cloud layout links in `ai-cloud-setup.sh`, the doctor check, README (FR-13; AC-7) | `scripts/ai-workspace-link.sh` *(new)*, `scripts/ai-cloud-setup.sh`, `scripts/ai-doctor.sh`, `scripts/test/ai-workspace-link.test.sh` *(new)*, `scripts/test/ai-cloud-setup.test.sh`, `scripts/test/ai-doctor.test.sh`, `Makefile`, `README.md` | `scripts/lib/profile-links.sh` | 1, 2, 9 | writing-docs | default | ☐ pending |
 
 ## Closure Evidence
 Pending — closure only.
