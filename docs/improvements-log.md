@@ -612,3 +612,27 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** once a newline separated commands, `shlex` read each line of a heredoc body as a command, so a commit message mentioning `git merge` was refused; its comment rule ate the newline after `# note` and the rest of a word after `a#b`, hiding the next command; a descriptor glued to an operator (`true;2>/dev/null git push`), a line continuation, `time -p` and `coproc` each hid the git verb. Separately, any `$` left the whole command unread, so `git push -u origin "$(git branch --show-current)"` passed in the cloud wherever `HEAD` stood.
 - **What was changed:** a quote-aware pre-pass drops comments, continuations, heredoc bodies and the descriptor before `shlex` reads; in the cloud a git write or `gh pr` command with a word the shell decides is refused, except a quoted commit message, each substitution body is read as a command, and a command naming git or gh that does not tokenise is refused, because bash runs the lines before an unclosed quote. Each form has a test and a mutant the tests kill.
 - **Suggested follow-up:** the grammar-forms list proposed above now has a natural home: the pre-pass, tested against bash itself (`bash -n`, `set -x` traces) rather than against the forms a reviewer happened to find.
+
+### 2026-10-25 — A test read the wired session's `AI_DOTFILES` instead of its fixture
+
+- **Spec / task:** IMP-20261025-cloud-sessions / closure (AC-6 thread)
+- **Category:** `tooling`
+- **What was found:** in the first thread of the wired cloud environment `scripts/test/ai-workspace-link.test.sh` failed 4 cases. `ai-cloud-setup.sh` puts `AI_DOTFILES` into `settings.json` `env`, so every Bash call inherits it, and `ai-workspace-link.sh` prefers it to its own location; each fixture copy then resolved to the real clone. The suite had only ever run in shells without the variable.
+- **What was changed:** the test unsets `AI_DOTFILES` beside its git-config isolation; 4 failures → 0.
+- **Suggested follow-up:** a shared test prelude that clears every framework variable (`AI_DOTFILES`, `AI_PROFILE`, `CLAUDE_CODE_REMOTE`) and the git config, sourced by each suite, so a suite cannot depend on the shell it happens to run in.
+
+### 2026-10-25 — `make check` cannot pass in a cloud session: `install-check` wants `~/.zshrc`
+
+- **Spec / task:** IMP-20261025-cloud-sessions / closure (AC-6 thread)
+- **Category:** `tooling`
+- **What was found:** `check` depends on `install-check`, which runs `ai-install.sh --check` and reports drift in `/root/.zshrc`. Only the laptop runs `ai-install.sh`; a cloud session has no `~/.zshrc` and needs none, so `make check` stops there before `validate-specs`, `lint-rules`, `validate-anchors` and `tests`.
+- **What was changed:** nothing; the closure ran the remaining prerequisites one by one, all exit 0.
+- **Suggested follow-up:** `install-check` passes with a one-line note when `CLAUDE_CODE_REMOTE=true` (or `check` drops it there), its own small IMP.
+
+### 2026-10-25 — The recorded base was deleted on merge, and the closing PR must open before the archive
+
+- **Spec / task:** IMP-20261025-cloud-sessions / closure (AC-6 thread)
+- **Category:** `process`
+- **What was found:** the spec's `branches:` named `TBV-83-cloud-setup`, which was merged to `master` (#13) and deleted, so the closing PR had no base and the agent may not create one. Separately, `pr-base-guard.sh` reads the base from an `in-progress` spec in the working tree: once the closing commit flips the spec to `done` and moves it to `archived/`, no spec records a base and every PR from that tree is denied.
+- **What was changed:** asked Alex for the base; the evidence commit is pushed and the PR opened with the spec still `in-progress`, and the `done` + archive commit goes on top.
+- **Suggested follow-up:** spec-lifecycle's closure step says so (open the closing PR before the archive commit), and the rollout notes of a cloud spec say to keep its base branch until the closing PR is merged.

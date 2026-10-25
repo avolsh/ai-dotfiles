@@ -11,6 +11,9 @@ set -euo pipefail
 # GIT_CONFIG_COUNT); the fixtures read them as written.
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
 unset GIT_CONFIG_COUNT
+# A wired session exports AI_DOTFILES (settings.json `env`), which the script prefers to its own location;
+# each fixture's dotfiles copy is found by where the script sits.
+unset AI_DOTFILES
 
 SRC="$(cd "$(dirname "$0")/../.." && pwd)"
 TMP="$(mktemp -d)"
