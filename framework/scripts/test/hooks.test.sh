@@ -330,6 +330,18 @@ bwg_expect 0 "bash -c 'rm src/foo/b'"
 bwg_expect 0 "python3 scripts/write.py"
 bwg_expect 0 "find . -name x -exec rm {} ;"
 bwg_expect 0 "cp /tmp/x src/foo/*.ts"
+# outside the cloud an expansion still leaves the command alone, a git write included; a heredoc body and a
+# `$` the shell keeps as it is are no expansion, so the write is read (review cycle 5)
+bwg_expect 0 'git push origin TBV-1 $X'
+bwg_expect 2 $'# note\ngit push origin TBV-1'
+bwg_expect 0 $'git status <<EOF\ngit merge x\nEOF'
+bwg_expect 2 $'cat > src/foo/b <<\'EOF\'\n$HOME\nEOF'
+bwg_expect 2 "echo x > 'src/foo/\$b'"
+bwg_expect 2 'echo x > src/foo/\$b'
+set +e
+bwg_out="$(cmd_payload "echo x > 'src/foo/\$b'" "$bwg" | "$BWG" 2>&1 >/dev/null)"
+set -e
+echo "$bwg_out" | grep -qF 'src/foo/$b' || { echo "FAIL: a quoted \$ must stay in the path named" >&2; fails=$((fails+1)); }
 # local mode keeps resolving a write against the payload cwd, a preceding cd included: the cloud spec
 # changes nothing here (IMP-20261025-cloud-sessions, review cycle 2 finding 5; the gap is logged)
 bwg_expect 0 "cd src && touch foo/b"
@@ -409,6 +421,59 @@ for c in "echo hi >&2" $'git status\ngit log' "if true; then git status; fi"; do
 done
 cloud_expect 2 "git >&2 push origin master" ""
 cloud_expect 2 "FOO=1 git commit -m x" ""
+# the pre-pass: a comment, a line continuation, a heredoc body and a descriptor glued to an operator hide
+# nothing, and `time -p` and `coproc` stand before the command they run (review cycle 5)
+for c in $'# note\ngit push origin TBV-1' "git commit -m a#b -n" "true;2>/dev/null git push origin TBV-1" \
+         "(2>&1 git push origin TBV-1)" "git status|2>&1 git push origin TBV-1" $'git commit -m x \\\n --no-verify' \
+         "time -p git push origin TBV-1" "coproc git push origin TBV-1" \
+         $'cat <<EOF\nx\nEOF\ngit status\ngit push origin TBV-1'; do
+  cloud_expect 2 "$c" true
+done
+for c in "git commit -m x # a comment" "git push origin claude/x # not TBV-1" $'git commit -F - <<\'EOF\'\nfix\ngit merge origin/master\nEOF' \
+         $'cat <<EOF\ncd /tmp\nEOF\ngit commit -m x' $'gh pr view 12 <<EOF\ngh pr merge 12\nEOF' \
+         $'cat > notes.md <<\'EOF\'\ngit push origin TBV-1\nEOF'; do
+  cloud_expect 0 "$c" true
+done
+# a git write or gh pr verb with a word the shell decides is denied in the cloud, a substitution body is read
+# as a command, and reads, a quoted commit message, a glob inside a path and a path write pass (FR-6)
+for c in 'git push origin TBV-1 $X' 'git push -u origin "$(git branch --show-current)"' \
+         'git push -u origin `git branch --show-current`' 'git add *.md && git push origin claude/x' \
+         'git commit -m $MSG' 'git commit -m fix$X' 'git -C "$D" commit -m x' 'git $SUB origin claude/x' \
+         'cd "$(git rev-parse --show-toplevel)" && git commit -m x' 'gh pr $V 12' 'gh $X merge 12' \
+         'for b in TBV-1; do git push origin $b; done' 'echo "$(git push origin TBV-1)"' \
+         'echo `git push origin TBV-1`' 'X=$(git merge origin/master)' 'git commit -m "$(git push origin TBV-1)"' \
+         'git checkout -b claude/y --no-track "$BASE"' 'git commit -m $(cat msg)' \
+         'cd ../otherrepo && echo "$(git commit -m x)"' $'git push origin TBV-1\necho "x' \
+         'git commit -m x --no-verify \' 'export $K=1; git commit -m x'; do
+  cloud_expect 2 "$c" true
+done
+for c in 'git log -1 $REF' 'git log --oneline "$(git merge-base HEAD origin/main)"..HEAD' 'git add src/*.ts' \
+         'git commit -m "fix $X"' 'git commit -am "$MSG"' 'git commit --message="$MSG"' "git commit -m 'costs \$5'" \
+         $'git commit -m "$(cat <<\'EOF\'\nSubject (with parens) and "quotes"\n\nit\'s $5 and `code`\nEOF\n)"' \
+         'git push origin claude/x && echo "$(date)"' 'cd "$D" && git status' 'gh pr view "$N"' \
+         'echo x > $TARGET/src/foo/b' 'git push origin claude/x < /dev/null' 'git commit -m"$MSG"' \
+         'git commit -m costs\$5' 'git commit -m "fix: a=$b"' 'echo "x' "cat .gitignore 'x" \
+         'git status \'; do
+  cloud_expect 0 "$c" true
+done
+# the denial names the word, and the cloud exception
+for c in 'git push origin TBV-1 $X|git push|$X' 'cd "$D" && git commit -m x|git commit|$D' \
+         'git $SUB origin claude/x|git|$SUB'; do
+  IFS='|' read -r cmd what word <<< "$c"
+  set +e
+  bwg_out="$(cmd_payload "$cmd" "$cloudrepo" | CLAUDE_CODE_REMOTE=true "$BWG" 2>&1 >/dev/null)"
+  set -e
+  echo "$bwg_out" | grep -qF "'$what' depends on '$word'" || { echo "FAIL: $cmd must name '$word'" >&2; fails=$((fails+1)); }
+  echo "$bwg_out" | grep -q "cloud exception" || { echo "FAIL: $cmd must name the cloud exception" >&2; fails=$((fails+1)); }
+done
+# in the cloud a literal path write is read as everywhere, while one the shell decides, or one inside a
+# substitution, still fails open
+for c in 'touch src/foo/b|2' 'echo "$(touch src/foo/b)"|0' 'cp /tmp/x src/foo/*.ts|0'; do
+  set +e
+  cmd_payload "${c%|*}" "$bwg" | CLAUDE_CODE_REMOTE=true "$BWG" >/dev/null 2>&1; rc=$?
+  set -e
+  expect "bash-write-guard cloud: ${c%|*}" "${c##*|}" "$rc"
+done
 # a cd or --git-dir moving the write to another repository (review finding 1)
 otherrepo="$TMP/otherrepo"
 git init -q "$otherrepo"

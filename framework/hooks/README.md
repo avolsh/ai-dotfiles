@@ -100,6 +100,24 @@ script and run it. A guard that denied what it did not understand would be
 switched off within a day. The rules in `boundaries.md` still bind wherever it
 fails open; this only makes the common case mechanical instead of remembered.
 
+**In a cloud session a git write must be readable.** There the guard is what
+keeps the agent on its own `claude/*` branch, so a git write or a `gh pr`
+command with a word the shell decides — a variable, a substitution, a glob at
+the start of a word — is denied, and the denial names the word:
+`git push -u origin "$(git branch --show-current)"` pushes wherever `HEAD`
+happens to be. The one exception is a quoted `-m` or `-F` value of
+`git commit`, which stays one word, so a message written with a heredoc
+substitution still commits. A git read keeps its variables, a path write with
+one still fails open, and the body of each substitution is read as a command
+of its own. A command that names git or gh and does not tokenise — an
+unclosed quote on a later line, say — is denied too, since bash runs the lines
+before the error.
+
+Before it reads, a pre-pass does what `shlex` cannot: it drops comments, line
+continuations and heredoc bodies, and the descriptor in front of a
+redirection, so `# note` on one line does not hide the next, and a `git push`
+inside a heredoc is text, not a command.
+
 ## Tests
 
 `framework/scripts/test/hooks.test.sh` — fixture-based self-tests for all
