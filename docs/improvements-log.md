@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-10-16*
+*Last updated: 2026-10-25*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -507,3 +507,35 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** `consolidation-due` reported `unknown 10/5 due`, which no log entry can reset. The agent edited `scripts/consolidation-due.py`, its self-test and `framework/spec-workflows/spec-lifecycle.md` straight into the working tree to stop `unknown` being due. That is not a Direct-lane change — Direct lane excludes `spec-lifecycle.md` — and no spec existed; the agent noticed only afterwards and told the owner. The project-side instruction ("fix it right away") was about the project's log and module map, not about changing the framework.
 - **What was changed:** `IMP-20261016-consolidation-unknown-never-due` now records the change; the edit stays uncommitted as input to its Plan.
 - **Suggested follow-up:** before editing anything under `framework/` or `scripts/` of ai-dotfiles from a project session, check the lane first — the edit is in another repository with its own lifecycle, and a fix that feels small in the project is a framework change there.
+
+### 2026-10-25 — `validate-specs` reads only a flow map, and nothing checks what `branches:` holds
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 3
+- **Category:** `tooling`
+- **What was found:** The new front-matter key `branches:` maps a repo to the base branch the human named. Written as a YAML block map (one `repo: base` per line), `validate-specs.py` could not parse the front-matter at all; only the flow map `branches: {repo: base, other: base}` validates. Nor does any check look at the value: a scalar, an empty map or a misspelt repo name passes, and `pr-base-guard.sh` then finds no recorded base and denies every PR.
+- **What was changed:** `spec-lifecycle.md` documents the flow-map form, and `scripts/test/validate-specs.test.sh` pins it. No type check added — out of this spec's scope.
+- **Suggested follow-up:** a `branches_shape` rule in `validate-specs.py` (a flow map of repo name to non-empty branch name, never `master` or `develop`), so the guard's input is checked where the spec is written.
+
+### 2026-10-25 — README described rendering that `ai-profile-init.sh` no longer does
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 7
+- **Category:** `anti-pattern`
+- **What was found:** README § `ai-profile-init.sh` said the script renders the system instruction files through `envsubst` and appends `profiles/<profile>/preferences.md`. The script links the templates instead and reads no `preferences.md`, so the two hand-written preference files had been doing nothing. Nothing compares a README's description of a script with the script.
+- **What was changed:** both `preferences.md` removed; README step 2 now describes the linking, and the overview and `.gitignore` no longer mention the files.
+- **Suggested follow-up:** when a script's behaviour changes, grep README for its name in the same change; the writing-docs freshness rules could say so for script-describing sections.
+
+### 2026-10-25 — `validate-anchors` does not scan the root README
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 7
+- **Category:** `tooling`
+- **What was found:** `validate-anchors.py` scans `framework/**/*.md` and `docs/**/*.md`; `check-md-links.sh` also scans `README.md`. A broken `#fragment` in README (tried: `#cloud-git-exceptionX`) passes both, because links-check checks the file and anchors are not its job.
+- **What was changed:** none — the README link to `boundaries.md#cloud-git-exception` was checked by hand.
+- **Suggested follow-up:** add `README.md` to `SEARCH_GLOBS`, matching the links-check scope.
+
+### 2026-10-25 — `CLAUDE_CODE_REMOTE=true` leaked from the cloud container into local-mode tests
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Tasks 2 and 3
+- **Category:** `tooling`
+- **What was found:** Once `ai-doctor.sh` and `bash-write-guard.sh` switch mode on `CLAUDE_CODE_REMOTE`, the self-tests written for the local profile inherited the cloud container's `CLAUDE_CODE_REMOTE=true` and asserted the wrong mode, so they failed in the cloud and would have passed on a laptop.
+- **What was changed:** `ai-doctor.test.sh`, `ai-switch.test.sh` and `hooks.test.sh` unset it at the top; the cloud cases set it per call.
+- **Suggested follow-up:** any test of a script that reads an ambient mode variable sets or unsets it explicitly, never inherits it.
