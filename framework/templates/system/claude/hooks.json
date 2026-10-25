@@ -64,7 +64,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "@AI_DOTFILES@/scripts/ai-doctor.sh --fast"
+            "command": "@AI_DOTFILES@/scripts/ai-doctor.sh --fast --hook"
           }
         ]
       }

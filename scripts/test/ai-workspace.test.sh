@@ -49,6 +49,19 @@ echo "sentinel" > "$D/workspace/_canonical.md"
 "$ROOT/scripts/ai-workspace.sh" --docs "$TMP/missing" >/dev/null 2>&1 && fail "a missing clone accepted"
 "$ROOT/scripts/ai-workspace.sh" --nope >/dev/null 2>&1 && fail "an unknown option accepted"
 
+# --- 4. `make sync-agents` at a root linked to workspace/ renders into workspace/, keeping the links ---
+mkdir -p "$TMP/root"
+ln -s "$D" "$TMP/root/docs"
+"$ROOT/scripts/ai-workspace-link.sh" "$TMP/root" >/dev/null 2>&1 || fail "linking the root rc"
+echo "sentinel rules" > "$D/workspace/_canonical.md"
+make -C "$TMP/root" sync-agents >/dev/null 2>&1 || fail "root: make sync-agents rc"
+for f in CLAUDE.md AGENTS.md .github; do
+  [ -L "$TMP/root/$f" ] || fail "root: make sync-agents replaced the $f link"
+done
+for f in CLAUDE.md AGENTS.md .github/copilot-instructions.md; do
+  grep -q "sentinel rules" "$D/workspace/$f" || fail "root: workspace/$f not rendered"
+done
+
 [ -z "$(ls -A "$ELSEWHERE")" ] || fail "a run wrote to the cwd"
 
 if [ "$fails" -ne 0 ]; then

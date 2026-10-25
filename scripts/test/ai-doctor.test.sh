@@ -317,6 +317,22 @@ echo "$out" | grep -qF "NOTE $TMP/docs/workspace/.github/scripts/sync-agents.sh:
 cp "$DF/framework/templates/workspace/.github/scripts/sync-agents.sh" "$WS/.github/scripts/"
 bash "$WS/.github/scripts/sync-agents.sh" >/dev/null
 
+# 10i. --hook: a failing run exits 0 with its failures and notes on stdout, the SessionStart context (FR-4, FR-15)
+git init -q "$TMP/src/github.com/org/bare"
+set +e
+out="$(AI_DOTFILES="$DF" AI_CLOUD_HOME="$CFG" AI_DOCTOR_DOCKER=false "$SUT" --fast --cloud --hook test 2>/dev/null)"; rc=$?
+set -e
+expect "--hook exits 0 on a failing run" 0 "$rc"
+echo "$out" | grep -qF "FAIL docker daemon not reachable" || { echo "FAIL: --hook kept a failure off stdout" >&2; fails=$((fails+1)); }
+echo "$out" | grep -qF "ai-doctor: NOTE " || { echo "FAIL: --hook kept the notes off stdout" >&2; fails=$((fails+1)); }
+set +e
+AI_DOTFILES="$DF" AI_CLOUD_HOME="$CFG" AI_DOCTOR_DOCKER=false "$SUT" --fast --cloud test >/dev/null 2>&1; rc=$?
+set -e
+expect "without --hook the same run exits 1" 1 "$rc"
+rm -rf "$TMP/src/github.com/org/bare"
+grep -qF '"@AI_DOTFILES@/scripts/ai-doctor.sh --fast --hook"' "$(dirname "$SUT")/../framework/templates/system/claude/hooks.json" \
+  || { echo "FAIL: the Claude SessionStart hook does not run the doctor with --hook" >&2; fails=$((fails+1)); }
+
 # 11. without --cloud the same broken session is not checked
 set +e
 cloud false >/dev/null; rc=$?

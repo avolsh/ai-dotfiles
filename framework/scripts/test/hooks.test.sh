@@ -379,6 +379,7 @@ for c in "git push origin TBV-1" "git push --force origin claude/x" "git push --
          "git switch --discard-changes -c claude/y --no-track origin/TBV-1" \
          "git commit --no-verif -m x" "git commit --amen -m x" "git push origin :claude/x" \
          "git push origin --del claude/x" "git push --forc origin claude/x" "gh pr new --base master" \
+         "gh pr revert 12" "gh pr update-branch 12" "gh pr update-branch 12 --rebase" \
          "export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/dev/null; git commit -m x" \
          "git checkout --forc -b claude/y --no-track origin/TBV-1"; do
   cloud_expect 2 "$c" true
@@ -396,9 +397,19 @@ git init -q "$otherrepo"
 git -C "$otherrepo" checkout -q -b TBV-1
 for c in "cd ../otherrepo && git commit -m x" "cd ../otherrepo && git add -A" \
          "git --git-dir=../otherrepo/.git commit -m x" "git --work-tree ../otherrepo add -A" \
-         "cd - && git commit -m x" "cd && git add -A" "git -C ../otherrepo commit -m x"; do
+         "cd - && git commit -m x" "cd && git add -A" "git -C ../otherrepo commit -m x" \
+         "(cd ../otherrepo && git commit -m x)" "{ cd ../otherrepo; git add -A; }" \
+         "(cd ../otherrepo)&& git commit -m x"; do
   cloud_expect 2 "$c" true
 done
+# a cd inside a group moves only the group: the write after it lands in the payload cwd (review cycle 3 finding 1)
+set +e
+cmd_payload "(cd ../cloudrepo) && git commit -m x" "$otherrepo" | CLAUDE_CODE_REMOTE=true "$BWG" >/dev/null 2>&1; rc=$?
+set -e
+expect "bash-write-guard cloud: a cd inside a group is not followed out of it" 2 "$rc"
+# a group with no cd moves nothing; its git write is still read, in both modes (review cycle 3 finding 1)
+cloud_expect 0 "(git commit -m x)" true
+cloud_expect 2 "(git commit -m x)" ""
 cloud_expect 2 "git commit -m x" false
 git -C "$cloudrepo" checkout -q -b TBV-1
 cloud_expect 2 "git commit -m x" true

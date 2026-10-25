@@ -91,8 +91,9 @@ the repo with its working branch, the two settings of step 2, and the merge.
    repo and add it to the project's repositories; on a laptop, add its section
    to `workspace/.mrconfig` and run `mr checkout`.
 3. **Owner:** start a session (cloud) or run `make workspace-link` (laptop).
-4. **Agent:** `ai-doctor` notes the repo as not initialised for the
-   framework. The agent asks the owner once whether to initialise it.
+4. **Agent:** `ai-doctor` notes a project repo (under `src/`) as not
+   initialised for the framework. The agent asks the owner once whether to
+   initialise it. A research repo is read as it is and never initialised.
 5. **Agent, on yes:** creates `claude/*` from the working branch, runs
    `ai-project.sh <repo>` (`ai-workspace.sh --docs <repo>` for a docs repo),
    and adds the repo's section to `workspace/.mrconfig` if it is missing.

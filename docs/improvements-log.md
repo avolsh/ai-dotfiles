@@ -580,3 +580,19 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** the guide listed the owner's two cloud settings for a new repo (the Claude GitHub App's access, the project's repositories), but nothing the agent sees in a session did. A repo the agent adds to `.mrconfig` stayed uncloned in every later session with only a bare "not cloned" note, and the owner had to ask which actions were theirs.
 - **What was changed:** the doctor's note names both steps; the cloud exception in `boundaries.md` has the agent remind the owner of them; the guide and README say the owner's whole part in the cloud.
 - **Suggested follow-up:** when a framework step can only be done by the human, put it in the output the agent reads at that moment (a doctor note, a hook message), not only in a guide.
+
+### 2026-10-25 — A SessionStart hook that fails hides its notes from the agent
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 8, review finding 4
+- **Category:** `protocol`
+- **What was found:** the doctor printed its notes on stdout for the agent, but Claude Code adds a SessionStart hook's stdout to the context only when the hook exits 0. Any failure in the same run (an unreachable Docker daemon, say) exited 1, so the agent never saw the notes it had to act on.
+- **What was changed:** the Claude SessionStart hook runs `ai-doctor.sh --fast --hook`, which writes the whole report to stdout and exits 0; a manual run keeps exit 1.
+- **Suggested follow-up:** any hook that talks to the agent must state which of its streams and exit codes reach the agent, and test that path.
+
+### 2026-10-25 — The shell reader in bash-write-guard took a bracket for the command
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 8, review finding 1
+- **Category:** `tooling`
+- **What was found:** in `(git commit -m x)` or `{ cd ../other; git add -A; }` the guard read `(` or `{` as the verb, so the git write went unread, in a local session too, and a `cd` inside a group was not followed.
+- **What was changed:** `( ) { }` separate commands, runs of operator characters are split, and a command with both a group and a `cd` leaves the branch unknown, so a cloud git write in it is refused.
+- **Suggested follow-up:** feed the guard's tests from a list of bash grammar forms (subshell, group, pipeline, `&&` glued to a bracket) rather than from commands seen so far.

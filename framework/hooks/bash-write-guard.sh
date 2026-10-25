@@ -33,7 +33,7 @@ payload="$(cat || true)"
 #   GH<TAB><verb>            — a `gh pr` verb that opens or changes a PR (cloud session only)
 #   PATH<TAB><verb><TAB><abs>— a write and the file it lands on
 findings="$(printf '%s' "$payload" | python3 -c '
-import json, os, shlex, subprocess, sys
+import json, os, re, shlex, subprocess, sys
 
 def out(*parts):
     print("\t".join(parts))
@@ -80,7 +80,9 @@ GIT_BARE_IS_READ = {"branch", "tag", "config", "remote", "worktree", "notes", "r
 # Where each write verb keeps the path it writes. "all": every non-flag argument; "last": the final one.
 WRITE_VERBS = {"cp": "last", "mv": "last", "install": "last", "ln": "last",
                "rm": "all", "mkdir": "all", "touch": "all", "rmdir": "all", "tee": "all"}
-SEPARATORS = {";", "&&", "||", "|", "&", "\n"}
+# `(…)` and `{ …; }` group commands, so their brackets end one command and start the next as a separator does.
+GROUP = {"(", ")", "{", "}"}
+SEPARATORS = {";", "&&", "||", "|", "&", "\n"} | GROUP
 
 try:
     lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
@@ -88,6 +90,9 @@ try:
     tokens = list(lexer)
 except Exception:
     out("OPEN"); raise SystemExit
+# The lexer keeps a run of operator characters as one token (`)&&`, `((`); split it into its operators.
+tokens = [part for t in tokens
+          for part in (re.findall(r"&&|\|\||>>|[;&|()<>]", t) if t and all(c in "();<>|&" for c in t) else [t])]
 
 # An unexpanded variable, a substitution or a glob means the path this reader would resolve is not the path
 # the shell will write to, so the command is left alone.
@@ -113,10 +118,14 @@ def absolute(path, base=None):
 # branch the cloud exception checks is read there. None once it cannot be followed. Write paths still resolve
 # against the payload cwd, as they always have.
 here = cwd
+# A `cd` inside a group moves that group alone, which this reader does not track: with both in one command the
+# repository a git write lands in is unknown (FR-6).
+if any(t in GROUP for t in tokens) and any(t in ("cd", "pushd", "popd") for t in tokens):
+    here = None
 
 CLOUD = os.environ.get("CLAUDE_CODE_REMOTE") == "true"
 AGENT = "claude/"
-GH_PR_WRITE = {"create", "new", "edit", "merge", "ready", "close", "reopen"}  # `new` is gh'"'"'s alias of create
+GH_PR_WRITE = {"create", "new", "edit", "merge", "ready", "close", "reopen", "revert", "update-branch"}  # `new` is gh'"'"'s alias of create
 CHECKOUT_DENY = {"-f", "--force", "--discard-changes", "-m", "--merge"}  # each discards or rewrites local work
 PUSH_DENY = {"-f", "--force", "--force-with-lease", "--force-if-includes", "-d", "--delete", "--mirror",
              "--all", "--tags", "--prune"}

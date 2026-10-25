@@ -26,29 +26,39 @@
 #      steps that make the next session clone it (FR-17).
 #
 # Usage:
-#   ai-doctor.sh [--fast] [--cloud] [<profile>]
+#   ai-doctor.sh [--fast] [--cloud] [--hook] [<profile>]
 #     --fast      manifest + instruction links only (SessionStart budget)
 #     --cloud     add the cloud-session checks (implied by CLAUDE_CODE_REMOTE=true)
+#     --hook      the Claude SessionStart run: the whole report on stdout, exit 0
 #     <profile>   defaults to $AI_PROFILE, then "personal"
 #
 # Env: AI_DOTFILES overrides the dotfiles root (tests use this);
 #      AI_CLOUD_HOME overrides ~/.claude, AI_DOCTOR_DOCKER the docker binary.
 # Exit: 0 all checks pass; 1 any failure (each failure printed with the
-# expected target).
+# expected target). With --hook always 0: SessionStart adds stdout to the
+# agent's context only on exit 0, and the agent acts on failures and notes.
 set -euo pipefail
 
 FAST=0
 CLOUD=0
 [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] && CLOUD=1
 PROFILE=""
+HOOK=0
+args=()
 for arg in "$@"; do
   case "$arg" in
+    --hook) HOOK=1; continue ;;
     --fast) FAST=1 ;;
     --cloud) CLOUD=1 ;;
     -*) echo "ai-doctor: unknown option '$arg'" >&2; exit 2 ;;
     *) PROFILE="$arg" ;;
   esac
+  args+=("$arg")
 done
+if [ "$HOOK" -eq 1 ]; then
+  bash "$0" ${args[@]+"${args[@]}"} 2>&1 || true
+  exit 0
+fi
 PROFILE="${PROFILE:-${AI_PROFILE:-personal}}"
 
 AI_DOTFILES="${AI_DOTFILES:-$(cd "$(dirname "$0")/.." && pwd)}"

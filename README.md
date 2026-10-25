@@ -293,8 +293,10 @@ The script, idempotent:
 6. starts `dockerd` with `mirror.gcr.io` as its registry mirror, because anonymous Docker Hub pulls from
    the shared egress address are refused. `--no-docker` skips this step.
 
-The SessionStart hook runs `ai-doctor.sh --fast`, which adds the cloud checks whenever
-`CLAUDE_CODE_REMOTE=true`; `scripts/ai-doctor.sh --cloud` prints the whole report. A session uses the
+The SessionStart hook runs `ai-doctor.sh --fast --hook`, which adds the cloud checks whenever
+`CLAUDE_CODE_REMOTE=true`; `scripts/ai-doctor.sh --cloud` prints the whole report. SessionStart adds a
+hook's stdout to the agent's context only when it exits 0, so `--hook` writes the whole report there and
+exits 0: the agent sees the failures and the notes, and tells you. A session uses the
 framework as it is on the default branch of `ai-dotfiles` when the session starts, so a framework change
 reaches the cloud once it is merged there, in the next new session.
 
