@@ -356,8 +356,8 @@ cloud_expect() { # $1 expected rc, $2 command, $3 CLAUDE_CODE_REMOTE value ("" =
 }
 for c in "git add -A" "git commit -m x" "git push origin claude/x" "git push -u origin claude/x" \
          "git push origin HEAD:refs/heads/claude/x" "git pull --ff-only origin claude/x" "git fetch origin" \
-         "git fetch origin TBV-1" "git checkout -B claude/y --no-track origin/TBV-1" \
-         "git switch -c claude/y --no-track origin/TBV-1"; do
+         "git fetch origin TBV-1" "git checkout -b claude/y --no-track origin/TBV-1" \
+         "git switch -c claude/y --no-track origin/TBV-1" "cd ../cloudrepo && git commit -m x"; do
   cloud_expect 0 "$c" true
   cloud_expect 2 "$c" ""
 done
@@ -366,14 +366,29 @@ for c in "git push origin TBV-1" "git push --force origin claude/x" "git push --
          "git push origin --delete claude/x" "git merge TBV-1" "git commit --amend" "git pull origin claude/x" \
          "git pull --ff-only --rebase origin claude/x" "git fetch origin TBV-1:TBV-1" "git rebase TBV-1" \
          "git reset --hard" "git checkout -b claude/y origin/TBV-1" "git checkout -b feat --no-track origin/TBV-1" \
-         "git tag v1"; do
+         "git tag v1" "git checkout -B claude/x --no-track origin/master" \
+         "git switch -C claude/x --no-track origin/master" "gh pr create --base master" \
+         "gh pr edit 12 --base TBV-1" "gh pr merge 12"; do
+  cloud_expect 2 "$c" true
+done
+# gh is not a git verb: outside the cloud the guard leaves it alone, and reading a PR is never refused
+cloud_expect 0 "gh pr create --base master" ""
+cloud_expect 0 "gh pr view 12" true
+# a cd or --git-dir moving the write to another repository (review finding 1)
+otherrepo="$TMP/otherrepo"
+git init -q "$otherrepo"
+git -C "$otherrepo" checkout -q -b TBV-1
+for c in "cd ../otherrepo && git commit -m x" "cd ../otherrepo && git add -A" \
+         "git --git-dir=../otherrepo/.git commit -m x" "git --work-tree ../otherrepo add -A" \
+         "cd - && git commit -m x" "cd && git add -A" "git -C ../otherrepo commit -m x"; do
   cloud_expect 2 "$c" true
 done
 cloud_expect 2 "git commit -m x" false
 git -C "$cloudrepo" checkout -q -b TBV-1
 cloud_expect 2 "git commit -m x" true
 cloud_expect 2 "git push origin TBV-1" true
-cloud_expect 0 "git checkout -B claude/z --no-track origin/TBV-1" true
+cloud_expect 0 "git checkout -b claude/z --no-track origin/TBV-1" true
+cloud_expect 2 "cd ../cloudrepo && git commit -m x" true
 set +e
 bwg_out="$(cmd_payload "git push origin TBV-1" "$cloudrepo" | CLAUDE_CODE_REMOTE=true "$BWG" 2>&1 >/dev/null)"
 set -e
@@ -414,6 +429,21 @@ prg_expect 2 unrecorded TBV-83-cloud-setup
 prg_expect 2 ai-dotfiles master mcp__github__update_pull_request
 prg_expect 0 ai-dotfiles TBV-83-cloud-setup mcp__github__update_pull_request
 prg_expect 0 ai-dotfiles "" mcp__github__update_pull_request
+# only an in-progress spec counts, and two of them disagreeing deny (review finding 4)
+cat > "$prws/other/docs/specs/active/CR-20261025-y.md" <<'EOF2'
+---
+id: CR-20261025-y
+status: plan
+branches: {ai-dotfiles: TBV-7-planned}
+---
+# y
+EOF2
+prg_expect 2 ai-dotfiles TBV-7-planned
+prg_expect 0 ai-dotfiles TBV-83-cloud-setup
+sed -i 's/^status: plan$/status: in-progress/' "$prws/other/docs/specs/active/CR-20261025-y.md"
+prg_expect 2 ai-dotfiles TBV-7-planned
+prg_expect 2 ai-dotfiles TBV-83-cloud-setup
+rm "$prws/other/docs/specs/active/CR-20261025-y.md"
 # a spec tree above cwd is found without AI_DOTFILES
 set +e
 pr_payload mcp__github__create_pull_request other TBV-9-a "$prws/ai-dotfiles/docs" | CLAUDE_CODE_REMOTE=true "$PRG" >/dev/null 2>&1; rc=$?

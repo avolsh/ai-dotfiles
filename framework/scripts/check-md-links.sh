@@ -52,7 +52,12 @@ trap 'rm -f "$TMP_OUT"' EXIT
 for src in "${files[@]}"; do
   [[ -f "$src" ]] || continue
   src_dir="$(dirname "$src")"
+  # Relative links resolve from the physical source directory, as the filesystem resolves `..`, and git
+  # reports the top level with symlinks resolved, so both sides of the "leaves the repo" test are physical
+  # (a repo reached through a symlink, or macOS /var -> /private/var). The target itself is not resolved.
   repo_root="$(git -C "$src_dir" rev-parse --show-toplevel 2>/dev/null || true)"
+  [[ -n "$repo_root" ]] && repo_root="$(cd "$repo_root" && pwd -P)"
+  src_dir_phys="$(cd "$src_dir" && pwd -P)"
   # Strip fenced code blocks AND HTML comments, then emit "lineno:linecontent".
   # Multi-line <!-- ... --> blocks are removed before line splitting.
   perl -0777 -ne 's/<!--.*?-->//gs; print' "$src" | \
@@ -79,7 +84,7 @@ for src in "${files[@]}"; do
     if [[ "$path" = /* ]]; then
       candidate="$ROOT$path"
     else
-      candidate="$src_dir/$path"
+      candidate="$src_dir_phys/$path"
     fi
     resolved="$(python3 -c 'import os,sys; print(os.path.normpath(sys.argv[1]))' "$candidate")"
     rel_src="${src#"$ROOT"/}"

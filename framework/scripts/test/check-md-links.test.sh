@@ -113,5 +113,17 @@ if echo "$out3" | grep -q 'README.md'; then
   exit 1
 fi
 
+# --- The same repo reached through a symlink: only the outside link is reported (review finding 2) ---
+ln -s "$TMP/layout/src/repo" "$TMP/linked-repo"
+set +e
+out4="$("$SUT" "$TMP/linked-repo/docs/source.md" 2>&1)"
+rc4=$?
+set -e
+if [[ $rc4 -ne 1 ]] || echo "$out4" | grep -q 'README.md' || ! echo "$out4" | grep -q 'spec-lifecycle.md (leaves the repo'; then
+  echo "FAIL: through a symlink, an in-repo link was reported or the outside one missed (rc=$rc4)" >&2
+  echo "$out4" >&2
+  exit 1
+fi
+
 echo "scripts/check-md-links.sh self-tests passed ✓"
 

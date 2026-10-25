@@ -145,6 +145,18 @@ for want in "$CFG/prompts" "hook missing: $DF/framework/hooks/stop-build-check.s
   echo "$out" | grep -qF "$want" || { echo "FAIL: cloud failure not named: $want" >&2; fails=$((fails+1)); }
 done
 
+# 10b. a real path standing where a framework link belongs is named, not passed (review finding 6)
+rm "$CFG/CLAUDE.md" "$CFG/skills/writing-specs"
+echo "harness-owned" > "$CFG/CLAUDE.md"
+mkdir "$CFG/skills/writing-specs"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "a real path in place of a framework link fails" 1 "$rc"
+for want in "$CFG/CLAUDE.md (a real path" "$CFG/skills/writing-specs (a real path"; do
+  echo "$out" | grep -qF "$want" || { echo "FAIL: real path not named: $want" >&2; fails=$((fails+1)); }
+done
+
 # 11. without --cloud the same broken session is not checked
 set +e
 cloud false >/dev/null; rc=$?

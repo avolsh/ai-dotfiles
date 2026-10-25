@@ -96,6 +96,18 @@ for tool in claude copilot codex; do
   fi
 done
 
+# A cloud entry passes only as a link into ai-dotfiles: a real file or dir standing in its place is one the
+# setup script left alone ("real path in the way"), so the framework entry it should be is absent.
+check_cloud_link() { # $1 = path in ~/.claude, $2 = the framework source it must resolve to
+  if [ -L "$1" ] && [ "$(readlink -f "$1")" = "$(readlink -f "$2")" ]; then
+    return 0
+  elif [ -e "$1" ] && [ ! -L "$1" ]; then
+    fail "$1 (a real path stands where the framework link belongs — move it aside, re-run: ai-cloud-setup.sh $PROFILE)"
+  else
+    fail "$1 (missing — re-run: ai-cloud-setup.sh $PROFILE)"
+  fi
+}
+
 if [ "$CLOUD" -eq 1 ]; then
   cfg="${AI_CLOUD_HOME:-$HOME/.claude}"
   for entry in CLAUDE.md boundaries.md docs $REFS; do
@@ -106,12 +118,12 @@ if [ "$CLOUD" -eq 1 ]; then
       *) src="$AI_DOTFILES/framework/$entry" ;;
     esac
     [ -e "$src" ] || continue
-    [ -e "$cfg/$entry" ] || fail "$cfg/$entry (missing — re-run: ai-cloud-setup.sh $PROFILE)"
+    check_cloud_link "$cfg/$entry" "$src"
   done
   for skill in "$AI_DOTFILES"/framework/skills/*/; do
     [ -d "$skill" ] || continue
     name="$(basename "$skill")"
-    [ -e "$cfg/skills/$name" ] || fail "$cfg/skills/$name (framework skill not linked)"
+    check_cloud_link "$cfg/skills/$name" "$skill"
   done
   template="$AI_DOTFILES/framework/templates/system/claude/hooks.json"
   if [ -f "$template" ]; then

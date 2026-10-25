@@ -162,10 +162,11 @@
     (`CLAUDE_CODE_REMOTE=true`) the container is reclaimed and work not pushed is lost, so the agent owns one
     branch of its own, and only that branch. Before its first commit in a repo it asks the human which base
     branch to start from, records the answer under the spec's `branches:` (repo → base), and creates
-    `claude/<name>` from `origin/<base>` with `--no-track`, so no push of it can reach the base. On that
+    `claude/<name>` from `origin/<base>` with `--no-track`, so no push of it can reach the base; it never
+    resets a branch that already exists. On that
     branch, and only there, it may `add`, `commit`, `fetch`, `pull --ff-only` and `push` it by name. It
-    opens its draft PR itself after the first push, with the recorded base, and retargets a PR from its
-    branch whose base is anything else to that base. It never merges, never pushes to or rewrites any other
+    opens its draft PR itself after the first push, with the recorded base, through the GitHub tools rather
+    than `gh pr`, and retargets a PR from its branch whose base is anything else to that base. It never merges, never pushes to or rewrites any other
     branch, never force-pushes (§ Never do #8 still binds), and never opens a PR into `master` or `develop`.
     A diverged branch — the human pushed to it too — stops the work: the agent says so and waits. Outside a
     cloud session none of this applies and the rule above holds in full. `bash-write-guard.sh` and

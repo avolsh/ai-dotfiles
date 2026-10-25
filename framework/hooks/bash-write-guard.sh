@@ -7,6 +7,8 @@
 #   - a state-changing git verb anywhere in the command, per boundaries.md § Never do #10 (FR-3) — except, in a
 #     cloud session (CLAUDE_CODE_REMOTE=true), the writes its cloud exception allows on the agent's own
 #     `claude/*` branch (IMP-20261025-cloud-sessions FR-6)
+#   - in a cloud session, a `gh pr` verb that opens or changes a PR: PRs go through the GitHub tools, whose base
+#     `pr-base-guard.sh` checks (FR-7)
 #
 # It is a backstop for convenience, not a sandbox: an agent that means to evade it can write a script and run
 # it. So it FAILS OPEN (FR-4) — anything it cannot read confidently is allowed, and recall remains the first
@@ -28,6 +30,7 @@ payload="$(cat || true)"
 # with a regular expression is how a guard starts denying the wrong things. It prints one record per line:
 #   OPEN                     — something unreadable; the whole command is allowed
 #   GIT<TAB><verb>           — a state-changing git verb
+#   GH<TAB><verb>            — a `gh pr` verb that opens or changes a PR (cloud session only)
 #   PATH<TAB><verb><TAB><abs>— a write and the file it lands on
 findings="$(printf '%s' "$payload" | python3 -c '
 import json, os, shlex, subprocess, sys
@@ -102,11 +105,16 @@ for t in tokens:
 if current:
     segments.append(current)
 
-def absolute(path):
-    return path if os.path.isabs(path) else os.path.normpath(os.path.join(cwd, path))
+# A `cd` earlier in the same command moves where the later segments run; None once it cannot be followed.
+here = cwd
+
+def absolute(path, base=None):
+    base = base or here or cwd
+    return path if os.path.isabs(path) else os.path.normpath(os.path.join(base, path))
 
 CLOUD = os.environ.get("CLAUDE_CODE_REMOTE") == "true"
 AGENT = "claude/"
+GH_PR_WRITE = {"create", "edit", "merge", "ready", "close", "reopen"}
 PUSH_DENY = {"-f", "--force", "--force-with-lease", "--force-if-includes", "-d", "--delete", "--mirror",
              "--all", "--tags", "--prune"}
 
@@ -121,11 +129,14 @@ def current_branch(where):
 def cloud_allows(sub, rest, where):
     """boundaries.md § Never do #10, cloud exception: the writes allowed on the agent branch."""
     if sub in ("checkout", "switch"):
-        # Creating the agent branch from the human base, never tracking it.
+        # Creating the agent branch from the human base, never tracking it. -B and -C are absent on purpose:
+        # they reset a branch that already exists, unpushed commits and all.
         for k, a in enumerate(rest):
-            if a in ("-b", "-B", "-c", "-C") and k + 1 < len(rest):
+            if a in ("-b", "-c") and k + 1 < len(rest):
                 return rest[k + 1].startswith(AGENT) and "--no-track" in rest
         return False
+    if where is None:
+        return False  # a `cd` this reader could not follow: the branch is unknown
     branch = current_branch(where)
     if not branch.startswith(AGENT):
         return False
@@ -181,14 +192,29 @@ for seg in segments:
     verb = os.path.basename(words[0])
     args = words[1:]
 
+    if verb in ("cd", "pushd"):
+        plain = [a for a in args if not a.startswith("-")]
+        here = absolute(plain[0]) if plain and here else None  # bare `cd` and `cd -` are not followed
+        continue
+    if verb == "popd":
+        here = None
+        continue
+
+    if verb == "gh":
+        if CLOUD and len(args) >= 2 and args[0] == "pr" and args[1] in GH_PR_WRITE:
+            out("GH", "pr " + args[1])
+        continue
+
     if verb in OPAQUE:
         continue  # not a finding and not a reason to stop reading the rest
 
     if verb == "git":
-        sub, j, where = None, 0, cwd
+        sub, j, where = None, 0, here
         while j < len(args):  # skip the pre-command options that carry a value
             if args[j] == "-C" and j + 1 < len(args):
-                where = absolute(args[j + 1])
+                where = absolute(args[j + 1], where) if where else None
+            if args[j].startswith(("--git-dir", "--work-tree")):
+                where = None  # another repository than the one the branch is read from
             if args[j] in ("-C", "-c", "--git-dir", "--work-tree", "--namespace"):
                 j += 2; continue
             if args[j].startswith("-"):
@@ -233,11 +259,15 @@ while IFS= read -r finding; do
   [ -n "$finding" ] || continue
   kind="${finding%%	*}"
   rest="${finding#*	}"
+  if [ "$kind" = "GH" ]; then
+    echo "Blocked by bash-write-guard: 'gh $rest' — in a cloud session a PR is opened or changed through the GitHub tools, whose base pr-base-guard checks (boundaries.md § Never do #10, cloud exception)." >&2
+    exit 2
+  fi
   if [ "$kind" = "GIT" ]; then
     echo "Blocked by bash-write-guard: 'git $rest' changes repository state, which is the human's to run (boundaries.md § Never do #10)." >&2
     echo "Reading commands — status, log, diff, show, branch --show-current — are unrestricted. Say what you would run and wait." >&2
     if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
-      echo "Cloud session: only add, commit, fetch, pull --ff-only and a named push of your own claude/* branch, and creating that branch with --no-track, are allowed (boundaries.md § Never do #10, cloud exception)." >&2
+      echo "Cloud session: only add, commit, fetch, pull --ff-only and a named push of your own claude/* branch, and creating that branch with -b or -c and --no-track, are allowed (boundaries.md § Never do #10, cloud exception)." >&2
     fi
     exit 2
   fi
