@@ -121,6 +121,7 @@ git init -q "$TMP/wsdocs"
 mkdir -p "$TMP/wsdocs/workspace"
 echo "# workspace" > "$TMP/wsdocs/workspace/CLAUDE.md"
 git -C "$TMP/wsdocs" config core.hooksPath "$DF/scripts/git-hooks"
+git -C "$TMP/wsdocs" remote add origin https://github.com/org/wsdocs  # docs, never also under src/
 WSL="$(cd "$(dirname "$0")/.." && pwd)/ai-workspace-link.sh"
 AI_DOTFILES="$DF" "$WSL" --cloud "$TMP" >/dev/null 2>&1
 cloud() { AI_DOTFILES="$DF" AI_CLOUD_HOME="$CFG" AI_DOCTOR_DOCKER="$1" "$SUT" --fast "${@:2}" test 2>&1; }
@@ -196,6 +197,27 @@ for want in "$TMP/CLAUDE.md (not linked" "$TMP/src/github.com/org/repo-a (missin
   echo "$out" | grep -qF "$want" || { echo "FAIL: workspace failure not named: $want" >&2; fails=$((fails+1)); }
 done
 AI_DOTFILES="$DF" "$WSL" --cloud "$TMP" >/dev/null 2>&1
+
+# 10e. a second clone holding workspace/CLAUDE.md and no docs link: the ambiguity is named; the
+#      link --docs makes passes
+git init -q "$TMP/wsdocs2"
+mkdir -p "$TMP/wsdocs2/workspace"
+echo "# other" > "$TMP/wsdocs2/workspace/CLAUDE.md"
+git -C "$TMP/wsdocs2" config core.hooksPath "$DF/scripts/git-hooks"
+rm "$TMP/docs"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "two docs candidates and no docs link fail" 1 "$rc"
+echo "$out" | grep -qF "several clones hold workspace/CLAUDE.md" || { echo "FAIL: docs ambiguity not named" >&2; fails=$((fails+1)); }
+AI_DOTFILES="$DF" "$WSL" --cloud --docs wsdocs "$TMP" >/dev/null 2>&1
+ai_links_wire_dir "$DF" "$CFG" claude 2>/dev/null  # the links 10c removed
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "the docs link --docs made passes beside a second candidate" 0 "$rc"
+[ "$rc" -eq 0 ] || echo "$out" >&2
+rm -rf "$TMP/wsdocs2"
 
 # 11. without --cloud the same broken session is not checked
 set +e

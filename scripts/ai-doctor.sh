@@ -165,17 +165,26 @@ fi
 . "$(dirname "$0")/lib/workspace-layout.sh"
 ws_root="$(ai_ws_root "$AI_DOTFILES")"
 if [ "$CLOUD" -eq 1 ]; then
-  [ -n "$(ai_ws_docs_clone "$ws_root")" ] \
-    || fail "$ws_root: no clone holds workspace/ (add the docs repo to the project, or commit its workspace/)"
+  # The setup script recorded its choice as the docs link; without one, say why none was made.
+  docs_real="$(readlink -f "$ws_root/docs" 2>/dev/null || true)"
+  if [ ! -L "$ws_root/docs" ] || [ ! -d "$docs_real/workspace" ]; then
+    docs_real=""
+    rc=0
+    ai_ws_docs_clone "$ws_root" >/dev/null || rc=$?
+    case "$rc" in
+      1) fail "$ws_root: no clone holds workspace/CLAUDE.md (add the docs repo to the project, or commit its workspace/)" ;;
+      2) fail "$ws_root: several clones hold workspace/CLAUDE.md (name one in the Setup script: --docs <repo>)" ;;
+      *) fail "$ws_root/docs (not linked to the docs clone — re-run: ai-cloud-setup.sh)" ;;
+    esac
+  fi
   [ "$(readlink -f "$ws_root/env/ai-dotfiles" 2>/dev/null)" = "$(readlink -f "$AI_DOTFILES")" ] \
     || fail "$ws_root/env/ai-dotfiles (missing — re-run: ai-cloud-setup.sh $PROFILE)"
   for repo in "$ws_root"/*/; do
     repo="${repo%/}"
     { [ -L "$repo" ] || [ ! -d "$repo/.git" ]; } && continue
     [ "$(readlink -f "$repo")" = "$(readlink -f "$AI_DOTFILES")" ] && continue
-    [ -d "$repo/workspace" ] && continue
-    src="$(ai_ws_src_path "$repo")"
-    [ -n "$src" ] || continue
+    [ "$(readlink -f "$repo")" = "$docs_real" ] && continue
+    src="$(ai_ws_src_path "$repo")" || continue
     [ "$(readlink -f "$ws_root/src/$src" 2>/dev/null)" = "$(readlink -f "$repo")" ] \
       || fail "$ws_root/src/$src (missing — re-run: ai-cloud-setup.sh $PROFILE)"
   done

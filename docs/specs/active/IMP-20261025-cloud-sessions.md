@@ -74,7 +74,7 @@ baseline-impact: none — no docs/domain baselines in ai-dotfiles; tobevisit-con
 - FR-9: `framework/scripts/check-md-links.sh` MUST report a relative link that resolves outside the repo root; `writing-docs` MUST say framework files are cited as `<system>/…`.
 - FR-10: The local-layout links (`../…/env/ai-dotfiles/…`, `../…/src/github.com/…`) MUST read as `<system>/…` or repo-name citations: three in `tobevisit-content`, one in `ai-dotfiles` `docs/baseline-citations.md:50`.
 - FR-11: `profiles/*/preferences.md` MUST be removed, with README and `docs/ai-agent-framework.md` no longer describing them.
-- FR-13: `scripts/ai-workspace-link.sh <root>` MUST link every entry of `docs/workspace/` into `<root>` as a relative symlink, never replacing a real file that differs; in the cloud `ai-cloud-setup.sh` first links `docs` → the clone holding `workspace/`, `env/ai-dotfiles`, and `src/<host>/<org>/<repo>` from each clone's `origin`; `ai-doctor` names a missing root link in both modes.
+- FR-13: `scripts/ai-workspace-link.sh <root>` MUST link every entry of `docs/workspace/` into `<root>` as a relative symlink, never replacing a real file that differs; in the cloud `ai-cloud-setup.sh` first links `docs` → the clone named by `--docs` (without it the only clone holding `workspace/CLAUDE.md`, never a guess between several), `env/ai-dotfiles`, and `src/<host>/<org>/<repo>` from each clone's `origin`, only when every component is a plain name; `ai-doctor` names a missing root link in both modes.
 - FR-14: `tobevisit-docs` MUST hold the workspace root files under `workspace/`.
 - FR-12: README MUST gain a "Cloud sessions" section: one environment per profile, the Setup script line, network (`mirror.gcr.io`), no `CLAUDE_CONFIG_DIR`, dev keys only and no kubeconfig, the mixed cloud/local workflow on one `claude/*` branch, and that the agent, not the UI's PR button, opens PRs.
 
@@ -107,7 +107,7 @@ Evidence: manual (observation, Projects thread, agent + Alex, date of first run)
 ### AC-7: The workspace root resolves in both layouts (FR-13, FR-14)
 Given a flat fixture of clones (one holding `workspace/CLAUDE.md`) and a local-layout fixture whose root has a differing real `CLAUDE.md`
 When the cloud setup and `ai-workspace-link.sh` run twice
-Then the cloud root's `CLAUDE.md`, `docs`, `env/ai-dotfiles` and `src/github.com/<org>/<repo>` resolve; the local real file is reported, not replaced; the doctor names a removed root link
+Then the cloud root's `CLAUDE.md`, `docs`, `env/ai-dotfiles` and `src/github.com/<org>/<repo>` resolve; the local real file is reported, not replaced; the doctor names a removed root link; with two candidates and no `--docs` no `docs` is linked and the doctor names why; an `origin` with `..` is not placed
 
 ## Design
 ### Decisions

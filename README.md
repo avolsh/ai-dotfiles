@@ -227,9 +227,12 @@ are kept in the docs repo under `workspace/`, and the root carries relative link
 Run `make workspace-link` (`scripts/ai-workspace-link.sh`) once on a laptop: it links every entry of
 `docs/workspace/` into the root, replaces a real file identical to its source, and keeps and reports
 one that differs, so you merge it into `docs/workspace/` and run it again. A cloud session runs it with
-`--cloud`, which first builds `docs`, `env/ai-dotfiles` and `src/<host>/<org>/<repo>` (from each
-clone's `origin`) out of the clones the session put side by side. `ai-doctor.sh` names any root entry
-left unlinked.
+`--cloud --docs <docs repo>`, which first builds `docs`, `env/ai-dotfiles` and `src/<host>/<org>/<repo>`
+(from each clone's `origin`) out of the clones the session put side by side. `docs` is the clone
+`--docs` names; without it, the only clone holding `workspace/CLAUDE.md`, and none when several do,
+since its files become every session's rules. A clone whose `origin` gives no plain
+`<host>/<org>/<repo>` path (a `..`, a space, a port) stays out of `src/` with a warning.
+`ai-doctor.sh` names any root entry left unlinked, and why `docs` is missing.
 
 ## Cloud sessions
 
@@ -249,7 +252,7 @@ directory holding it as the workspace.
 
 | Field | Value |
 |---|---|
-| Setup script | `bash ai-dotfiles/scripts/ai-cloud-setup.sh personal` (or `work`) |
+| Setup script | `bash ai-dotfiles/scripts/ai-cloud-setup.sh personal --docs <docs repo>` (`work` for the other profile; the docs repo is the clone holding `workspace/`, e.g. `tobevisit-docs`) |
 | Network access | Limited, with **Allow package managers** ticked and `mirror.gcr.io` under Allowed domains |
 | Environment variables | Development keys only. No production key, no kubeconfig, nothing that reaches a cluster |
 

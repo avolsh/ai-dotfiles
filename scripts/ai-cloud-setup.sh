@@ -5,13 +5,15 @@
 # (IMP-20261025-cloud-sessions FR-1..FR-3). Run from the cloud environment's
 # Setup script, which starts in the directory holding the cloned repos:
 #
-#   bash ai-dotfiles/scripts/ai-cloud-setup.sh <profile>
+#   bash ai-dotfiles/scripts/ai-cloud-setup.sh <profile> --docs <docs repo>
 #
 # `<system>/` is ~/.claude here: the harness keeps its own files in it, so
 # CLAUDE_CONFIG_DIR is never repointed and nothing it owns is replaced.
 # Idempotent: a second run changes nothing.
 #
-# Usage: ai-cloud-setup.sh [--no-docker] <profile>
+# Usage: ai-cloud-setup.sh [--no-docker] [--docs <repo>] <profile>
+#        --docs names the clone whose workspace/ becomes the root files; see
+#        ai-workspace-link.sh for what happens without it.
 # Env:   AI_CLOUD_HOME overrides ~/.claude, AI_CLOUD_DOCKER_CONF the daemon.json
 #        path and AI_CLOUD_DOCKER_LOG dockerd's log (tests use these).
 set -euo pipefail
@@ -19,15 +21,19 @@ set -euo pipefail
 _err() { printf 'ai-cloud-setup: %s\n' "$*" >&2; }
 
 docker=1
+docs=()
 profile=""
-for arg in "$@"; do
-  case "$arg" in
+while [ "$#" -gt 0 ]; do
+  case "$1" in
     --no-docker) docker=0 ;;
-    -*) _err "unknown option '$arg'"; exit 2 ;;
-    *) profile="$arg" ;;
+    --docs) [ "$#" -ge 2 ] || { _err "--docs needs a repo name"; exit 2; }; docs=(--docs "$2"); shift ;;
+    --docs=*) docs=(--docs "${1#--docs=}") ;;
+    -*) _err "unknown option '$1'"; exit 2 ;;
+    *) profile="$1" ;;
   esac
+  shift
 done
-[ -n "$profile" ] || { _err "usage: ai-cloud-setup.sh [--no-docker] <profile>"; exit 2; }
+[ -n "$profile" ] || { _err "usage: ai-cloud-setup.sh [--no-docker] [--docs <repo>] <profile>"; exit 2; }
 
 DF="$(cd "$(dirname "$0")/.." && pwd)"
 WS="$(dirname "$DF")"
@@ -54,7 +60,7 @@ done
 
 # 5. The workspace root as on a laptop: docs, env/ai-dotfiles, src/<host>/<org>/<repo>
 #    and the root files from docs/workspace/ (FR-13).
-AI_DOTFILES="$DF" "$DF/scripts/ai-workspace-link.sh" --cloud "$WS"
+AI_DOTFILES="$DF" "$DF/scripts/ai-workspace-link.sh" --cloud "${docs[@]}" "$WS"
 
 # 6. Docker for the contract and integration suites. Anonymous Docker Hub
 #    pulls from the shared egress address return 429; mirror.gcr.io serves

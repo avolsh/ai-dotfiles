@@ -9,14 +9,17 @@
 #
 # --cloud first builds the layout a laptop already has, from the clones the
 # session put side by side in <root> (scripts/lib/workspace-layout.sh):
-# docs, env/ai-dotfiles and src/<host>/<org>/<repo>.
+# docs, env/ai-dotfiles and src/<host>/<org>/<repo>. `docs` is the clone named
+# with --docs; without it, the one clone holding workspace/CLAUDE.md, and none
+# when several do. A clone whose origin makes no plain <host>/<org>/<repo> path
+# is left out of src/.
 #
 # A symlink is repaired, a missing entry created, and a real file identical to
 # its source replaced by the link. A real entry that differs is kept and
 # reported: it is the human's to merge into docs/workspace/. Idempotent;
 # `ai-doctor.sh` reports anything left unlinked.
 #
-# Usage: ai-workspace-link.sh [--cloud] [<root>]
+# Usage: ai-workspace-link.sh [--cloud [--docs <repo>]] [<root>]
 #   <root> defaults to the directory above env/ (laptop) or the one holding
 #   this dotfiles clone (cloud).
 # Env:   AI_DOTFILES overrides the dotfiles root (tests use this).
@@ -25,14 +28,19 @@ set -euo pipefail
 _err() { printf 'ai-workspace-link: %s\n' "$*" >&2; }
 
 cloud=0
+docs=""
 root=""
-for arg in "$@"; do
-  case "$arg" in
+while [ "$#" -gt 0 ]; do
+  case "$1" in
     --cloud) cloud=1 ;;
-    -*) _err "unknown option '$arg'"; exit 2 ;;
-    *) root="$arg" ;;
+    --docs) [ "$#" -ge 2 ] || { _err "--docs needs a repo name"; exit 2; }; docs="$2"; shift ;;
+    --docs=*) docs="${1#--docs=}" ;;
+    -*) _err "unknown option '$1'"; exit 2 ;;
+    *) root="$1" ;;
   esac
+  shift
 done
+[ -z "$docs" ] || [ "$cloud" -eq 1 ] || { _err "--docs is for --cloud; a laptop's docs/ is already in place"; exit 2; }
 
 DF="${AI_DOTFILES:-$(cd "$(dirname "$0")/.." && pwd)}"
 # shellcheck source=lib/workspace-layout.sh
@@ -54,20 +62,28 @@ place() { # $1 relative target, $2 link
 relpath() { python3 -c 'import os,sys; print(os.path.relpath(sys.argv[2], sys.argv[1]))' "$1" "$2"; }
 
 if [ "$cloud" -eq 1 ]; then
-  docs_clone="$(ai_ws_docs_clone "$root")"
-  if [ -n "$docs_clone" ]; then
-    place "$(basename "$docs_clone")" "$root/docs"
-  else
-    _err "WARN no clone in $root holds workspace/; docs not linked"
-  fi
+  rc=0
+  docs_clone="$(ai_ws_docs_clone "$root" "$docs")" || rc=$?
+  case "$rc:$docs" in
+    0:*) place "$(basename "$docs_clone")" "$root/docs" ;;
+    1:) _err "WARN no clone in $root holds workspace/CLAUDE.md; docs not linked" ;;
+    2:) _err "WARN several clones in $root hold workspace/CLAUDE.md; docs not linked — name one: --docs <repo>" ;;
+    1:*|2:*) _err "--docs '$docs' is not a clone in $root"; exit 2 ;;
+    *) _err "--docs '$docs' holds no workspace/CLAUDE.md"; exit 2 ;;
+  esac
   place "$(relpath "$root/env" "$DF")" "$root/env/ai-dotfiles"
   for repo in "$root"/*/; do
     repo="${repo%/}"
     [ -L "$repo" ] || [ ! -d "$repo/.git" ] && continue
     [ "$(cd "$repo" && pwd -P)" = "$(cd "$DF" && pwd -P)" ] && continue
     [ "$repo" = "$docs_clone" ] && continue
-    src="$(ai_ws_src_path "$repo")"
-    [ -n "$src" ] || { _err "WARN $repo has no origin URL; not placed under src/"; continue; }
+    rc=0
+    src="$(ai_ws_src_path "$repo")" || rc=$?
+    case "$rc" in
+      0) ;;
+      1) _err "WARN $repo has no origin URL; not placed under src/"; continue ;;
+      *) _err "WARN $repo: origin makes no plain <host>/<org>/<repo> path; not placed under src/"; continue ;;
+    esac
     place "$(relpath "$(dirname "$root/src/$src")" "$repo")" "$root/src/$src"
   done
 fi

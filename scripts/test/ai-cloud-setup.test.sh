@@ -23,7 +23,13 @@ mkdir -p "$DF"
 cp -R "$SRC/framework" "$SRC/scripts" "$SRC/docs" "$DF/"
 mkdir -p "$DF/profiles/personal"
 cp "$SRC/profiles/personal/profile.env" "$DF/profiles/personal/"
-for r in repo-a repo-b; do git init -q "$WS/$r"; done
+# both hold workspace/CLAUDE.md, so only --docs can say which one is the docs repo
+for r in repo-a repo-b; do
+  git init -q "$WS/$r"
+  git -C "$WS/$r" remote add origin "https://github.com/org/$r"
+  mkdir -p "$WS/$r/workspace"
+  echo "# $r" > "$WS/$r/workspace/CLAUDE.md"
+done
 mkdir -p "$WS/not-a-repo"
 
 # --- a harness-shaped ~/.claude: its own key, its own skills ---
@@ -34,10 +40,12 @@ echo "harness-owned" > "$CFG/skills/writing-specs/SKILL.md"
 printf '{"model":"opus","hooks":{"Stop":[{"hooks":[{"type":"command","command":"harness-stop"}]}]}}\n' \
   > "$CFG/settings.json"
 
-run() { HOME="$TMP/home" AI_CLOUD_HOME="$CFG" "$DF/scripts/ai-cloud-setup.sh" --no-docker personal >/dev/null 2>&1; }
+run() { HOME="$TMP/home" AI_CLOUD_HOME="$CFG" "$DF/scripts/ai-cloud-setup.sh" --no-docker "${@:---docs=repo-b}" personal >/dev/null 2>&1; }
 
-# 1. usage error without a profile
+# 1. usage error without a profile, or with a --docs that names no docs clone
 if "$DF/scripts/ai-cloud-setup.sh" >/dev/null 2>&1; then fail "no profile accepted"; fi
+if run --docs not-a-repo; then fail "a --docs naming no docs clone accepted"; fi
+[ -e "$WS/docs" ] && fail "a refused --docs still linked docs"
 
 # 2. first run wires everything
 run || fail "first run rc"
@@ -68,6 +76,8 @@ for r in repo-a repo-b; do
   [ "$(git -C "$WS/$r" config core.hooksPath)" = "$DF/scripts/git-hooks" ] || fail "core.hooksPath unset: $r"
 done
 [ -d "$WS/not-a-repo/.git" ] && fail "non-repo touched"
+[ "$(readlink "$WS/docs")" = "repo-b" ] || fail "--docs not passed to the workspace link"
+grep -q repo-b "$WS/CLAUDE.md" 2>/dev/null || fail "root CLAUDE.md not linked from the named docs clone"
 
 # 3. second run changes nothing
 before="$(cd "$CFG" && find . -print0 | sort -z | xargs -0 ls -ld | awk '{print $1, $NF}'; cat "$CFG/settings.json")"
