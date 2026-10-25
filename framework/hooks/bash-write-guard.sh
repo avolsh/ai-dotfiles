@@ -82,17 +82,27 @@ WRITE_VERBS = {"cp": "last", "mv": "last", "install": "last", "ln": "last",
                "rm": "all", "mkdir": "all", "touch": "all", "rmdir": "all", "tee": "all"}
 # `(…)` and `{ …; }` group commands, so their brackets end one command and start the next as a separator does.
 GROUP = {"(", ")", "{", "}"}
-SEPARATORS = {";", "&&", "||", "|", "&", "\n"} | GROUP
+SEPARATORS = {";", "&&", "||", "|", "|&", "&", "\n"} | GROUP
+# Redirections that write to the word after them; `2>&1`, `>&2` point at a descriptor, not a file.
+REDIRECT = {">", ">>", ">|", ">&", "&>", "&>>"}
+# Shell words that come before the command they run, so the command is the word after them.
+PREFIX = {"!", "time", "if", "then", "elif", "else", "while", "until", "do"}
 
 try:
-    lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+    # A newline ends a command as `;` does, so it is an operator here and not whitespace. The descriptor in
+    # front of a redirection (`2>&1`, `2>/dev/null`) is part of it, not a word of the command.
+    lexer = shlex.shlex(re.sub(r"(?:(?<=\s)|^)\d+(?=[<>])", "", command), posix=True,
+                        punctuation_chars="();<>|&\n")
     lexer.whitespace_split = True
+    lexer.whitespace = " \t\r"
     tokens = list(lexer)
 except Exception:
     out("OPEN"); raise SystemExit
-# The lexer keeps a run of operator characters as one token (`)&&`, `((`); split it into its operators.
+# The lexer keeps a run of operator characters as one token (`)&&`, `((`); split it into its operators,
+# keeping each redirection (`>&`, `&>`, `<<`) whole.
+OPERATOR = r"&>>|&>|>&|<&|>\||\|&|<<<|<<-|<<|>>|&&|\|\||[;&|()<>\n]"
 tokens = [part for t in tokens
-          for part in (re.findall(r"&&|\|\||>>|[;&|()<>]", t) if t and all(c in "();<>|&" for c in t) else [t])]
+          for part in (re.findall(OPERATOR, t) if t and all(c in "();<>|&\n" for c in t) else [t])]
 
 # An unexpanded variable, a substitution or a glob means the path this reader would resolve is not the path
 # the shell will write to, so the command is left alone.
@@ -204,26 +214,28 @@ for seg in segments:
     # Redirections write wherever they point, whatever the command in front of them is.
     i = 0
     while i < len(seg):
-        if seg[i] in (">", ">>") and i + 1 < len(seg):
-            out("PATH", seg[i], absolute(seg[i + 1]))
+        if seg[i] in REDIRECT and i + 1 < len(seg):
+            if not (seg[i + 1].isdigit() or seg[i + 1] == "-"):
+                out("PATH", seg[i], absolute(seg[i + 1]))
             i += 2
             continue
         i += 1
-    words = [w for w in seg if w not in (">", ">>")]
-    # Drop the redirection targets so they are not read as arguments of the command.
+    # Drop each redirection and its target, so the words after it still reach the command.
     trimmed, skip = [], False
     for w in seg:
         if skip:
             skip = False; continue
-        if w in (">", ">>"):
+        if w in REDIRECT or w == "<&":
             skip = True; continue
         trimmed.append(w)
     words = trimmed
+    while words and words[0] in PREFIX:
+        words = words[1:]
     if not words:
         continue
     # Leading NAME=value assignments (GIT_CONFIG_COUNT=…, say) can reconfigure git for that one command.
     assigned = 0
-    while CLOUD and assigned < len(words) - 1 and "=" in words[assigned] and not words[assigned].startswith("-"):
+    while assigned < len(words) - 1 and "=" in words[assigned] and not words[assigned].startswith("-"):
         assigned += 1
     words = words[assigned:]
     verb = os.path.basename(words[0])
@@ -238,8 +250,16 @@ for seg in segments:
         continue
 
     if verb == "gh":
-        if CLOUD and len(args) >= 2 and args[0] == "pr" and args[1] in GH_PR_WRITE:
-            out("GH", "pr " + args[1])
+        # `-R/--repo` may stand before `pr` or before its verb; the verb is the second word that is no flag.
+        plain, k = [], 0
+        while k < len(args):
+            if args[k] in ("-R", "--repo"):
+                k += 2; continue
+            if not args[k].startswith("-"):
+                plain.append(args[k])
+            k += 1
+        if CLOUD and len(plain) >= 2 and plain[0] == "pr" and plain[1] in GH_PR_WRITE:
+            out("GH", "pr " + plain[1])
         continue
 
     if verb in OPAQUE:

@@ -596,3 +596,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** in `(git commit -m x)` or `{ cd ../other; git add -A; }` the guard read `(` or `{` as the verb, so the git write went unread, in a local session too, and a `cd` inside a group was not followed.
 - **What was changed:** `( ) { }` separate commands, runs of operator characters are split, and a command with both a group and a `cd` leaves the branch unknown, so a cloud git write in it is refused.
 - **Suggested follow-up:** feed the guard's tests from a list of bash grammar forms (subshell, group, pipeline, `&&` glued to a bracket) rather than from commands seen so far.
+
+### 2026-10-25 — A fix to the guard's tokenizer opened a hole a second review caught
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 8, review cycle 2
+- **Category:** `anti-pattern`
+- **What was found:** splitting runs of operator characters, the fix for subshells, also split `>&` and `2>&1` into `>` and `&`; `&` is a separator, so `git commit 2>&1 -n` ended at the redirection and the `-n` went unread. The same review found three older holes of one kind: a newline, a reserved word (`if`, `then`, `!`, `time`) and `gh -R` each hid the command from the reader.
+- **What was changed:** redirections stay whole and a descriptor in front of one is dropped; a newline separates commands; reserved words before a command are skipped; `gh` flags are skipped before `pr` and its verb. Each form has a test, and each change was checked by a mutant the tests kill.
+- **Suggested follow-up:** the grammar-forms test list proposed above would have caught the regression before the push; until it exists, a change to the reader runs a second review.
