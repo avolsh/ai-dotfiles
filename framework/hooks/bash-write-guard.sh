@@ -4,7 +4,9 @@
 # PreToolUse guard on `Bash` (IMP-20260929-guarded-writes-through-bash): the shell is the unguarded door to
 # everything the file tools are guarded from. It refuses two things:
 #   - a write to a path no active spec governs, by the same decision `spec-status-guard.sh` makes (FR-1)
-#   - a state-changing git verb anywhere in the command, per boundaries.md § Never do #10 (FR-3)
+#   - a state-changing git verb anywhere in the command, per boundaries.md § Never do #10 (FR-3) — except, in a
+#     cloud session (CLAUDE_CODE_REMOTE=true), the writes its cloud exception allows on the agent's own
+#     `claude/*` branch (IMP-20261025-cloud-sessions FR-6)
 #
 # It is a backstop for convenience, not a sandbox: an agent that means to evade it can write a script and run
 # it. So it FAILS OPEN (FR-4) — anything it cannot read confidently is allowed, and recall remains the first
@@ -28,7 +30,7 @@ payload="$(cat || true)"
 #   GIT<TAB><verb>           — a state-changing git verb
 #   PATH<TAB><verb><TAB><abs>— a write and the file it lands on
 findings="$(printf '%s' "$payload" | python3 -c '
-import json, os, shlex, sys
+import json, os, shlex, subprocess, sys
 
 def out(*parts):
     print("\t".join(parts))
@@ -103,6 +105,56 @@ if current:
 def absolute(path):
     return path if os.path.isabs(path) else os.path.normpath(os.path.join(cwd, path))
 
+CLOUD = os.environ.get("CLAUDE_CODE_REMOTE") == "true"
+AGENT = "claude/"
+PUSH_DENY = {"-f", "--force", "--force-with-lease", "--force-if-includes", "-d", "--delete", "--mirror",
+             "--all", "--tags", "--prune"}
+
+def current_branch(where):
+    try:
+        r = subprocess.run(["git", "-C", where, "branch", "--show-current"], capture_output=True, text=True,
+                           timeout=5)
+    except Exception:
+        return ""
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+def cloud_allows(sub, rest, where):
+    """boundaries.md § Never do #10, cloud exception: the writes allowed on the agent branch."""
+    if sub in ("checkout", "switch"):
+        # Creating the agent branch from the human base, never tracking it.
+        for k, a in enumerate(rest):
+            if a in ("-b", "-B", "-c", "-C") and k + 1 < len(rest):
+                return rest[k + 1].startswith(AGENT) and "--no-track" in rest
+        return False
+    branch = current_branch(where)
+    if not branch.startswith(AGENT):
+        return False
+    if sub == "add":
+        return True
+    if sub == "commit":
+        return "--amend" not in rest
+    if sub == "fetch":
+        return not any(":" in a for a in rest if not a.startswith("-"))
+    if sub == "pull":
+        return "--ff-only" in rest and not any(a in ("-r", "--rebase") or a.startswith("--rebase=") for a in rest)
+    if sub == "push":
+        if any(a in PUSH_DENY or a.startswith("--force") for a in rest):
+            return False
+        plain = [a for a in rest if not a.startswith("-")]
+        refspecs = plain[1:]  # the first is the remote
+        if not refspecs:
+            return False  # a bare push goes wherever push.default says; name the branch
+        for spec in refspecs:
+            if spec.startswith("+"):
+                return False
+            dst = spec.split(":", 1)[-1]
+            if dst.startswith("refs/heads/"):
+                dst = dst[len("refs/heads/"):]
+            if dst != branch:
+                return False
+        return True
+    return False
+
 for seg in segments:
     if not seg:
         continue
@@ -133,8 +185,10 @@ for seg in segments:
         continue  # not a finding and not a reason to stop reading the rest
 
     if verb == "git":
-        sub, j = None, 0
+        sub, j, where = None, 0, cwd
         while j < len(args):  # skip the pre-command options that carry a value
+            if args[j] == "-C" and j + 1 < len(args):
+                where = absolute(args[j + 1])
             if args[j] in ("-C", "-c", "--git-dir", "--work-tree", "--namespace"):
                 j += 2; continue
             if args[j].startswith("-"):
@@ -150,6 +204,8 @@ for seg in segments:
                 continue
             if rest and any(r in readable for r in rest):
                 continue
+        if CLOUD and cloud_allows(sub, rest, where):
+            continue
         out("GIT", sub)
         continue
 
@@ -180,6 +236,9 @@ while IFS= read -r finding; do
   if [ "$kind" = "GIT" ]; then
     echo "Blocked by bash-write-guard: 'git $rest' changes repository state, which is the human's to run (boundaries.md § Never do #10)." >&2
     echo "Reading commands — status, log, diff, show, branch --show-current — are unrestricted. Say what you would run and wait." >&2
+    if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
+      echo "Cloud session: only add, commit, fetch, pull --ff-only and a named push of your own claude/* branch, and creating that branch with --no-track, are allowed (boundaries.md § Never do #10, cloud exception)." >&2
+    fi
     exit 2
   fi
   verb="${rest%%	*}"

@@ -7,6 +7,8 @@
 set -euo pipefail
 
 HOOKS_DIR="$(cd "$(dirname "$0")/../../hooks" && pwd)"
+# The cloud exception is opted into per case below; a cloud session's own env must not leak into the rest.
+unset CLAUDE_CODE_REMOTE
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 
@@ -336,6 +338,46 @@ set +e
 printf '{"tool_name":"Bash","tool_input":{}}' | "$BWG" >/dev/null 2>&1; rc=$?
 set -e
 expect "bash-write-guard fails open when there is no command" 0 "$rc"
+
+# ---------- bash-write-guard.sh, cloud exception (IMP-20261025-cloud-sessions AC-3) ----------
+cloudrepo="$TMP/cloudrepo"
+git init -q "$cloudrepo"
+git -C "$cloudrepo" checkout -q -b claude/x
+cloud_expect() { # $1 expected rc, $2 command, $3 CLAUDE_CODE_REMOTE value ("" = unset)
+  set +e
+  if [ -n "$3" ]; then
+    cmd_payload "$2" "$cloudrepo" | CLAUDE_CODE_REMOTE="$3" "$BWG" >/dev/null 2>&1
+  else
+    cmd_payload "$2" "$cloudrepo" | "$BWG" >/dev/null 2>&1
+  fi
+  local rc=$?
+  set -e
+  expect "bash-write-guard cloud=${3:-unset}: $2" "$1" "$rc"
+}
+for c in "git add -A" "git commit -m x" "git push origin claude/x" "git push -u origin claude/x" \
+         "git push origin HEAD:refs/heads/claude/x" "git pull --ff-only origin claude/x" "git fetch origin" \
+         "git fetch origin TBV-1" "git checkout -B claude/y --no-track origin/TBV-1" \
+         "git switch -c claude/y --no-track origin/TBV-1"; do
+  cloud_expect 0 "$c" true
+  cloud_expect 2 "$c" ""
+done
+for c in "git push origin TBV-1" "git push --force origin claude/x" "git push --force-with-lease origin claude/x" \
+         "git push origin +claude/x" "git push origin claude/x:TBV-1" "git push origin claude/other" "git push" \
+         "git push origin --delete claude/x" "git merge TBV-1" "git commit --amend" "git pull origin claude/x" \
+         "git pull --ff-only --rebase origin claude/x" "git fetch origin TBV-1:TBV-1" "git rebase TBV-1" \
+         "git reset --hard" "git checkout -b claude/y origin/TBV-1" "git checkout -b feat --no-track origin/TBV-1" \
+         "git tag v1"; do
+  cloud_expect 2 "$c" true
+done
+cloud_expect 2 "git commit -m x" false
+git -C "$cloudrepo" checkout -q -b TBV-1
+cloud_expect 2 "git commit -m x" true
+cloud_expect 2 "git push origin TBV-1" true
+cloud_expect 0 "git checkout -B claude/z --no-track origin/TBV-1" true
+set +e
+bwg_out="$(cmd_payload "git push origin TBV-1" "$cloudrepo" | CLAUDE_CODE_REMOTE=true "$BWG" 2>&1 >/dev/null)"
+set -e
+echo "$bwg_out" | grep -q "cloud exception" || { echo "FAIL: cloud deny must name the cloud exception" >&2; fails=$((fails+1)); }
 
 # ---------- secrets-scan.sh ----------
 SCAN="$HOOKS_DIR/secrets-scan.sh"

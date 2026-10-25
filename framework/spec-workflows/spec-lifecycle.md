@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-10-16*
+*Last updated: 2026-10-25*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Design Decisions / Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -38,6 +38,7 @@ siblings: # optional — sibling spec IDs produced by the Split check
   - <spec-id>
 depends-on: # optional — specs that MUST reach `done` before this one advances to `plan`
   - <spec-id>
+branches: {<repo>: <base-branch>}      # optional — cloud sessions: the base the human named per repo (boundaries.md § Never do #10, cloud exception)
 baseline-impact: none — <reason>        # CR / IMP / BUG — set instead of `## Baseline Deltas` when no docs/domain/ baseline changes (Rule 13)
 ---
 ```

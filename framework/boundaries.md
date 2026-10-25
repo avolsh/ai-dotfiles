@@ -1,6 +1,6 @@
 # Boundaries
 
-*Last updated: 2026-10-21*
+*Last updated: 2026-10-25*
 
 <!-- Canonical home for behavioural rules. Anchors below match `docs/rule-canonical-map.md` (R1, R4, R5, R11, R23; R9 anchor-only — see docs/specs/archived/artifacts/IMP-20260514-rule-map-narrative.md). Other framework files link to these anchors rather than restate the rules. -->
 
@@ -157,6 +157,19 @@
     write to a path no active spec governs as well. It **fails open** on any command it cannot read
     confidently, so it narrows the gap rather than closing it: this rule binds in full wherever the guard is
     silent, and a command the guard passes is not thereby approved.
+
+    <a id="cloud-git-exception"></a>**Cloud exception.** In a Claude Code cloud session
+    (`CLAUDE_CODE_REMOTE=true`) the container is reclaimed and work not pushed is lost, so the agent owns one
+    branch of its own, and only that branch. Before its first commit in a repo it asks the human which base
+    branch to start from, records the answer under the spec's `branches:` (repo → base), and creates
+    `claude/<name>` from `origin/<base>` with `--no-track`, so no push of it can reach the base. On that
+    branch, and only there, it may `add`, `commit`, `fetch`, `pull --ff-only` and `push` it by name. It
+    opens its draft PR itself after the first push, with the recorded base, and retargets a PR from its
+    branch whose base is anything else to that base. It never merges, never pushes to or rewrites any other
+    branch, never force-pushes (§ Never do #8 still binds), and never opens a PR into `master` or `develop`.
+    A diverged branch — the human pushed to it too — stops the work: the agent says so and waits. Outside a
+    cloud session none of this applies and the rule above holds in full. `bash-write-guard.sh` and
+    `pr-base-guard.sh` enforce the shell and PR halves.
 11. <a id="environments-are-the-humans"></a>**Never run a command that reaches a deployed environment
     without the human's permission for that exact command — reads included.** A cluster, a cloud account, a
     deployed host or a production database is the human's, and so is every command that touches it:
