@@ -46,7 +46,7 @@ clone "$WS/spaced" "git@github.com:geeoz/re po"
 clone "$WS/half-docs" https://github.com/tobeverse/half-docs
 mkdir -p "$WS/half-docs/workspace" "$WS/not-a-repo"
 
-for bad in "--docs nope" "--docs half-docs" "--docs ../cloud/tobevisit-docs" "--docs"; do
+for bad in "--docs nope" "--docs ../cloud/tobevisit-docs" "--docs"; do
   # shellcheck disable=SC2086 # the option and its value are two words
   "$DF/scripts/ai-workspace-link.sh" --cloud $bad "$WS" >/dev/null 2>&1 && fail "accepted: $bad"
 done
@@ -97,6 +97,11 @@ out="$("$W2/ai-dotfiles/scripts/ai-workspace-link.sh" --cloud "$W2" 2>&1)" || fa
 [ -e "$W2/docs" ] && fail "a docs clone guessed between two"
 [ -e "$W2/CLAUDE.md" ] && fail "root files linked from a guessed clone"
 echo "$out" | grep -q "several clones" || fail "the ambiguity not reported"
+# a named docs repo not initialised yet is linked and reported, not refused (FR-15)
+clone "$W2/empty-docs" https://github.com/tobeverse/empty-docs
+out="$("$W2/ai-dotfiles/scripts/ai-workspace-link.sh" --cloud --docs empty-docs "$W2" 2>&1)" || fail "an uninitialised --docs refused"
+[ "$(readlink "$W2/docs")" = "empty-docs" ] || fail "an uninitialised --docs not linked"
+echo "$out" | grep -q "initialise it: ai-workspace.sh --docs" || fail "an uninitialised --docs not reported"
 "$W2/ai-dotfiles/scripts/ai-workspace-link.sh" --cloud --docs=docs-b "$W2" >/dev/null 2>&1 || fail "--docs= run rc"
 grep -q "docs-b" "$W2/CLAUDE.md" 2>/dev/null || fail "--docs= did not pick the named clone"
 

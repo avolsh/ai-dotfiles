@@ -69,7 +69,10 @@ if [ "$cloud" -eq 1 ]; then
     1:) _err "WARN no clone in $root holds workspace/CLAUDE.md; docs not linked" ;;
     2:) _err "WARN several clones in $root hold workspace/CLAUDE.md; docs not linked — name one: --docs <repo>" ;;
     1:*|2:*) _err "--docs '$docs' is not a clone in $root"; exit 2 ;;
-    *) _err "--docs '$docs' holds no workspace/CLAUDE.md"; exit 2 ;;
+    *) # a docs repo not initialised yet: linked, so ai-workspace.sh --docs can fill it
+      docs_clone="$root/$docs"
+      place "$docs" "$root/docs"
+      _err "WARN $docs_clone holds no workspace/CLAUDE.md yet; docs linked — initialise it: ai-workspace.sh --docs $docs_clone" ;;
   esac
   place "$(relpath "$root/env" "$DF")" "$root/env/ai-dotfiles"
   for repo in "$root"/*/; do

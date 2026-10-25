@@ -2,7 +2,7 @@
 id: IMP-20261025-cloud-sessions
 type: IMP
 date: 2026-10-25
-status: plan
+status: in-progress
 owner: avolsh
 risk: medium
 affected-repos:
@@ -173,7 +173,7 @@ flowchart LR
 | 8 | `make check`, review, PR into `TBV-83-cloud-setup`; AC-6 is observed after Alex takes it to `master` and creates the environment, then Closure Evidence | `docs/specs/active/IMP-20261025-cloud-sessions.md`, `docs/improvements-log.md` | — | 1–7, 9–13 | reviewing-changes | default | ☐ pending |
 | 9 | `tobevisit-docs`: Alex sends the root files in the thread; the agent commits them under `workspace/` with Alex's `.mrconfig`, adds its README line, PR into the recorded base (FR-14, FR-17; AC-7) | `tobevisit-docs/workspace/` *(new)*, `tobevisit-docs/README.md` | — | 13 | writing-docs | fast | ☐ pending |
 | 10 | `ai-workspace-link.sh`, the cloud layout links in `ai-cloud-setup.sh`, the doctor check, README (FR-13; AC-7) | `scripts/ai-workspace-link.sh` *(new)*, `scripts/lib/workspace-layout.sh` *(new)*, `scripts/ai-cloud-setup.sh`, `scripts/ai-doctor.sh`, `scripts/test/ai-workspace-link.test.sh` *(new)*, `scripts/test/ai-cloud-setup.test.sh`, `scripts/test/ai-doctor.test.sh`, `Makefile`, `README.md` | `scripts/lib/profile-links.sh` | 1, 2 | writing-docs | default | ☑ done |
-| 11 | Doctor notes repos without the framework (by the files the four project repos carry today); `--docs` on a clone without `workspace/CLAUDE.md` warns (FR-15; AC-8) | `scripts/ai-doctor.sh`, `scripts/ai-workspace-link.sh`, `scripts/lib/workspace-layout.sh`, `scripts/test/ai-doctor.test.sh`, `scripts/test/ai-workspace-link.test.sh` | `scripts/ai-cloud-setup.sh` | 10 | writing-specs | default | ☐ pending |
+| 11 | Doctor notes repos without the framework (by the files the four project repos carry today); `--docs` on a clone without `workspace/CLAUDE.md` warns (FR-15; AC-8) | `scripts/ai-doctor.sh`, `scripts/ai-workspace-link.sh`, `scripts/lib/workspace-layout.sh`, `scripts/test/ai-doctor.test.sh`, `scripts/test/ai-workspace-link.test.sh` | `scripts/ai-cloud-setup.sh` | 10 | writing-specs | default | ◐ awaiting approval |
 | 12 | `ai-project.sh` and `ai-workspace.sh` take a target, `ai-workspace.sh --docs`; the ask-then-scaffold rule in the cloud exception; the guide's "add a repo to the workspace" (empty or with code) (FR-16; AC-8) | `scripts/ai-project.sh`, `scripts/ai-workspace.sh`, `scripts/test/ai-project.test.sh`, `scripts/test/ai-workspace.test.sh` *(new)*, `framework/boundaries.md`, `docs/workspace-bootstrap-guide.md` | `framework/templates/workspace/`, `framework/templates/project/` | 11 | writing-docs, reviewing-changes | default | ☐ pending |
 | 13 | `.mrconfig` sections read by the layout lib, placed by `ai-workspace-link.sh` and checked by the doctor; README: `mr checkout`, then `make workspace-link` (FR-17; AC-9) | `scripts/lib/workspace-layout.sh`, `scripts/ai-workspace-link.sh`, `scripts/ai-doctor.sh`, `scripts/test/ai-doctor.test.sh`, `scripts/test/ai-workspace-link.test.sh`, `README.md` | — | 11 | writing-docs | default | ☐ pending |
 

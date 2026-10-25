@@ -219,6 +219,29 @@ expect "the docs link --docs made passes beside a second candidate" 0 "$rc"
 [ "$rc" -eq 0 ] || echo "$out" >&2
 rm -rf "$TMP/wsdocs2"
 
+# 10f. not initialised for the framework: a noted project repo and a noted docs repo, the exit status unchanged (FR-15)
+# stdout only: it is what reaches the session at SessionStart
+stdout_of() { AI_DOTFILES="$DF" AI_CLOUD_HOME="$CFG" AI_DOCTOR_DOCKER=true "$SUT" --fast --cloud test 2>/dev/null; }
+set +e
+out="$(stdout_of)"; rc=$?
+set -e
+expect "a repo without the framework does not fail the doctor" 0 "$rc"
+echo "$out" | grep -qF "NOTE $TMP/src/github.com/org/repo-a: not initialised for the AI framework (missing: _canonical.md CLAUDE.md AGENTS.md .github/copilot-instructions.md)" \
+  || { echo "FAIL: uninitialised project repo not noted on stdout" >&2; fails=$((fails+1)); }
+for f in _canonical.md CLAUDE.md AGENTS.md .github/copilot-instructions.md; do
+  mkdir -p "$(dirname "$TMP/repo-a/$f")"; echo x > "$TMP/repo-a/$f"
+done
+out="$(stdout_of || true)"
+echo "$out" | grep -q "repo-a: not initialised" && { echo "FAIL: an initialised repo still noted" >&2; fails=$((fails+1)); }
+git init -q "$TMP/emptydocs"
+git -C "$TMP/emptydocs" config core.hooksPath "$DF/scripts/git-hooks"
+ln -sfn emptydocs "$TMP/docs"
+out="$(stdout_of || true)"
+echo "$out" | grep -qF "NOTE $TMP/emptydocs: not initialised for the AI framework (no workspace/CLAUDE.md)" \
+  || { echo "FAIL: uninitialised docs repo not noted" >&2; fails=$((fails+1)); }
+rm -rf "$TMP/emptydocs"
+AI_DOTFILES="$DF" "$WSL" --cloud --docs wsdocs "$TMP" >/dev/null 2>&1
+
 # 11. without --cloud the same broken session is not checked
 set +e
 cloud false >/dev/null; rc=$?

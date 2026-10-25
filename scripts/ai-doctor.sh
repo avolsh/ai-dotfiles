@@ -19,6 +19,8 @@
 #   5. workspace root (both modes, once docs/workspace/ exists; always in the
 #      cloud): each entry of docs/workspace/ is linked into the root, and in the
 #      cloud docs, env/ai-dotfiles and src/<host>/<org>/<repo> resolve (FR-13).
+#      A repo under src/ without the framework files, or a docs repo without
+#      workspace/CLAUDE.md, is a NOTE on stdout, never a failure (FR-15).
 #
 # Usage:
 #   ai-doctor.sh [--fast] [--cloud] [<profile>]
@@ -51,6 +53,8 @@ profile_dir="$AI_DOTFILES/profiles/$PROFILE"
 
 fails=0
 fail() { printf 'ai-doctor: FAIL %s\n' "$1" >&2; fails=$((fails + 1)); }
+# Not a failure: something the agent asks the owner about (stdout reaches the session at SessionStart).
+note() { printf 'ai-doctor: NOTE %s\n' "$1"; }
 check_link() { # $1 = path that must exist and resolve
   local p="$1"
   if [ -L "$p" ]; then
@@ -167,7 +171,9 @@ ws_root="$(ai_ws_root "$AI_DOTFILES")"
 if [ "$CLOUD" -eq 1 ]; then
   # The setup script recorded its choice as the docs link; without one, say why none was made.
   docs_real="$(readlink -f "$ws_root/docs" 2>/dev/null || true)"
-  if [ ! -L "$ws_root/docs" ] || [ ! -d "$docs_real/workspace" ]; then
+  if [ -L "$ws_root/docs" ] && [ -d "$docs_real/.git" ] && [ ! -f "$docs_real/workspace/CLAUDE.md" ]; then
+    note "$docs_real: not initialised for the AI framework (no workspace/CLAUDE.md) — ask the owner, then: ai-workspace.sh --docs $docs_real"
+  elif [ ! -L "$ws_root/docs" ] || [ ! -d "$docs_real/workspace" ]; then
     docs_real=""
     rc=0
     ai_ws_docs_clone "$ws_root" >/dev/null || rc=$?
@@ -189,6 +195,14 @@ if [ "$CLOUD" -eq 1 ]; then
       || fail "$ws_root/src/$src (missing — re-run: ai-cloud-setup.sh $PROFILE)"
   done
 fi
+# Project repos without the framework: the owner decides whether to initialise each (FR-15).
+for repo in "$ws_root"/src/*/*/*/; do
+  repo="${repo%/}"
+  [ -d "$repo/.git" ] || continue
+  missing="$(ai_ws_missing_framework "$repo")"
+  [ -z "$missing" ] \
+    || note "$repo: not initialised for the AI framework (missing: $missing) — ask the owner, then: ai-project.sh $repo"
+done
 if [ -d "$ws_root/docs/workspace" ]; then
   while IFS= read -r entry; do
     name="$(basename "$entry")"

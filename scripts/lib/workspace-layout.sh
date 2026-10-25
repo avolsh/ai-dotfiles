@@ -51,6 +51,17 @@ ai_ws_docs_clone() { # $1 directory holding the clones, $2 optional clone name
   printf '%s\n' "${found[0]}"
 }
 
+# The framework files a project repo carries once `ai-project.sh` scaffolded it
+# and `make sync-agents` rendered it.
+AI_WS_PROJECT_FILES="_canonical.md CLAUDE.md AGENTS.md .github/copilot-instructions.md"
+
+# Those of them missing from repo $1, space-separated; empty when it is initialised.
+ai_ws_missing_framework() { # $1 repo
+  local f out=""
+  for f in $AI_WS_PROJECT_FILES; do [ -e "$1/$f" ] || out="$out $f"; done
+  printf '%s\n' "${out# }"
+}
+
 # <host>/<org>/<repo> of a clone's origin (https://host/org/repo[.git],
 # ssh://[user@]host/org/repo or git@host:org/repo). Every component must be a
 # plain name: an origin is anyone's text, and it becomes a path under src/.
