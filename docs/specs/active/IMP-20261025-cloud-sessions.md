@@ -9,7 +9,7 @@ affected-repos:
   - ai-dotfiles
   - tobevisit-content
   - tobevisit-docs
-branches: {ai-dotfiles: TBV-83-cloud-setup, tobevisit-content: TBV-83-new-categories}
+branches: {ai-dotfiles: TBV-83-cloud-setup, tobevisit-content: TBV-83-new-categories, tobevisit-docs: TBV-83-cloud-setup}
 affected-docs:
   - README.md
   - docs/ai-agent-framework.md
@@ -153,7 +153,7 @@ flowchart LR
 | 7 | Remove `profiles/*/preferences.md`; README "Cloud sessions" section; framework overview updated (FR-11, FR-12) | `profiles/personal/preferences.md`, `profiles/work/preferences.md`, `README.md`, `docs/ai-agent-framework.md` | `.gitignore` | 1, 2, 3, 4 | writing-docs | default | ☑ done |
 | 8 | `make check`, review, PR into `TBV-83-cloud-setup`; AC-6 is observed after Alex takes it to `master` and creates the environment, then Closure Evidence | `docs/specs/active/IMP-20261025-cloud-sessions.md`, `docs/improvements-log.md` | — | 1–7, 9, 10 | reviewing-changes | default | ☐ pending |
 | 9 | `tobevisit-docs`: Alex commits the root files under `workspace/`; the agent adds its README line, PR into the recorded base (FR-14; AC-7) | `tobevisit-docs/workspace/` *(new)*, `tobevisit-docs/README.md` | — | — | writing-docs | fast | ☐ pending |
-| 10 | `ai-workspace-link.sh`, the cloud layout links in `ai-cloud-setup.sh`, the doctor check, README (FR-13; AC-7) | `scripts/ai-workspace-link.sh` *(new)*, `scripts/ai-cloud-setup.sh`, `scripts/ai-doctor.sh`, `scripts/test/ai-workspace-link.test.sh` *(new)*, `scripts/test/ai-cloud-setup.test.sh`, `scripts/test/ai-doctor.test.sh`, `Makefile`, `README.md` | `scripts/lib/profile-links.sh` | 1, 2, 9 | writing-docs | default | ☐ pending |
+| 10 | `ai-workspace-link.sh`, the cloud layout links in `ai-cloud-setup.sh`, the doctor check, README (FR-13; AC-7) | `scripts/ai-workspace-link.sh` *(new)*, `scripts/ai-cloud-setup.sh`, `scripts/ai-doctor.sh`, `scripts/test/ai-workspace-link.test.sh` *(new)*, `scripts/test/ai-cloud-setup.test.sh`, `scripts/test/ai-doctor.test.sh`, `Makefile`, `README.md` | `scripts/lib/profile-links.sh` | 1, 2 | writing-docs | default | ☐ pending |
 
 ## Closure Evidence
 Pending — closure only.
