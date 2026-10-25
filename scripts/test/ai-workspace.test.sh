@@ -6,6 +6,8 @@
 # --docs — root files under workspace/, the template's docs/ at the clone's top,
 # nothing the clone already holds overwritten.
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 TMP="$(mktemp -d)"

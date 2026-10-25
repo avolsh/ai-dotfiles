@@ -169,7 +169,10 @@
     opens its draft PR itself after the first push, with the recorded base, through the GitHub tools rather
     than `gh pr`, and retargets a PR from its branch whose base is anything else to that base. It never merges, never pushes to or rewrites any other
     branch, never force-pushes (§ Never do #8 still binds), and never opens a PR into `master` or `develop`.
-    A diverged branch — the human pushed to it too — stops the work: the agent says so and waits. Outside a
+    A diverged branch — the human pushed to it too — stops the work: the agent says so and waits. A spec
+    whose AC can be observed only after `master` keeps its base branch until its closing PR merges; that PR is
+    opened before the archive commit, and a base found gone is asked for again
+    ([`spec-lifecycle.md § An AC observed only after master`](spec-workflows/spec-lifecycle.md#closing-after-master)). Outside a
     cloud session none of this applies and the rule above holds in full. `bash-write-guard.sh` and
     `pr-base-guard.sh` enforce the shell and PR halves. When `ai-doctor` notes a repo as not initialised for
     the framework, the agent asks the human once per repo whether to initialise it; on yes it runs

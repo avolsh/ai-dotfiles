@@ -7,10 +7,10 @@
 # laptop layout whose root already holds real files — one identical to its
 # docs/workspace/ source, one that differs.
 set -euo pipefail
-# The host's git config may rewrite origins (url.<base>.insteadOf; a cloud container sets it through
-# GIT_CONFIG_COUNT); the fixtures read them as written.
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
+# The host's git config may rewrite origins (url.<base>.insteadOf) too; the fixtures read them as written.
 export GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
-unset GIT_CONFIG_COUNT
 
 SRC="$(cd "$(dirname "$0")/../.." && pwd)"
 TMP="$(mktemp -d)"

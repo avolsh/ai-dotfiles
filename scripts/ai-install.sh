@@ -9,6 +9,9 @@
 #   ai-install.sh                  # write to ~/.zshrc
 #   ai-install.sh --check          # exit non-zero on drift; no writes
 #   ai-install.sh --rc-file <path> # override default ~/.zshrc (testing)
+#
+# In a cloud session (CLAUDE_CODE_REMOTE=true) --check on the default ~/.zshrc passes with a note: the
+# block is the laptop's, and no cloud shell sources it (IMP-20261025-cloud-sessions FR-19).
 
 set -euo pipefail
 
@@ -17,6 +20,7 @@ _err() { printf 'ai-install: %s\n' "$*" >&2; }
 # --- Parse args ---
 CHECK=0
 RC_FILE="$HOME/.zshrc"
+RC_GIVEN=0
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -27,6 +31,7 @@ while [ $# -gt 0 ]; do
         exit 2
       fi
       RC_FILE="$2"
+      RC_GIVEN=1
       shift 2
       ;;
     -h|--help)
@@ -40,6 +45,11 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
+
+if [ "$CHECK" -eq 1 ] && [ "$RC_GIVEN" -eq 0 ] && [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
+  echo "✓ cloud session: $RC_FILE is the laptop's shell block — not checked here"
+  exit 0
+fi
 
 # --- Compute AI_DOTFILES from this script's own location ---
 AI_DOTFILES_PATH="$(cd "$(dirname "$0")/.." && pwd)"

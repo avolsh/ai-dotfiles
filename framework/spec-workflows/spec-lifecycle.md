@@ -74,6 +74,14 @@ may transition `in-progress → specify` repeatedly until reaching `done` —
 the iterative loop is the lane's defining feature. See [§ RES exception](#res-exception)
 for the full rule set and Iteration Log mandate.
 
+<a id="closing-after-master"></a>**An AC observed only after `master`.** When an acceptance criterion can be
+observed only once the work has reached `master` — a fresh cloud session clones `master`, a deploy reads it —
+the spec stays `in-progress` across that merge and closes in a second PR. Its base branch under `branches:` is
+kept until that closing PR merges: the agent never asks for it to be deleted on merge, and says so when it hands
+the first PR over. The closing PR is opened while the spec is still `in-progress`, before the commit that flips
+it to `done` and moves it to `archived/`, because `pr-base-guard.sh` reads the base from an `in-progress`
+spec. A base found gone is asked for again, recorded under `branches:`, and the PR opened into it.
+
 ## Rules
 
 1. Skip-protection rule lives at [`boundaries.md § Never do #2`](../boundaries.md#never-skip-specify). In lifecycle

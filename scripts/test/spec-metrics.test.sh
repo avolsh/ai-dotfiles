@@ -6,6 +6,8 @@
 # framework spec, one product spec, and one non-spec artifact; asserts
 # classification, monthly grouping, and share arithmetic.
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 SUT="$(cd "$(dirname "$0")/.." && pwd)/spec-metrics.py"
 TMP="$(mktemp -d)"

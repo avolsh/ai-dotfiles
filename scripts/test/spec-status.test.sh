@@ -6,6 +6,8 @@
 # specify spec with one met and one unmet `depends-on:`, a done spec in archived/ —
 # and asserts what the command reports and that it writes nothing.
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 SUT="$(cd "$(dirname "$0")/.." && pwd)/spec-status.py"
 TMP="$(mktemp -d)"
