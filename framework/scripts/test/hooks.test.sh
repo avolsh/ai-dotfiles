@@ -5,10 +5,10 @@
 # Builds fixtures in a temp dir and asserts allow/deny/exit-code behaviour
 # (AC-1 groundwork of IMP-20260610-mechanize-framework-guardrails).
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/../../../scripts/test/lib/test-env.sh"
 
 HOOKS_DIR="$(cd "$(dirname "$0")/../../hooks" && pwd)"
-# The cloud exception is opted into per case below; a cloud session's own env must not leak into the rest.
-unset CLAUDE_CODE_REMOTE
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 

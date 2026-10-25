@@ -8,6 +8,8 @@
 # Never touches the real ~/.claude, repos or Docker: the Docker step runs
 # against stub docker/dockerd and a fixture daemon.json.
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 SRC="$(cd "$(dirname "$0")/../.." && pwd)"
 TMP="$(mktemp -d)"

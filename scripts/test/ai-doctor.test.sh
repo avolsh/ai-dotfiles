@@ -7,12 +7,11 @@
 # the expected target on a deliberately broken symlink, and OK again after
 # repair. HOME is overridden so real tool homes are never touched.
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 SUT="$(cd "$(dirname "$0")/.." && pwd)/ai-doctor.sh"
 LIB="$(cd "$(dirname "$0")/.." && pwd)/lib/profile-links.sh"
-# Cases 1-7 are the local profile; a cloud session's own env must not turn
-# on the cloud checks for them.
-unset CLAUDE_CODE_REMOTE
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 

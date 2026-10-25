@@ -7,6 +7,8 @@
 # stale-stamp rejection, escape hatch, clean pass, and chaining to a
 # repo-local hook.
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 DF="$(cd "$(dirname "$0")/../.." && pwd)"
 TMP="$(mktemp -d)"

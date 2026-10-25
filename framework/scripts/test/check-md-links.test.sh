@@ -13,6 +13,8 @@
 # exit 0.
 
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/../../../scripts/test/lib/test-env.sh"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 SUT="$SCRIPT_DIR/check-md-links.sh"

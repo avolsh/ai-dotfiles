@@ -6,6 +6,8 @@
 # fire on malformed input can be proven without planting malformed specs in the
 # real corpus (IMP-20260826 FR-7..FR-9).
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 VALIDATOR="$(cd "$(dirname "$0")/.." && pwd)/validate-specs.py"
 TMP="$(mktemp -d)"
