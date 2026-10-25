@@ -73,7 +73,9 @@ repo under `workspace/` and linked into the root by
 with `ai-workspace --docs <docs clone>`: the root files land in
 `<docs clone>/workspace/`, the template's `docs/` content at the clone's top.
 The repos of the workspace are listed in `workspace/.mrconfig` (myrepos), one
-section per repo with its path relative to the root. `CLAUDE.md`, `AGENTS.md`
+section per repo with its path relative to the root. Run `mr` from the root or
+from a repo, never from inside `docs/workspace/`: there `mr` resolves the
+paths from that directory and `mr checkout` clones into the docs repo. `CLAUDE.md`, `AGENTS.md`
 and `.github/copilot-instructions.md` there are committed renders of
 `workspace/_canonical.md`: edit the canonical file and run
 `make -C docs/workspace sync-agents`; `ai-doctor` fails on a stale render.

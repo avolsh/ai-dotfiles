@@ -243,7 +243,9 @@ the docs repo's `sync-agents.sh` only when that file is the framework's own, and
 `docs/workspace/.mrconfig` lists the workspace's repos for [myrepos](https://myrepos.branchable.com/)
 (`mr`): one section per repo, its path relative to the root (`docs`, `env/ai-dotfiles`,
 `src/<host>/<org>/<repo>`, `research/<name>`), with `checkout = git clone '<url>' '<dir>'`. It is linked
-into the root like the other entries, and `mr` reads it there, resolving the paths against the root. In a
+into the root like the other entries, and `mr` reads it there, resolving the paths against the root. Run
+`mr` from the root or from a repo, never from inside `docs/workspace/`: there it finds the file itself and
+resolves the paths from that directory, so `mr checkout` clones every repo into the docs repo. In a
 cloud session `--cloud` places each clone at the section its URL matches (else under `src/`), and the
 doctor notes a listed repo the session did not clone. A new laptop:
 
