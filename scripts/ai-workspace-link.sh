@@ -9,7 +9,8 @@
 #
 # --cloud first builds the layout a laptop already has, from the clones the
 # session put side by side in <root> (scripts/lib/workspace-layout.sh):
-# docs, env/ai-dotfiles and src/<host>/<org>/<repo>. `docs` is the clone named
+# docs, env/ai-dotfiles and a path per clone: the section docs/workspace/.mrconfig
+# gives its URL (research/<name>, say), else src/<host>/<org>/<repo>. `docs` is the clone named
 # with --docs; without it, the one clone holding workspace/CLAUDE.md, and none
 # when several do. A clone whose origin makes no plain <host>/<org>/<repo> path
 # is left out of src/.
@@ -75,6 +76,16 @@ if [ "$cloud" -eq 1 ]; then
       _err "WARN $docs_clone holds no workspace/CLAUDE.md yet; docs linked — initialise it: ai-workspace.sh --docs $docs_clone" ;;
   esac
   place "$(relpath "$root/env" "$DF")" "$root/env/ai-dotfiles"
+
+  # Where each clone goes: its .mrconfig section, else src/<host>/<org>/<repo> (FR-17).
+  repos="$(ai_ws_mr_repos "$root/docs/workspace/.mrconfig")"
+  # A link at $1 to clone $2 that an earlier layout left; only ever a symlink this script made.
+  drop_stale() { # $1 link, $2 clone
+    if [ -L "$1" ] && [ "$(cd "$1" 2>/dev/null && pwd -P)" = "$(cd "$2" && pwd -P)" ]; then rm -f -- "$1"; fi
+  }
+  if [ -n "$docs_clone" ] && key="$(ai_ws_src_path "$docs_clone")"; then
+    drop_stale "$root/src/$key" "$docs_clone"
+  fi
   for repo in "$root"/*/; do
     repo="${repo%/}"
     [ -L "$repo" ] || [ ! -d "$repo/.git" ] && continue
@@ -84,10 +95,15 @@ if [ "$cloud" -eq 1 ]; then
     src="$(ai_ws_src_path "$repo")" || rc=$?
     case "$rc" in
       0) ;;
-      1) _err "WARN $repo has no origin URL; not placed under src/"; continue ;;
-      *) _err "WARN $repo: origin makes no plain <host>/<org>/<repo> path; not placed under src/"; continue ;;
+      1) _err "WARN $repo has no origin URL; not placed"; continue ;;
+      *) _err "WARN $repo: origin makes no plain <host>/<org>/<repo> path; not placed"; continue ;;
     esac
-    place "$(relpath "$(dirname "$root/src/$src")" "$repo")" "$root/src/$src"
+    dest="$(ai_ws_section_of "$src" "$repos")"
+    case "$dest" in
+      ""|docs|env/ai-dotfiles) dest="src/$src" ;;  # those two are the docs clone's and the dotfiles' own
+      *) drop_stale "$root/src/$src" "$repo" ;;
+    esac
+    place "$(relpath "$(dirname "$root/$dest")" "$repo")" "$root/$dest"
   done
 fi
 

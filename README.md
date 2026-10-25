@@ -234,6 +234,21 @@ since its files become every session's rules. A clone whose `origin` gives no pl
 `<host>/<org>/<repo>` path (a `..`, a space, a port) stays out of `src/` with a warning.
 `ai-doctor.sh` names any root entry left unlinked, and why `docs` is missing.
 
+`docs/workspace/.mrconfig` lists the workspace's repos for [myrepos](https://myrepos.branchable.com/)
+(`mr`): one section per repo, its path relative to the root (`docs`, `env/ai-dotfiles`,
+`src/<host>/<org>/<repo>`, `research/<name>`), with `checkout = git clone '<url>' '<dir>'`. It is linked
+into the root like the other entries, and `mr` reads it there, resolving the paths against the root. In a
+cloud session `--cloud` places each clone at the section its URL matches (else under `src/`), and the
+doctor notes a listed repo the session did not clone. A new laptop:
+
+1. clone the docs repo to `<root>/docs` and ai-dotfiles to `<root>/env/ai-dotfiles`;
+2. run `make workspace-link` in `env/ai-dotfiles`;
+3. add to `~/.mrconfig` a section for the root, relative to your home, with `chain = true`
+   (`[vcs/<org>/<workspace>]`) — no `~/.mrtrust` entry is needed for plain `git clone` checkouts;
+4. run `mr checkout`.
+
+Adding a repo, empty or with code: `docs/workspace-bootstrap-guide.md` § Adding a repo to the workspace.
+
 ## Cloud sessions
 
 A Claude Code cloud session (a claude.ai project thread, or claude.ai/code) clones the repos fresh into

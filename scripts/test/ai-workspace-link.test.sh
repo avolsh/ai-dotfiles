@@ -83,6 +83,40 @@ before="$(listing "$WS")"
 "$DF/scripts/ai-workspace-link.sh" --cloud "$WS" >/dev/null 2>&1 || fail "cloud run without --docs rc"
 [ "$before" = "$(listing "$WS")" ] || fail "the single docs candidate not found without --docs"
 
+# --- 1a. cloud: .mrconfig places a clone at its section and drops the link an earlier run left ---
+cat > "$WS/tobevisit-docs/workspace/.mrconfig" <<'MR'
+[docs]
+checkout = git clone 'git@github.com:tobeverse/tobevisit-docs.git' 'docs'
+
+[vcs/chain]
+chain = true
+
+[../chained-up]
+chain = true
+
+[research/repo-b]
+checkout = git clone 'git@github.com:geeoz/repo-b.git' 'repo-b'
+
+[src/../escaped]
+checkout = git clone 'https://github.com/tobeverse/repo-a' 'escaped'
+MR
+# a link the layout did not make, at the docs clone's src/ path: not the docs clone's, so kept
+mkdir -p "$WS/src/github.com/tobeverse"
+ln -sfn ../../../repo-a "$WS/src/github.com/tobeverse/tobevisit-docs"
+out="$("$DF/scripts/ai-workspace-link.sh" --cloud --docs tobevisit-docs "$WS" 2>&1)" || fail ".mrconfig run rc"
+[ -L "$WS/src/github.com/tobeverse/tobevisit-docs" ] || fail "a link to another clone dropped as stale"
+rm "$WS/src/github.com/tobeverse/tobevisit-docs"
+echo "$out" | grep -q "chained-up" && fail "a section with no checkout judged as a path"
+[ "$(cd "$WS/research/repo-b" 2>/dev/null && pwd -P)" = "$(cd "$WS/repo-b" && pwd -P)" ] \
+  || fail "a clone not placed at its .mrconfig section"
+[ -e "$WS/src/github.com/geeoz/repo-b" ] && fail "the earlier src/ link of a moved clone kept"
+[ "$(readlink "$WS/.mrconfig")" = "docs/workspace/.mrconfig" ] || fail "root .mrconfig not linked"
+echo "$out" | grep -q "section \[src/../escaped\] is not a plain path" || fail "an unsafe section not reported"
+[ -e "$TMP/escaped" ] || [ -e "$WS/escaped" ] && fail "an unsafe section placed a clone"
+[ "$(cd "$WS/src/github.com/tobeverse/repo-a" && pwd -P)" = "$(cd "$WS/repo-a" && pwd -P)" ] \
+  || fail "a clone matched only by an unsafe section left out of src/"
+[ -L "$WS/vcs/chain" ] && fail "a chain section placed"
+
 # --- 1b. cloud: two clones hold workspace/CLAUDE.md ---
 W2="$TMP/two"
 mkdir -p "$W2/ai-dotfiles"
@@ -104,6 +138,11 @@ out="$("$W2/ai-dotfiles/scripts/ai-workspace-link.sh" --cloud --docs empty-docs 
 echo "$out" | grep -q "initialise it: ai-workspace.sh --docs" || fail "an uninitialised --docs not reported"
 "$W2/ai-dotfiles/scripts/ai-workspace-link.sh" --cloud --docs=docs-b "$W2" >/dev/null 2>&1 || fail "--docs= run rc"
 grep -q "docs-b" "$W2/CLAUDE.md" 2>/dev/null || fail "--docs= did not pick the named clone"
+[ -e "$W2/src/github.com/tobeverse/docs-b" ] && fail "the new docs clone kept its earlier src/ link"
+# a [docs] section naming another clone's URL never moves docs off the named clone
+printf "[docs]\ncheckout = git clone 'https://github.com/tobeverse/docs-a' 'docs'\n" > "$W2/docs-b/workspace/.mrconfig"
+"$W2/ai-dotfiles/scripts/ai-workspace-link.sh" --cloud --docs docs-b "$W2" >/dev/null 2>&1 || fail "[docs] section run rc"
+[ "$(readlink "$W2/docs")" = "docs-b" ] || fail "a [docs] section moved docs to another clone"
 
 # --- 2. laptop: layout already in place, real root files ---
 L="$TMP/laptop"
@@ -124,6 +163,27 @@ echo "$out" | grep -q "in the way" && fail "the cloud layout was attempted on a 
 [ -e "$L/env/ai-dotfiles/../../src/github.com/tobeverse/ai-dotfiles" ] && fail "laptop layout touched"
 [ -e "$L/docs/docs" ] && fail "docs linked on a laptop"
 "$LDF/scripts/ai-workspace-link.sh" --docs docs >/dev/null 2>&1 && fail "--docs accepted without --cloud"
+
+# --- 3. laptop with mr: ~/.mrconfig chains to the root's linked .mrconfig (FR-17, AC-9) ---
+if command -v mr >/dev/null 2>&1; then
+  H="$TMP/home"
+  R="$H/vcs/ws"
+  mkdir -p "$R/env/ai-dotfiles" "$R/docs/workspace" "$TMP/remotes"
+  cp -R "$SRC/scripts" "$R/env/ai-dotfiles/"
+  git init -q --bare "$TMP/remotes/lib.git"
+  git clone -q "$TMP/remotes/lib.git" "$TMP/seed" 2>/dev/null
+  git -C "$TMP/seed" -c user.email=t@t -c user.name=t commit -q --allow-empty -m seed
+  git -C "$TMP/seed" push -q origin HEAD 2>/dev/null
+  printf "[src/example.org/org/lib]\ncheckout = git clone '%s' 'lib'\n" "$TMP/remotes/lib.git" > "$R/docs/workspace/.mrconfig"
+  printf "[vcs/ws]\nchain = true\n" > "$H/.mrconfig"
+  "$R/env/ai-dotfiles/scripts/ai-workspace-link.sh" >/dev/null 2>&1 || fail "laptop link rc (mr)"
+  [ "$(readlink "$R/.mrconfig")" = "docs/workspace/.mrconfig" ] || fail "root .mrconfig not linked on a laptop"
+  (cd "$H" && HOME="$H" mr checkout >/dev/null 2>&1) || fail "mr checkout through the chain rc"
+  [ -d "$R/src/example.org/org/lib/.git" ] || fail "mr did not clone at the section path relative to the root"
+  [ -e "$R/docs/workspace/src" ] && fail "mr resolved the section against the link's target"
+else
+  echo "ai-workspace-link.test: mr not installed — skipping the mr chain case"
+fi
 
 if [ "$fails" -ne 0 ]; then
   echo "$fails ai-workspace-link test(s) failed ✗" >&2

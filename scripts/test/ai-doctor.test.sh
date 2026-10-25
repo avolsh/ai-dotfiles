@@ -242,6 +242,38 @@ echo "$out" | grep -qF "NOTE $TMP/emptydocs: not initialised for the AI framewor
 rm -rf "$TMP/emptydocs"
 AI_DOTFILES="$DF" "$WSL" --cloud --docs wsdocs "$TMP" >/dev/null 2>&1
 
+# 10g. .mrconfig: a clone at its section passes; a listed repo with no clone is a NOTE; an unsafe section fails (FR-17)
+cat > "$TMP/wsdocs/workspace/.mrconfig" <<'MR'
+[research/repo-a]
+checkout = git clone 'https://github.com/org/repo-a.git' 'repo-a'
+
+[src/github.com/org/missing]
+checkout = git clone 'git@github.com:org/missing.git' 'missing'
+MR
+AI_DOTFILES="$DF" "$WSL" --cloud --docs wsdocs "$TMP" >/dev/null 2>&1
+set +e
+out="$(stdout_of)"; rc=$?
+set -e
+expect "a clone at its .mrconfig section passes" 0 "$rc"
+echo "$out" | grep -qF "NOTE $TMP/src/github.com/org/missing: listed in .mrconfig, not cloned in this session (github.com/org/missing)" \
+  || { echo "FAIL: a listed repo with no clone not noted" >&2; fails=$((fails+1)); }
+rm "$TMP/research/repo-a"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "a clone missing from its .mrconfig section fails" 1 "$rc"
+echo "$out" | grep -qF "$TMP/research/repo-a (missing" || { echo "FAIL: missing section link not named" >&2; fails=$((fails+1)); }
+printf "\n[src/../x]\ncheckout = git clone 'https://github.com/org/x' 'x'\n" >> "$TMP/wsdocs/workspace/.mrconfig"
+AI_DOTFILES="$DF" "$WSL" --cloud --docs wsdocs "$TMP" >/dev/null 2>&1
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "an unsafe .mrconfig section fails" 1 "$rc"
+echo "$out" | grep -qF "FAIL $TMP/wsdocs/workspace/.mrconfig: section [src/../x] is not a plain path" \
+  || echo "$out" | grep -qF "FAIL $TMP/docs/workspace/.mrconfig: section [src/../x] is not a plain path" \
+  || { echo "FAIL: unsafe section not named" >&2; fails=$((fails+1)); }
+rm "$TMP/wsdocs/workspace/.mrconfig" "$TMP/.mrconfig"
+
 # 11. without --cloud the same broken session is not checked
 set +e
 cloud false >/dev/null; rc=$?

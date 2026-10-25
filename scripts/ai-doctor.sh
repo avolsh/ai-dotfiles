@@ -185,15 +185,29 @@ if [ "$CLOUD" -eq 1 ]; then
   fi
   [ "$(readlink -f "$ws_root/env/ai-dotfiles" 2>/dev/null)" = "$(readlink -f "$AI_DOTFILES")" ] \
     || fail "$ws_root/env/ai-dotfiles (missing — re-run: ai-cloud-setup.sh $PROFILE)"
+  mrconfig="$ws_root/docs/workspace/.mrconfig"
+  repos="$(ai_ws_mr_repos "$mrconfig" 2>/dev/null)"
+  while IFS= read -r bad; do
+    [ -z "$bad" ] || fail "$mrconfig: ${bad#workspace-layout: .mrconfig }"
+  done < <(ai_ws_mr_repos "$mrconfig" 2>&1 >/dev/null)
+  cloned=""
   for repo in "$ws_root"/*/; do
     repo="${repo%/}"
     { [ -L "$repo" ] || [ ! -d "$repo/.git" ]; } && continue
+    src="$(ai_ws_src_path "$repo")" || continue
+    cloned="$cloned $src"
     [ "$(readlink -f "$repo")" = "$(readlink -f "$AI_DOTFILES")" ] && continue
     [ "$(readlink -f "$repo")" = "$docs_real" ] && continue
-    src="$(ai_ws_src_path "$repo")" || continue
-    [ "$(readlink -f "$ws_root/src/$src" 2>/dev/null)" = "$(readlink -f "$repo")" ] \
-      || fail "$ws_root/src/$src (missing — re-run: ai-cloud-setup.sh $PROFILE)"
+    dest="$(ai_ws_section_of "$src" "$repos")"
+    case "$dest" in ""|docs|env/ai-dotfiles) dest="src/$src" ;; esac
+    [ "$(readlink -f "$ws_root/$dest" 2>/dev/null)" = "$(readlink -f "$repo")" ] \
+      || fail "$ws_root/$dest (missing — re-run: ai-cloud-setup.sh $PROFILE)"
   done
+  # A listed repo this session did not clone: the owner may add it to the project (FR-15, FR-17).
+  while IFS=$'\t' read -r key sec; do
+    [ -n "$key" ] || continue
+    case " $cloned " in *" $key "*) ;; *) note "$ws_root/$sec: listed in .mrconfig, not cloned in this session ($key)" ;; esac
+  done <<< "$repos"
 fi
 # Project repos without the framework: the owner decides whether to initialise each (FR-15).
 for repo in "$ws_root"/src/*/*/*/; do
