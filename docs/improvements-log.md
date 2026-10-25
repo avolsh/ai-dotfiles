@@ -548,3 +548,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was changed:** none for local mode — logged for review.
 - **Suggested follow-up:** resolve write paths against the `cd`-tracked directory in both modes, and replace the pinning test in `framework/scripts/test/hooks.test.sh` with one that expects the governed write to be refused.
 
+### 2026-10-25 — Three review cycles kept finding narrower ways around the cloud git denylist
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 8, review cycles 1–3
+- **Category:** `anti-pattern`
+- **What was found:** The cloud exception in `bash-write-guard.sh` allows `commit`, `push` and the rest unless an argument is on a deny list. Each cold review found forms the list missed: `-B` resetting a branch, a `cd` into another repo, `--no-verify` / `-n` / `git -c`, then the abbreviations git accepts (`--no-verif`, `--del`), an exported `GIT_CONFIG_*`, an empty-source refspec and `gh pr new`. Every round closed its own findings; none could show the list complete, because git's option surface is open-ended.
+- **What was changed:** all findings of the three cycles applied, each pinned by a test and a mutation check; the owner stopped the cycles there.
+- **Suggested follow-up:** an IMP turning the cloud rules into an allowlist — `commit` only with `-m`/`-a`/`-F` and their long forms, `push` only `[-u] origin claude/<current>` — so an unknown option is refused rather than passed.
+

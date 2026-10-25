@@ -376,11 +376,17 @@ for c in "git push origin TBV-1" "git push --force origin claude/x" "git push --
          "git commit -anm x" "git -c core.hooksPath=/dev/null commit -m x" \
          "git --config-env=core.hooksPath=H commit -m x" "GIT_CONFIG_COUNT=1 git commit -m x" \
          "git checkout -f -b claude/y --no-track origin/TBV-1" \
-         "git switch --discard-changes -c claude/y --no-track origin/TBV-1"; do
+         "git switch --discard-changes -c claude/y --no-track origin/TBV-1" \
+         "git commit --no-verif -m x" "git commit --amen -m x" "git push origin :claude/x" \
+         "git push origin --del claude/x" "git push --forc origin claude/x" "gh pr new --base master" \
+         "export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/dev/null; git commit -m x" \
+         "git checkout --forc -b claude/y --no-track origin/TBV-1"; do
   cloud_expect 2 "$c" true
 done
-# a commit message that merely contains n is not -n
+# a commit message that merely contains n is not -n, and an allowed long option is no abbreviation of a denied one
 cloud_expect 0 "git commit -am note" true
+cloud_expect 0 "git commit --no-edit -m x" true
+cloud_expect 0 "git push --set-upstream origin claude/x" true
 # gh is not a git verb: outside the cloud the guard leaves it alone, and reading a PR is never refused
 cloud_expect 0 "gh pr create --base master" ""
 cloud_expect 0 "gh pr view 12" true
