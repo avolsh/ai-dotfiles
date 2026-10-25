@@ -1,6 +1,6 @@
 # framework/hooks/ — canonical hook scripts
 
-*Last updated: 2026-09-29*
+*Last updated: 2026-10-25*
 
 Single-source enforcement scripts for the rules in
 [`boundaries.md`](../boundaries.md) that all three harnesses (Claude Code,
@@ -29,7 +29,8 @@ errors and rely on the git pre-commit backstop (FR-2) as the second line.
 | Script | Event | Enforces |
 |---|---|---|
 | `spec-status-guard.sh` | PreToolUse (Edit/Write) | No code edits while the governing spec (matched via `affected-code`) is at `specify`/`plan`, subject to the allow conditions below — [`spec-lifecycle.md § Status transitions`](../spec-workflows/spec-lifecycle.md) |
-| `bash-write-guard.sh` | PreToolUse (Bash) | The same lease decision for a write made by a shell command, and no state-changing git verb — [`boundaries.md § Never do #10`](../boundaries.md#git-is-the-humans). Fails open, see below |
+| `bash-write-guard.sh` | PreToolUse (Bash) | The same lease decision for a write made by a shell command, and no state-changing git verb — [`boundaries.md § Never do #10`](../boundaries.md#git-is-the-humans) — except, in a cloud session, the writes its [cloud exception](../boundaries.md#cloud-git-exception) allows on the agent's own `claude/*` branch. Fails open, see below |
+| `pr-base-guard.sh` | PreToolUse (`mcp__github__create_pull_request`, `mcp__github__update_pull_request`) | Cloud sessions only (`CLAUDE_CODE_REMOTE=true`): a PR's base is the one an active spec records for that repo under `branches:`, never `master` or `develop`; a call naming no base passes — [`boundaries.md § Never do #10`](../boundaries.md#cloud-git-exception) |
 | `secrets-scan.sh` | PreToolUse (`git commit`) and git pre-commit | No secrets or `.env` / `.env.*` / `.dev.vars` in commits — [`boundaries.md § Never do #1`](../boundaries.md) |
 | `stamp-refresh.sh` | PostToolUse (Edit/Write on `*.md`) | `*Last updated:*` stamp refreshed automatically — [`boundaries.md § Always do #10`](../boundaries.md#last-updated-stamp) |
 

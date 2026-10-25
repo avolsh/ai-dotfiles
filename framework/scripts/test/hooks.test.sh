@@ -379,6 +379,60 @@ bwg_out="$(cmd_payload "git push origin TBV-1" "$cloudrepo" | CLAUDE_CODE_REMOTE
 set -e
 echo "$bwg_out" | grep -q "cloud exception" || { echo "FAIL: cloud deny must name the cloud exception" >&2; fails=$((fails+1)); }
 
+# ---------- pr-base-guard.sh (IMP-20261025-cloud-sessions AC-4) ----------
+PRG="$HOOKS_DIR/pr-base-guard.sh"
+prws="$TMP/prws"
+mkdir -p "$prws/ai-dotfiles/docs/specs/active" "$prws/other/docs/specs/active"
+cat > "$prws/ai-dotfiles/docs/specs/active/IMP-20261025-x.md" <<'EOF2'
+---
+id: IMP-20261025-x
+status: in-progress
+branches: {ai-dotfiles: TBV-83-cloud-setup, other: TBV-9-a}
+---
+# x
+EOF2
+pr_payload() { # $1 tool, $2 repo, $3 base ("" = none), $4 cwd
+  python3 -c 'import json,sys
+ti={"owner":"o","repo":sys.argv[2],"head":"claude/x"}
+if sys.argv[3]: ti["base"]=sys.argv[3]
+print(json.dumps({"tool_name":sys.argv[1],"tool_input":ti,"cwd":sys.argv[4]}))' "$1" "$2" "$3" "$4"
+}
+prg_expect() { # $1 expected rc, $2 repo, $3 base, [$4 tool], [$5 cwd]
+  set +e
+  pr_payload "${4:-mcp__github__create_pull_request}" "$2" "$3" "${5:-$TMP}" \
+    | CLAUDE_CODE_REMOTE=true AI_DOTFILES="$prws/ai-dotfiles" "$PRG" >/dev/null 2>&1
+  local rc=$?
+  set -e
+  expect "pr-base-guard: $2 -> ${3:-<none>} (${4:-create})" "$1" "$rc"
+}
+prg_expect 0 ai-dotfiles TBV-83-cloud-setup
+prg_expect 2 ai-dotfiles master
+prg_expect 2 ai-dotfiles develop
+prg_expect 2 ai-dotfiles TBV-99
+prg_expect 0 other TBV-9-a
+prg_expect 2 unrecorded TBV-83-cloud-setup
+prg_expect 2 ai-dotfiles master mcp__github__update_pull_request
+prg_expect 0 ai-dotfiles TBV-83-cloud-setup mcp__github__update_pull_request
+prg_expect 0 ai-dotfiles "" mcp__github__update_pull_request
+# a spec tree above cwd is found without AI_DOTFILES
+set +e
+pr_payload mcp__github__create_pull_request other TBV-9-a "$prws/ai-dotfiles/docs" | CLAUDE_CODE_REMOTE=true "$PRG" >/dev/null 2>&1; rc=$?
+set -e
+expect "pr-base-guard: ancestor spec tree" 0 "$rc"
+# outside a cloud session the guard is silent; a malformed payload allows
+set +e
+pr_payload mcp__github__create_pull_request ai-dotfiles master "$TMP" | "$PRG" >/dev/null 2>&1; rc=$?
+set -e
+expect "pr-base-guard: silent outside the cloud" 0 "$rc"
+set +e
+printf 'not json' | CLAUDE_CODE_REMOTE=true "$PRG" >/dev/null 2>&1; rc=$?
+set -e
+expect "pr-base-guard: fails open on a malformed payload" 0 "$rc"
+set +e
+prg_out="$(pr_payload mcp__github__create_pull_request ai-dotfiles TBV-99 "$TMP" | CLAUDE_CODE_REMOTE=true AI_DOTFILES="$prws/ai-dotfiles" "$PRG" 2>&1 >/dev/null)"
+set -e
+echo "$prg_out" | grep -q "TBV-83-cloud-setup" || { echo "FAIL: pr-base-guard deny must name the recorded base" >&2; fails=$((fails+1)); }
+
 # ---------- secrets-scan.sh ----------
 SCAN="$HOOKS_DIR/secrets-scan.sh"
 repo="$TMP/repo"
