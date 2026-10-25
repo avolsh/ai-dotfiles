@@ -7,6 +7,8 @@
 # validator emit the intended id, so a check that silently stops firing fails here.
 # Ported from RES-20260914-declarative-lifecycle-schema (IMP-20260917 FR-6).
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 VALIDATOR="$(cd "$(dirname "$0")/.." && pwd)/validate-specs.py"
 TMP="$(mktemp -d)"

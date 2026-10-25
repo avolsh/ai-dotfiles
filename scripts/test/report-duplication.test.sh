@@ -6,6 +6,8 @@
 # promoted here (tobevisit-web IMP-20260916-quality-gates-adoption FR-4), plus the group rule that
 # became an argument: `--split` and `--scan-root`.
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 SCRIPT="$(cd "$(dirname "$0")/.." && pwd)/report-duplication.js"
 TMP="$(mktemp -d)"

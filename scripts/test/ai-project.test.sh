@@ -6,6 +6,8 @@
 # directory yields a _canonical.md whose § Build and Run table seeds a
 # `n/a — to be decided` row for every required quality kind.
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 TMP="$(mktemp -d)"

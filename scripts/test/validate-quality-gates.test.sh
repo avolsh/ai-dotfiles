@@ -6,6 +6,8 @@
 # complete table exits 0, and every other one prints exactly one finding naming
 # its check and line (IMP-20260916-quality-gates-check AC-1).
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 VALIDATOR="$(cd "$(dirname "$0")/.." && pwd)/validate-quality-gates.py"
 TMP="$(mktemp -d)"

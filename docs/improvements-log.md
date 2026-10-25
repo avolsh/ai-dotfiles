@@ -618,21 +618,21 @@ own `docs/improvements-log.md` for project-specific findings.
 - **Spec / task:** IMP-20261025-cloud-sessions / closure (AC-6 thread)
 - **Category:** `tooling`
 - **What was found:** in the first thread of the wired cloud environment `scripts/test/ai-workspace-link.test.sh` failed 4 cases. `ai-cloud-setup.sh` puts `AI_DOTFILES` into `settings.json` `env`, so every Bash call inherits it, and `ai-workspace-link.sh` prefers it to its own location; each fixture copy then resolved to the real clone. The suite had only ever run in shells without the variable.
-- **What was changed:** the test unsets `AI_DOTFILES` beside its git-config isolation; 4 failures → 0.
-- **Suggested follow-up:** a shared test prelude that clears every framework variable (`AI_DOTFILES`, `AI_PROFILE`, `CLAUDE_CODE_REMOTE`) and the git config, sourced by each suite, so a suite cannot depend on the shell it happens to run in.
+- **What was changed:** FR-20 of the same spec: `scripts/test/lib/test-env.sh` unsets `AI_DOTFILES`, `AI_PROFILE`, `CLAUDE_CODE_REMOTE` and `GIT_CONFIG_COUNT`, and all 21 shell suites source it, replacing four per-suite unsets; 4 failures → 0, and `make tests` exits 0 both in the wired session and with the variables removed.
+- **Suggested follow-up:** a new suite copies the two-line source from its neighbours; nothing checks that it does — a `tests` lint could.
 
 ### 2026-10-25 — `make check` cannot pass in a cloud session: `install-check` wants `~/.zshrc`
 
 - **Spec / task:** IMP-20261025-cloud-sessions / closure (AC-6 thread)
 - **Category:** `tooling`
 - **What was found:** `check` depends on `install-check`, which runs `ai-install.sh --check` and reports drift in `/root/.zshrc`. Only the laptop runs `ai-install.sh`; a cloud session has no `~/.zshrc` and needs none, so `make check` stops there before `validate-specs`, `lint-rules`, `validate-anchors` and `tests`.
-- **What was changed:** nothing; the closure ran the remaining prerequisites one by one, all exit 0.
-- **Suggested follow-up:** `install-check` passes with a one-line note when `CLAUDE_CODE_REMOTE=true` (or `check` drops it there), its own small IMP.
+- **What was changed:** FR-19 of the same spec: `ai-install.sh --check` on the default rc file passes in a cloud session with a note; an explicit `--rc-file` is still checked (`scripts/test/ai-install.test.sh`). `make check` exits 0 in the cloud.
+- **Suggested follow-up:** none.
 
 ### 2026-10-25 — The recorded base was deleted on merge, and the closing PR must open before the archive
 
 - **Spec / task:** IMP-20261025-cloud-sessions / closure (AC-6 thread)
 - **Category:** `process`
 - **What was found:** the spec's `branches:` named `TBV-83-cloud-setup`, which was merged to `master` (#13) and deleted, so the closing PR had no base and the agent may not create one. Separately, `pr-base-guard.sh` reads the base from an `in-progress` spec in the working tree: once the closing commit flips the spec to `done` and moves it to `archived/`, no spec records a base and every PR from that tree is denied.
-- **What was changed:** asked Alex for the base; the evidence commit is pushed and the PR opened with the spec still `in-progress`, and the `done` + archive commit goes on top.
-- **Suggested follow-up:** spec-lifecycle's closure step says so (open the closing PR before the archive commit), and the rollout notes of a cloud spec say to keep its base branch until the closing PR is merged.
+- **What was changed:** the agent had told Alex the base could go on merge; Alex cut `TBV-83-cloud-setup-1` from `master`. FR-18 of the same spec: `spec-lifecycle.md` § An AC observed only after `master` and the cloud exception now say to keep the base until the closing PR merges, open that PR before the archive commit, and ask again for a base found gone; this spec closed that way (#14).
+- **Suggested follow-up:** `ai-doctor --cloud` could note a `branches:` base of an `in-progress` spec that no longer exists on the remote, so a session finds it before the PR, not at it.

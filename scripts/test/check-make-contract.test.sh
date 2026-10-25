@@ -8,6 +8,8 @@
 # its rule and target; each conforming repo must exit 0 (make contract
 # § Conformance check).
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 CHECK="$(cd "$(dirname "$0")/.." && pwd)/check-make-contract.py"
 TMP="$(mktemp -d)"

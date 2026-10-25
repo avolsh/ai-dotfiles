@@ -6,6 +6,8 @@
 # running Python against `scripts/speclib.py`; the CLI is exercised on
 # throwaway project roots in a temp dir.
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 SCRIPTS="$(cd "$(dirname "$0")/.." && pwd)"
 TMP="$(mktemp -d)"

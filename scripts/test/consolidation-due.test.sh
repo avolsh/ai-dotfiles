@@ -6,6 +6,8 @@
 # specs closed against them, a consolidation log — and asserts which contexts are
 # due, what a recommendation gathers, and that the command writes nothing.
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 SUT="$(cd "$(dirname "$0")/.." && pwd)/consolidation-due.py"
 TMP="$(mktemp -d)"

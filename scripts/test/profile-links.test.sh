@@ -5,6 +5,8 @@
 # IMP-20260610-stabilize-profile-switching; FR-1, FR-3 / AC-1, AC-3).
 # Fixture-only; never touches real tool homes or profiles.
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 LIB="$(cd "$(dirname "$0")/../lib" && pwd)/profile-links.sh"
 TMP="$(mktemp -d)"

@@ -5,6 +5,8 @@
 # each, asserting the printed step carries its own questions, gate and rules and
 # nothing belonging to another case (IMP-20260914-spec-next-instructions AC-1, AC-2).
 set -euo pipefail
+# shellcheck source=/dev/null
+. "$(dirname "$0")/lib/test-env.sh"
 
 SCRIPTS="$(cd "$(dirname "$0")/.." && pwd)"
 SPEC_NEXT="$SCRIPTS/spec-next.py"
