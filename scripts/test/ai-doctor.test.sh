@@ -31,6 +31,9 @@ mkdir -p "$DF/framework/spec-workflows" "$DF/framework/prompts" \
          "$DF/framework/agents" "$DF/framework/upstream"
 echo "# b" > "$DF/framework/boundaries.md"
 echo "# c" > "$DF/framework/templates/system/claude/CLAUDE.md"
+mkdir -p "$DF/framework/templates/workspace/.github/scripts"
+cp "$(cd "$(dirname "$0")/../.." && pwd)/framework/templates/workspace/.github/scripts/sync-agents.sh" \
+   "$DF/framework/templates/workspace/.github/scripts/"
 mkdir -p "$DF/docs" && echo "# ap" > "$DF/docs/agent-protocol.md"
 
 P="$DF/profiles/test/claude"
@@ -275,6 +278,44 @@ echo "$out" | grep -qF "FAIL $TMP/wsdocs/workspace/.mrconfig: section [src/../x]
   || echo "$out" | grep -qF "FAIL $TMP/docs/workspace/.mrconfig: section [src/../x] is not a plain path" \
   || { echo "FAIL: unsafe section not named" >&2; fails=$((fails+1)); }
 rm "$TMP/wsdocs/workspace/.mrconfig" "$TMP/.mrconfig"
+
+# 10h. the root's agent files: renders of the current _canonical.md pass, a stale one fails and is named, and
+#      a sync-agents.sh that is not the framework's is a NOTE and never runs (FR-14)
+WS="$TMP/wsdocs/workspace"
+mkdir -p "$WS/.github/scripts"
+cp "$DF/framework/templates/workspace/.github/scripts/sync-agents.sh" "$WS/.github/scripts/"
+echo "# workspace rules" > "$WS/_canonical.md"
+bash "$WS/.github/scripts/sync-agents.sh" >/dev/null
+AI_DOTFILES="$DF" "$WSL" --cloud --docs wsdocs "$TMP" >/dev/null 2>&1
+set +e
+cloud true --cloud >/dev/null; rc=$?
+set -e
+expect "renders of the current _canonical.md pass" 0 "$rc"
+echo "more rules" >> "$WS/_canonical.md"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "renders older than _canonical.md fail" 1 "$rc"
+echo "$out" | grep -qF "FAIL $TMP/docs/workspace: CLAUDE.md AGENTS.md .github/copilot-instructions.md out of date with _canonical.md — run: make -C $TMP/docs/workspace sync-agents" \
+  || { echo "FAIL: stale renders not named" >&2; fails=$((fails+1)); }
+bash "$WS/.github/scripts/sync-agents.sh" >/dev/null
+echo "edited by hand" >> "$WS/AGENTS.md"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "a hand-edited render fails" 1 "$rc"
+echo "$out" | grep -qF "FAIL $TMP/docs/workspace: AGENTS.md out of date" || { echo "FAIL: the edited render not named alone" >&2; fails=$((fails+1)); }
+{ head -1 "$DF/framework/templates/workspace/.github/scripts/sync-agents.sh"; echo 'touch "$(dirname "$0")/ran"'
+  tail -n +2 "$DF/framework/templates/workspace/.github/scripts/sync-agents.sh"; } > "$WS/.github/scripts/sync-agents.sh"
+set +e
+out="$(stdout_of)"; rc=$?
+set -e
+expect "a sync-agents.sh that is not the framework's does not fail" 0 "$rc"
+echo "$out" | grep -qF "NOTE $TMP/docs/workspace/.github/scripts/sync-agents.sh: not the framework's script; renders not checked" \
+  || { echo "FAIL: a foreign sync-agents.sh not noted" >&2; fails=$((fails+1)); }
+[ ! -e "$WS/.github/scripts/ran" ] || { echo "FAIL: a foreign sync-agents.sh was run" >&2; fails=$((fails+1)); }
+cp "$DF/framework/templates/workspace/.github/scripts/sync-agents.sh" "$WS/.github/scripts/"
+bash "$WS/.github/scripts/sync-agents.sh" >/dev/null
 
 # 11. without --cloud the same broken session is not checked
 set +e

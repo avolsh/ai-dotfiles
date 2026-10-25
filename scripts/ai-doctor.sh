@@ -18,7 +18,8 @@
 #      Docker daemon answers (IMP-20261025-cloud-sessions FR-4).
 #   5. workspace root (both modes, once docs/workspace/ exists; always in the
 #      cloud): each entry of docs/workspace/ is linked into the root, and in the
-#      cloud docs, env/ai-dotfiles and src/<host>/<org>/<repo> resolve (FR-13).
+#      cloud docs, env/ai-dotfiles and src/<host>/<org>/<repo> resolve (FR-13);
+#      the root's CLAUDE.md, AGENTS.md and copilot file match _canonical.md (FR-14).
 #      A repo under src/ without the framework files, or a docs repo without
 #      workspace/CLAUDE.md, is a NOTE on stdout, never a failure (FR-15); so is
 #      a .mrconfig repo the cloud session did not clone, with the owner's two
@@ -227,6 +228,18 @@ if [ -d "$ws_root/docs/workspace" ]; then
     [ -L "$ws_root/$name" ] && [ "$(readlink -f "$ws_root/$name")" = "$(readlink -f "$entry")" ] \
       || fail "$ws_root/$name (not linked to docs/workspace/$name — run: ai-workspace-link.sh)"
   done < <(find "$ws_root/docs/workspace" -mindepth 1 -maxdepth 1)
+  # The root's agent files are committed renders of _canonical.md, and nothing else checks them (FR-14).
+  # The docs repo's sync-agents.sh runs only when it is the framework's own script, byte for byte.
+  ws="$ws_root/docs/workspace"
+  sync="$ws/.github/scripts/sync-agents.sh"
+  if [ -f "$ws/_canonical.md" ]; then
+    if ! cmp -s "$sync" "$AI_DOTFILES/framework/templates/workspace/.github/scripts/sync-agents.sh"; then
+      note "$sync: not the framework's script; renders not checked — run: make -C $ws sync-agents-check"
+    elif ! drift="$(bash "$sync" --check 2>&1 >/dev/null)"; then
+      stale="$(printf '%s\n' "$drift" | sed -n 's|^drift: \./||; s| would be regenerated.*||p' | paste -sd' ' -)"
+      fail "$ws: ${stale:-the agent files} out of date with _canonical.md — run: make -C $ws sync-agents"
+    fi
+  fi
 fi
 
 if [ "$fails" -gt 0 ]; then

@@ -234,6 +234,12 @@ since its files become every session's rules. A clone whose `origin` gives no pl
 `<host>/<org>/<repo>` path (a `..`, a space, a port) stays out of `src/` with a warning.
 `ai-doctor.sh` names any root entry left unlinked, and why `docs` is missing.
 
+`CLAUDE.md`, `AGENTS.md` and `.github/copilot-instructions.md` in `docs/workspace/` are renders of its
+`_canonical.md`, committed like those of every repo, because an agent reads its file before anything
+could render it. Edit `_canonical.md`, then run `make -C docs/workspace sync-agents`. The docs repo has
+no build of its own, so the doctor runs that drift check in both modes and names a stale render; it runs
+the docs repo's `sync-agents.sh` only when that file is the framework's own, and otherwise says so.
+
 `docs/workspace/.mrconfig` lists the workspace's repos for [myrepos](https://myrepos.branchable.com/)
 (`mr`): one section per repo, its path relative to the root (`docs`, `env/ai-dotfiles`,
 `src/<host>/<org>/<repo>`, `research/<name>`), with `checkout = git clone '<url>' '<dir>'`. It is linked
