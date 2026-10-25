@@ -83,7 +83,7 @@ baseline-impact: none — no docs/domain baselines in ai-dotfiles; tobevisit-con
 - FR-14: `tobevisit-docs` MUST hold the workspace root files under `workspace/`.
 - FR-15: `ai-doctor` MUST note, without failing, each clone without `_canonical.md` and its three renders (other than the dotfiles and the docs clone) and a docs clone without `workspace/CLAUDE.md` as "not initialised", and in the cloud each `docs/workspace/.mrconfig` section with no clone; `--docs` naming a clone without `workspace/CLAUDE.md` MUST link `docs` and warn, not stop.
 - FR-16: `ai-project.sh [<dir>]` and `ai-workspace.sh [<dir>]` MUST scaffold `<dir>` (default the cwd), never overwriting a file; `ai-workspace.sh --docs <clone>` MUST write the root files to `<clone>/workspace/` and the template's `docs/` to `<clone>/`; the cloud exception MUST say that on a "not initialised" note the agent asks the human once per repo and, on yes, scaffolds it on `claude/*`, adds its `.mrconfig` section, opens the PR, and shows rather than merges a `CLAUDE.md` it did not write; `docs/workspace-bootstrap-guide.md` MUST say how a repo, empty or with code, joins the workspace: the human's steps and the agent's.
-- FR-17: `docs/workspace/.mrconfig` (myrepos format, one `[src/<host>/<org>/<repo>]` section per repo) MUST list the workspace's repos; on a laptop `mr checkout` builds `src/`, then `ai-workspace-link.sh` links the root; the doctor and the agent read only section names and refuse one that is not a plain path (FR-13).
+- FR-17: `docs/workspace/.mrconfig` (myrepos format: a section per repo, its path relative to the root — `docs`, `env/ai-dotfiles`, `src/<host>/<org>/<repo>` — and a `checkout = git clone '<url>' '<dir>'`) MUST list the workspace's repos; on a laptop `~/.mrconfig` chains to it and `mr checkout` builds the layout, then `ai-workspace-link.sh` links the root; the doctor and the agent match sections to clones by the checkout URL and refuse a section path that is not plain (FR-13).
 - FR-12: README MUST gain a "Cloud sessions" section: one environment per profile, the Setup script line, network (`mirror.gcr.io`), no `CLAUDE_CONFIG_DIR`, dev keys only and no kubeconfig, the mixed cloud/local workflow on one `claude/*` branch, and that the agent, not the UI's PR button, opens PRs.
 
 ## Acceptance Criteria
@@ -122,9 +122,9 @@ Given a clone with code and no `_canonical.md`, one with its own `CLAUDE.md`, an
 When the cloud setup, the doctor, `ai-project.sh <clone>` and `ai-workspace.sh --docs <clone>` run
 Then setup exits 0 with `docs` linked and a warning; the doctor's exit status is unchanged and it names all four; the scaffolds add only missing files and keep the code and the existing `CLAUDE.md`
 ### AC-9: The workspace is built from `.mrconfig` (FR-17)
-Given a `.mrconfig` with one cloned section, one with no clone and one `[src/../x]`, and a laptop root
+Given a `.mrconfig` with `[docs]`, `[env/ai-dotfiles]`, one cloned `src/` section, one with no clone and one `[src/../x]`, and a laptop root
 When the cloud doctor runs, and `mr checkout` then `ai-workspace-link.sh` run on the laptop root
-Then the doctor notes the missing section and refuses the `..` one; on the laptop each repo lands at its `src/` path and the root `.mrconfig` is the link
+Then the doctor matches the first three by URL, notes the missing one and refuses the `..` one; on the laptop each repo lands at its path and the root `.mrconfig` is the link
 
 ## Design
 ### Decisions
