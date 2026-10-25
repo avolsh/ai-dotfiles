@@ -52,7 +52,11 @@ for repo in "$WS"/*/; do
   git -C "$repo" config core.hooksPath "$DF/scripts/git-hooks"
 done
 
-# 5. Docker for the contract and integration suites. Anonymous Docker Hub
+# 5. The workspace root as on a laptop: docs, env/ai-dotfiles, src/<host>/<org>/<repo>
+#    and the root files from docs/workspace/ (FR-13).
+AI_DOTFILES="$DF" "$DF/scripts/ai-workspace-link.sh" --cloud "$WS"
+
+# 6. Docker for the contract and integration suites. Anonymous Docker Hub
 #    pulls from the shared egress address return 429; mirror.gcr.io serves
 #    the library images. The mirror is added to a daemon.json already there,
 #    keeping its other keys; one that is not valid JSON is left alone.

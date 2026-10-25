@@ -115,6 +115,14 @@ git init -q "$TMP/repo-a"
 ai_links_wire_dir "$DF" "$CFG" claude 2>/dev/null
 ai_links_merge_claude_settings "$DF" "$CFG/settings.json" test 2>/dev/null
 git -C "$TMP/repo-a" config core.hooksPath "$DF/scripts/git-hooks"
+git -C "$TMP/repo-a" remote add origin https://github.com/org/repo-a
+# the docs clone holding workspace/, linked into the root as a cloud setup does (FR-13)
+git init -q "$TMP/wsdocs"
+mkdir -p "$TMP/wsdocs/workspace"
+echo "# workspace" > "$TMP/wsdocs/workspace/CLAUDE.md"
+git -C "$TMP/wsdocs" config core.hooksPath "$DF/scripts/git-hooks"
+WSL="$(cd "$(dirname "$0")/.." && pwd)/ai-workspace-link.sh"
+AI_DOTFILES="$DF" "$WSL" --cloud "$TMP" >/dev/null 2>&1
 cloud() { AI_DOTFILES="$DF" AI_CLOUD_HOME="$CFG" AI_DOCTOR_DOCKER="$1" "$SUT" --fast "${@:2}" test 2>&1; }
 
 # 8. a wired cloud session passes
@@ -177,6 +185,17 @@ set -e
 expect "a framework entry missing inside a CLI-owned dir fails" 1 "$rc"
 echo "$out" | grep -qF "$CFG/agents/reviewer.md (missing" || { echo "FAIL: missing inner entry not named" >&2; fails=$((fails+1)); }
 rm "$CFG/prompts"
+
+# 10d. the workspace root: a removed root link and a removed src link are named (FR-13, AC-7)
+rm "$TMP/CLAUDE.md" "$TMP/src/github.com/org/repo-a"
+set +e
+out="$(cloud true --cloud)"; rc=$?
+set -e
+expect "a broken workspace root fails" 1 "$rc"
+for want in "$TMP/CLAUDE.md (not linked" "$TMP/src/github.com/org/repo-a (missing"; do
+  echo "$out" | grep -qF "$want" || { echo "FAIL: workspace failure not named: $want" >&2; fails=$((fails+1)); }
+done
+AI_DOTFILES="$DF" "$WSL" --cloud "$TMP" >/dev/null 2>&1
 
 # 11. without --cloud the same broken session is not checked
 set +e

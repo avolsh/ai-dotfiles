@@ -16,6 +16,9 @@
 #      the system layer and every framework skill, settings.json every
 #      framework hook, each repo beside the dotfiles core.hooksPath, and the
 #      Docker daemon answers (IMP-20261025-cloud-sessions FR-4).
+#   5. workspace root (both modes, once docs/workspace/ exists; always in the
+#      cloud): each entry of docs/workspace/ is linked into the root, and in the
+#      cloud docs, env/ai-dotfiles and src/<host>/<org>/<repo> resolve (FR-13).
 #
 # Usage:
 #   ai-doctor.sh [--fast] [--cloud] [<profile>]
@@ -156,6 +159,33 @@ PY
   done
   "${AI_DOCTOR_DOCKER:-docker}" info >/dev/null 2>&1 \
     || fail "docker daemon not reachable (ai-cloud-setup.sh starts it)"
+fi
+
+# shellcheck source=lib/workspace-layout.sh
+. "$(dirname "$0")/lib/workspace-layout.sh"
+ws_root="$(ai_ws_root "$AI_DOTFILES")"
+if [ "$CLOUD" -eq 1 ]; then
+  [ -n "$(ai_ws_docs_clone "$ws_root")" ] \
+    || fail "$ws_root: no clone holds workspace/ (add the docs repo to the project, or commit its workspace/)"
+  [ "$(readlink -f "$ws_root/env/ai-dotfiles" 2>/dev/null)" = "$(readlink -f "$AI_DOTFILES")" ] \
+    || fail "$ws_root/env/ai-dotfiles (missing — re-run: ai-cloud-setup.sh $PROFILE)"
+  for repo in "$ws_root"/*/; do
+    repo="${repo%/}"
+    { [ -L "$repo" ] || [ ! -d "$repo/.git" ]; } && continue
+    [ "$(readlink -f "$repo")" = "$(readlink -f "$AI_DOTFILES")" ] && continue
+    [ -d "$repo/workspace" ] && continue
+    src="$(ai_ws_src_path "$repo")"
+    [ -n "$src" ] || continue
+    [ "$(readlink -f "$ws_root/src/$src" 2>/dev/null)" = "$(readlink -f "$repo")" ] \
+      || fail "$ws_root/src/$src (missing — re-run: ai-cloud-setup.sh $PROFILE)"
+  done
+fi
+if [ -d "$ws_root/docs/workspace" ]; then
+  while IFS= read -r entry; do
+    name="$(basename "$entry")"
+    [ -L "$ws_root/$name" ] && [ "$(readlink -f "$ws_root/$name")" = "$(readlink -f "$entry")" ] \
+      || fail "$ws_root/$name (not linked to docs/workspace/$name — run: ai-workspace-link.sh)"
+  done < <(find "$ws_root/docs/workspace" -mindepth 1 -maxdepth 1)
 fi
 
 if [ "$fails" -gt 0 ]; then

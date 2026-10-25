@@ -211,6 +211,26 @@ The script copies all 10 required artifacts (`CLAUDE.md`, `AGENTS.md`,
 ensures `docs/` exists. Re-running on an already-scaffolded project is
 a no-op.
 
+## Workspace root
+
+The workspace root (the directory above `env/ai-dotfiles`) holds no git repository of its own. Its
+files (`CLAUDE.md`, `_canonical.md`, `AGENTS.md`, …: which repo is where, where cross-repo specs live)
+are kept in the docs repo under `workspace/`, and the root carries relative links to them:
+
+```
+<root>/CLAUDE.md -> docs/workspace/CLAUDE.md   (one link per entry of docs/workspace/)
+<root>/docs                                    the docs repo (tobevisit-docs)
+<root>/env/ai-dotfiles
+<root>/src/<host>/<org>/<repo>
+```
+
+Run `make workspace-link` (`scripts/ai-workspace-link.sh`) once on a laptop: it links every entry of
+`docs/workspace/` into the root, replaces a real file identical to its source, and keeps and reports
+one that differs, so you merge it into `docs/workspace/` and run it again. A cloud session runs it with
+`--cloud`, which first builds `docs`, `env/ai-dotfiles` and `src/<host>/<org>/<repo>` (from each
+clone's `origin`) out of the clones the session put side by side. `ai-doctor.sh` names any root entry
+left unlinked.
+
 ## Cloud sessions
 
 A Claude Code cloud session (a claude.ai project thread, or claude.ai/code) clones the repos fresh into
@@ -241,7 +261,9 @@ The script, idempotent:
 3. merges the framework hooks and `AI_DOTFILES` / `AI_PROFILE` into `~/.claude/settings.json`, beside
    the harness's own hooks;
 4. points `core.hooksPath` of every cloned repo at the pre-commit backstop;
-5. starts `dockerd` with `mirror.gcr.io` as its registry mirror, because anonymous Docker Hub pulls from
+5. builds the laptop's workspace layout from the flat clones and links the workspace root files
+   (§ Workspace root below);
+6. starts `dockerd` with `mirror.gcr.io` as its registry mirror, because anonymous Docker Hub pulls from
    the shared egress address are refused. `--no-docker` skips this step.
 
 The SessionStart hook runs `ai-doctor.sh --fast`, which adds the cloud checks whenever
