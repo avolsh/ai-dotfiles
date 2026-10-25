@@ -564,3 +564,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** `framework/templates/workspace/Makefile` says `sync-agents` regenerates `AGENTS.md` from `.github/copilot-instructions.md`; the template's own `sync-agents.sh` renders all three files from `_canonical.md`. The owner's workspace root already carries the corrected help text, so a new workspace scaffolded today starts with the stale one.
 - **What was changed:** none — logged for review.
 - **Suggested follow-up:** copy the owner's two help lines into the template (Task 12 touches `ai-workspace.sh` and can carry it).
+
+### 2026-10-25 — A mutation of a scaffold script wrote the project template into the repo and into /
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 12, mutation checks
+- **Category:** `test-isolation`
+- **What was found:** `ai-project.test.sh` ran a scaffold with `cd /` and another from the caller's cwd. With the target argument mutated away, the scaffold wrote the template into `/` and into the ai-dotfiles checkout; removing the copies needs the owner, and until then `links-check` fails in that checkout on the stray `docs/specs/active/README.md`.
+- **What was changed:** both scaffold tests now run from an empty scratch cwd inside their temp dir and fail if it is written to; the mutation runner runs tests from a scratch cwd.
+- **Suggested follow-up:** a lint rule (or a `make tests` wrapper) that runs every self-test from an empty temp cwd, so no test can write outside its own temp dir.
