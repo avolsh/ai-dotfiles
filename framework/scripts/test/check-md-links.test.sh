@@ -85,5 +85,33 @@ if [[ $rc2 -ne 0 ]]; then
   exit 1
 fi
 
+# --- A link leaving the repo is reported even when its target exists (IMP-20261025-cloud-sessions AC-5) ---
+mkdir -p "$TMP/layout/env/ai-dotfiles/framework" "$TMP/layout/src/repo/docs"
+echo "# lifecycle" > "$TMP/layout/env/ai-dotfiles/framework/spec-lifecycle.md"
+git init -q "$TMP/layout/src/repo"
+echo "# readme" > "$TMP/layout/src/repo/README.md"
+cat > "$TMP/layout/src/repo/docs/source.md" <<'EOF'
+# source
+
+[inside](../README.md)
+[outside](../../../env/ai-dotfiles/framework/spec-lifecycle.md)
+EOF
+
+set +e
+out3="$("$SUT" "$TMP/layout/src/repo/docs/source.md" 2>&1)"
+rc3=$?
+set -e
+
+if [[ $rc3 -ne 1 ]] || ! echo "$out3" | grep -q 'spec-lifecycle.md (leaves the repo'; then
+  echo "FAIL: a link leaving the repo must be reported (rc=$rc3)" >&2
+  echo "$out3" >&2
+  exit 1
+fi
+if echo "$out3" | grep -q 'README.md'; then
+  echo "FAIL: a link inside the repo wrongly reported" >&2
+  echo "$out3" >&2
+  exit 1
+fi
+
 echo "scripts/check-md-links.sh self-tests passed ✓"
 
