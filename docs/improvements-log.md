@@ -572,3 +572,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** `ai-project.test.sh` ran a scaffold with `cd /` and another from the caller's cwd. With the target argument mutated away, the scaffold wrote the template into `/` and into the ai-dotfiles checkout; removing the copies needs the owner, and until then `links-check` fails in that checkout on the stray `docs/specs/active/README.md`.
 - **What was changed:** both scaffold tests now run from an empty scratch cwd inside their temp dir and fail if it is written to; the mutation runner runs tests from a scratch cwd.
 - **Suggested follow-up:** a lint rule (or a `make tests` wrapper) that runs every self-test from an empty temp cwd, so no test can write outside its own temp dir.
+
+### 2026-10-25 — The owner's cloud steps for a new repo were written only where the owner reads
+
+- **Spec / task:** IMP-20261025-cloud-sessions / Task 13
+- **Category:** `protocol`
+- **What was found:** the guide listed the owner's two cloud settings for a new repo (the Claude GitHub App's access, the project's repositories), but nothing the agent sees in a session did. A repo the agent adds to `.mrconfig` stayed uncloned in every later session with only a bare "not cloned" note, and the owner had to ask which actions were theirs.
+- **What was changed:** the doctor's note names both steps; the cloud exception in `boundaries.md` has the agent remind the owner of them; the guide and README say the owner's whole part in the cloud.
+- **Suggested follow-up:** when a framework step can only be done by the human, put it in the output the agent reads at that moment (a doctor note, a hook message), not only in a guide.

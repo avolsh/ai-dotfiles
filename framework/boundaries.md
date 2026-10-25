@@ -177,6 +177,9 @@
     the repo's section to `docs/workspace/.mrconfig`, and opens the PRs. It never renders over an agent file it
     did not write: a repo's own `CLAUDE.md` or `AGENTS.md` goes to the human to merge into `_canonical.md`
     before `make sync-agents` runs (`<system>/docs/workspace-bootstrap-guide.md` § Adding a repo to the workspace).
+    When it adds a section for a repo the session did not clone, or the doctor notes one, it reminds the human
+    of the two steps only the human can take, without which no cloud session clones the repo: give the Claude
+    GitHub App access to it and add it to the project's repositories.
 11. <a id="environments-are-the-humans"></a>**Never run a command that reaches a deployed environment
     without the human's permission for that exact command — reads included.** A cluster, a cloud account, a
     deployed host or a production database is the human's, and so is every command that touches it:

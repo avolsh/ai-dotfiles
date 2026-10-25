@@ -248,6 +248,9 @@ doctor notes a listed repo the session did not clone. A new laptop:
 4. run `mr checkout`.
 
 Adding a repo, empty or with code: `docs/workspace-bootstrap-guide.md` § Adding a repo to the workspace.
+In a cloud project your part is the repo with its working branch, the Claude GitHub App's access to it,
+the repo in the project's repositories, and the merge; the doctor's note on a `.mrconfig` repo the
+session did not clone names the two settings, and the agent reminds you of them.
 
 ## Cloud sessions
 

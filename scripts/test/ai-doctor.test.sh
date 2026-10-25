@@ -257,6 +257,8 @@ set -e
 expect "a clone at its .mrconfig section passes" 0 "$rc"
 echo "$out" | grep -qF "NOTE $TMP/src/github.com/org/missing: listed in .mrconfig, not cloned in this session (github.com/org/missing)" \
   || { echo "FAIL: a listed repo with no clone not noted" >&2; fails=$((fails+1)); }
+echo "$out" | grep -qF "(github.com/org/missing) — remind the owner to give the Claude GitHub App access to it and add it to the project's repositories (Project settings)" \
+  || { echo "FAIL: the note on a listed repo with no clone names no owner steps" >&2; fails=$((fails+1)); }
 rm "$TMP/research/repo-a"
 set +e
 out="$(cloud true --cloud)"; rc=$?

@@ -79,7 +79,8 @@ section per repo with its path relative to the root.
 
 The same steps serve an empty repo and one that already holds code. The owner
 does the first three; the agent, in a cloud session or locally when asked,
-does the rest on its own branch.
+does the rest on its own branch. In a cloud project the owner's whole part is
+the repo with its working branch, the two settings of step 2, and the merge.
 
 1. **Owner:** the repo exists and has the working branch the agent starts
    from. For an empty repo, create it with a README so the branch has a commit.
@@ -98,7 +99,10 @@ does the rest on its own branch.
    would render over it; the owner decides what moves into `_canonical.md`.
    Otherwise it fills `_canonical.md` and runs `make sync-agents`.
 7. **Agent:** opens the PRs into the working branches (the repo, and the docs
-   repo for `.mrconfig`); the owner merges.
+   repo for `.mrconfig`); the owner merges. A repo the agent lists in
+   `.mrconfig` that the session did not clone — a new research repo, say —
+   needs step 2 before any cloud session clones it: the doctor notes it as
+   "not cloned in this session", and the agent reminds the owner of step 2.
 
 ## Anti-patterns
 

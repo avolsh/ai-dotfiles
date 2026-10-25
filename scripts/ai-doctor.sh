@@ -20,7 +20,9 @@
 #      cloud): each entry of docs/workspace/ is linked into the root, and in the
 #      cloud docs, env/ai-dotfiles and src/<host>/<org>/<repo> resolve (FR-13).
 #      A repo under src/ without the framework files, or a docs repo without
-#      workspace/CLAUDE.md, is a NOTE on stdout, never a failure (FR-15).
+#      workspace/CLAUDE.md, is a NOTE on stdout, never a failure (FR-15); so is
+#      a .mrconfig repo the cloud session did not clone, with the owner's two
+#      steps that make the next session clone it (FR-17).
 #
 # Usage:
 #   ai-doctor.sh [--fast] [--cloud] [<profile>]
@@ -203,10 +205,12 @@ if [ "$CLOUD" -eq 1 ]; then
     [ "$(readlink -f "$ws_root/$dest" 2>/dev/null)" = "$(readlink -f "$repo")" ] \
       || fail "$ws_root/$dest (missing — re-run: ai-cloud-setup.sh $PROFILE)"
   done
-  # A listed repo this session did not clone: the owner may add it to the project (FR-15, FR-17).
+  # A listed repo this session did not clone: only the owner can add it to the project (FR-15, FR-17).
   while IFS=$'\t' read -r key sec; do
     [ -n "$key" ] || continue
-    case " $cloned " in *" $key "*) ;; *) note "$ws_root/$sec: listed in .mrconfig, not cloned in this session ($key)" ;; esac
+    case " $cloned " in *" $key "*) ;; *)
+      note "$ws_root/$sec: listed in .mrconfig, not cloned in this session ($key) — remind the owner to give the Claude GitHub App access to it and add it to the project's repositories (Project settings)" ;;
+    esac
   done <<< "$repos"
 fi
 # Project repos without the framework: the owner decides whether to initialise each (FR-15).
