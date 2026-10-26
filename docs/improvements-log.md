@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-10-25*
+*Last updated: 2026-10-26*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -636,3 +636,27 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** the spec's `branches:` named `TBV-83-cloud-setup`, which was merged to `master` (#13) and deleted, so the closing PR had no base and the agent may not create one. Separately, `pr-base-guard.sh` reads the base from an `in-progress` spec in the working tree: once the closing commit flips the spec to `done` and moves it to `archived/`, no spec records a base and every PR from that tree is denied.
 - **What was changed:** the agent had told Alex the base could go on merge; Alex cut `TBV-83-cloud-setup-1` from `master`. FR-18 of the same spec: `spec-lifecycle.md` § An AC observed only after `master` and the cloud exception now say to keep the base until the closing PR merges, open that PR before the archive commit, and ask again for a base found gone; this spec closed that way (#14).
 - **Suggested follow-up:** `ai-doctor --cloud` could note a `branches:` base of an `in-progress` spec that no longer exists on the remote, so a session finds it before the PR, not at it.
+
+### 2026-10-26 — The Setup script failed every session that did not clone the repos it named
+
+- **Spec / task:** IMP-20261026-cloud-setup-partial-sessions / Task 1
+- **Category:** `tooling`
+- **What was found:** the environment's Setup script, `bash ai-dotfiles/scripts/ai-cloud-setup.sh personal --docs tobevisit-docs`, exited 2 in a session without `tobevisit-docs` (`--docs` naming an absent clone was an error under `set -e`) and 127 in one without `ai-dotfiles`, and the harness then refuses the whole session. AC-6 of the previous spec was observed in a session holding every repo, the one case that passed.
+- **What was changed:** an absent `--docs` clone is a warning and the setup exits 0 for any set of clones; README's Setup script guards on `ai-dotfiles` and drops `--docs`, which the single docs clone does not need.
+- **Suggested follow-up:** a setup step's acceptance test runs over the subsets of clones a session can hold, not only the full set.
+
+### 2026-10-26 — A resumed cloud session had no Docker
+
+- **Spec / task:** IMP-20261026-cloud-setup-partial-sessions / Task 2
+- **Category:** `tooling`
+- **What was found:** after a resume the SessionStart report read `FAIL docker daemon not reachable`: the container keeps its files but not its processes, and the Setup script, the only thing that started `dockerd`, runs once per container.
+- **What was changed:** `scripts/ai-cloud-docker.sh` starts `dockerd` in the cloud only, detached, waiting up to 10 s; the setup uses it and the Claude SessionStart hook runs it before the doctor, in one command so the two never race.
+- **Suggested follow-up:** anything the framework starts as a process belongs to SessionStart, not only to the Setup script.
+
+### 2026-10-26 — The validate-specs suite went red with the calendar
+
+- **Spec / task:** IMP-20261026-cloud-setup-partial-sessions / Task 2
+- **Category:** `tooling`
+- **What was found:** 27 cases failed on 2026-10-26 on every branch: the fixtures' fixed `*Last updated: 2026-08-26*` stamps turned 61 days old, past the 60-day freshness rule, so the specs meant to validate cleanly reported `freshness_stale`.
+- **What was changed:** the spec engine's `today` reads `AI_SPECS_TODAY` when set; the suite pins it to 2026-09-20, and `test-env.sh` clears it for every other suite.
+- **Suggested follow-up:** a suite whose fixtures carry dates pins the clock; a freshness-style rule's tests state the day they judge on.

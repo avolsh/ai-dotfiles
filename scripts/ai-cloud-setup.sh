@@ -5,17 +5,22 @@
 # (IMP-20261025-cloud-sessions FR-1..FR-3). Run from the cloud environment's
 # Setup script, which starts in the directory holding the cloned repos:
 #
-#   bash ai-dotfiles/scripts/ai-cloud-setup.sh <profile> --docs <docs repo>
+#   [ ! -f ai-dotfiles/scripts/ai-cloud-setup.sh ] || bash ai-dotfiles/scripts/ai-cloud-setup.sh <profile>
+#
+# A session may clone any subset of the project's repos: a missing clone,
+# the docs one included, is a warning, never a failed setup
+# (IMP-20261026-cloud-setup-partial-sessions FR-2).
 #
 # `<system>/` is ~/.claude here: the harness keeps its own files in it, so
 # CLAUDE_CONFIG_DIR is never repointed and nothing it owns is replaced.
 # Idempotent: a second run changes nothing.
 #
 # Usage: ai-cloud-setup.sh [--no-docker] [--docs <repo>] <profile>
-#        --docs names the clone whose workspace/ becomes the root files; see
+#        --docs names the clone whose workspace/ becomes the root files, needed
+#        only when several clones hold workspace/CLAUDE.md; see
 #        ai-workspace-link.sh for what happens without it.
-# Env:   AI_CLOUD_HOME overrides ~/.claude, AI_CLOUD_DOCKER_CONF the daemon.json
-#        path and AI_CLOUD_DOCKER_LOG dockerd's log (tests use these).
+# Env:   AI_CLOUD_HOME overrides ~/.claude; ai-cloud-docker.sh reads the
+#        AI_CLOUD_DOCKER_* variables (tests use these).
 set -euo pipefail
 
 _err() { printf 'ai-cloud-setup: %s\n' "$*" >&2; }
@@ -62,25 +67,8 @@ done
 #    and the root files from docs/workspace/ (FR-13).
 AI_DOTFILES="$DF" "$DF/scripts/ai-workspace-link.sh" --cloud "${docs[@]}" "$WS"
 
-# 6. Docker for the contract and integration suites. Anonymous Docker Hub
-#    pulls from the shared egress address return 429; mirror.gcr.io serves
-#    the library images. The mirror is added to a daemon.json already there,
-#    keeping its other keys; one that is not valid JSON is left alone.
-DOCKER_CONF="${AI_CLOUD_DOCKER_CONF:-/etc/docker/daemon.json}"
-if [ "$docker" -eq 1 ] && command -v dockerd >/dev/null 2>&1 && ! docker info >/dev/null 2>&1; then
-  mkdir -p "$(dirname "$DOCKER_CONF")"
-  python3 - "$DOCKER_CONF" <<'PY' || _err "$DOCKER_CONF is not valid JSON; registry mirror not added"
-import json, os, sys
-path, mirror = sys.argv[1], "https://mirror.gcr.io"
-conf = json.load(open(path)) if os.path.exists(path) else {}
-mirrors = conf.setdefault("registry-mirrors", [])
-if mirror not in mirrors:
-    mirrors.append(mirror)
-    with open(path, "w") as fh:
-        json.dump(conf, fh, indent=2)
-        fh.write("\n")
-PY
-  nohup dockerd > "${AI_CLOUD_DOCKER_LOG:-/var/log/dockerd.log}" 2>&1 &
-fi
+# 6. Docker for the contract and integration suites, as the SessionStart hook
+#    starts it again after a resume (ai-cloud-docker.sh).
+[ "$docker" -eq 0 ] || "$DF/scripts/ai-cloud-docker.sh" --force
 
 printf '✓ cloud session wired: profile=%s system=%s\n' "$profile" "$CFG"

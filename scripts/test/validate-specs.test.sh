@@ -10,6 +10,9 @@ set -euo pipefail
 . "$(dirname "$0")/lib/test-env.sh"
 
 VALIDATOR="$(cd "$(dirname "$0")/.." && pwd)/validate-specs.py"
+# The fixtures carry fixed stamps; the freshness rule judges them on a pinned day, not the calendar's
+# (IMP-20261026-cloud-setup-partial-sessions: the suite went red on 2026-10-26, 61 days after 2026-08-26).
+export AI_SPECS_TODAY=2026-09-20
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 

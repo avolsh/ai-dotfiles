@@ -4,4 +4,5 @@
 # session exports the framework's variables through settings.json `env` — AI_DOTFILES, AI_PROFILE, and
 # CLAUDE_CODE_REMOTE in the cloud — and a cloud container rewrites git origins through GIT_CONFIG_COUNT. A suite
 # that inherits them tests the session it runs in, not its fixture; each case that needs one sets it itself.
-unset AI_DOTFILES AI_PROFILE CLAUDE_CODE_REMOTE GIT_CONFIG_COUNT
+# AI_SPECS_TODAY pins the spec engine's today, which only a suite with dated fixtures sets.
+unset AI_DOTFILES AI_PROFILE CLAUDE_CODE_REMOTE GIT_CONFIG_COUNT AI_SPECS_TODAY
