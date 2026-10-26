@@ -2,7 +2,7 @@
 id: IMP-20261026-cloud-setup-partial-sessions
 type: IMP
 date: 2026-10-26
-status: plan
+status: in-progress
 owner: avolsh
 risk: medium
 affected-repos:
