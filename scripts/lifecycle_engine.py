@@ -14,6 +14,7 @@ broken schema fails loudly instead of silently checking less
 from __future__ import annotations
 
 import datetime as _dt
+import os
 import re
 import sys
 from pathlib import Path
@@ -103,6 +104,13 @@ def _lam(c: Ctx, a, fn):  # [list, expr-over-$it]
     return fn((i, c.with_(it=i).ev(a[1])) for i in (c.ev(a[0]) or []))
 
 
+def _today():
+    """Today, or AI_SPECS_TODAY (YYYY-MM-DD) when set: a suite's dated fixtures
+    must not go stale with the calendar."""
+    pinned = os.environ.get("AI_SPECS_TODAY")
+    return _dt.date.fromisoformat(pinned) if pinned else _dt.date.today()
+
+
 OPS: dict[str, Callable] = {
     # logic and comparison
     "not": lambda c, a: not c.ev(a),
@@ -138,7 +146,7 @@ OPS: dict[str, Callable] = {
     "len": lambda c, a: len(c.ev(a)),
     "add": lambda c, a: sum(_a(c, a)),
     "date": lambda c, a: _date(c.ev(a)),
-    "today": lambda c, a: _dt.date.today(),
+    "today": lambda c, a: _today(),
     "days": lambda c, a: (lambda x, y: (x - y).days if x and y else None)(*_a(c, a)),
     "concat": lambda c, a: [i for part in _a(c, a) for i in part],
     "sorted": lambda c, a: sorted(c.ev(a)),

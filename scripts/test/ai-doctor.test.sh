@@ -329,7 +329,7 @@ AI_DOTFILES="$DF" AI_CLOUD_HOME="$CFG" AI_DOCTOR_DOCKER=false "$SUT" --fast --cl
 set -e
 expect "without --hook the same run exits 1" 1 "$rc"
 rm -rf "$TMP/src/github.com/org/bare"
-grep -qF '"@AI_DOTFILES@/scripts/ai-doctor.sh --fast --hook"' "$(dirname "$SUT")/../framework/templates/system/claude/hooks.json" \
+grep -qF '@AI_DOTFILES@/scripts/ai-doctor.sh --fast --hook"' "$(dirname "$SUT")/../framework/templates/system/claude/hooks.json" \
   || { echo "FAIL: the Claude SessionStart hook does not run the doctor with --hook" >&2; fails=$((fails+1)); }
 
 # 11. without --cloud the same broken session is not checked

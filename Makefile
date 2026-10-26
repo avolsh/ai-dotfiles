@@ -83,6 +83,7 @@ tests:
 	./scripts/test/ai-switch.test.sh
 	./scripts/test/ai-project.test.sh
 	./scripts/test/ai-cloud-setup.test.sh
+	./scripts/test/ai-cloud-docker.test.sh
 	./scripts/test/ai-workspace-link.test.sh
 	./scripts/test/ai-workspace.test.sh
 	./scripts/test/ai-install.test.sh

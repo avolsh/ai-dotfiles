@@ -175,7 +175,7 @@ PY
       || fail "${repo%/}: core.hooksPath='$hp' (expected $AI_DOTFILES/scripts/git-hooks)"
   done
   "${AI_DOCTOR_DOCKER:-docker}" info >/dev/null 2>&1 \
-    || fail "docker daemon not reachable (ai-cloud-setup.sh starts it)"
+    || fail "docker daemon not reachable (ai-cloud-docker.sh starts it at SessionStart; its log: /var/log/dockerd.log)"
 fi
 
 # shellcheck source=lib/workspace-layout.sh

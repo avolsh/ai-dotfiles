@@ -91,28 +91,18 @@ run || fail "second run rc"
 after="$(cd "$CFG" && find . -print0 | sort -z | xargs -0 ls -ld | awk '{print $1, $NF}'; cat "$CFG/settings.json")"
 [ "$before" = "$after" ] || fail "second run changed ~/.claude"
 
-# 4. the Docker step: mirror added to a missing, a foreign and an already-mirrored daemon.json (review finding 7)
+# 4. the Docker step goes through ai-cloud-docker.sh (its own suite covers daemon.json and the wait)
 STUB="$TMP/stub"
 mkdir -p "$STUB"
 printf '#!/bin/sh\nexit 1\n' > "$STUB/docker"                       # daemon not answering
 printf '#!/bin/sh\ntouch "%s/dockerd-started"\n' "$TMP" > "$STUB/dockerd"
 chmod +x "$STUB/docker" "$STUB/dockerd"
 CONF="$TMP/etc/docker/daemon.json"
-docker_run() {
-  rm -f "$TMP/dockerd-started"
-  HOME="$TMP/home" AI_CLOUD_HOME="$CFG" AI_CLOUD_DOCKER_CONF="$CONF" AI_CLOUD_DOCKER_LOG="$TMP/dockerd.log" \
-    PATH="$STUB:$PATH" "$DF/scripts/ai-cloud-setup.sh" personal >/dev/null 2>&1
-  for _ in 1 2 3 4 5 6 7 8 9 10; do [ -e "$TMP/dockerd-started" ] && break; sleep 0.1; done
-}
-mirrors() { python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("registry-mirrors"), d.get("debug"))' "$CONF"; }
-docker_run || fail "docker run rc (no daemon.json)"
-[ "$(mirrors)" = "['https://mirror.gcr.io'] None" ] || fail "daemon.json not created with the mirror: $(mirrors)"
-[ -e "$TMP/dockerd-started" ] || fail "dockerd not started"
-printf '{"debug": true}\n' > "$CONF"
-docker_run || fail "docker run rc (foreign daemon.json)"
-[ "$(mirrors)" = "['https://mirror.gcr.io'] True" ] || fail "mirror not merged into an existing daemon.json: $(mirrors)"
-docker_run || fail "docker run rc (mirrored daemon.json)"
-[ "$(mirrors)" = "['https://mirror.gcr.io'] True" ] || fail "mirror duplicated or key lost: $(mirrors)"
+HOME="$TMP/home" AI_CLOUD_HOME="$CFG" AI_CLOUD_DOCKER_CONF="$CONF" AI_CLOUD_DOCKER_LOG="$TMP/dockerd.log" \
+  AI_CLOUD_DOCKER_WAIT=0 PATH="$STUB:$PATH" "$DF/scripts/ai-cloud-setup.sh" personal >/dev/null 2>&1 || fail "docker run rc"
+for _ in 1 2 3 4 5 6 7 8 9 10; do [ -e "$TMP/dockerd-started" ] && break; sleep 0.1; done
+[ -e "$TMP/dockerd-started" ] || fail "dockerd not started by the setup"
+grep -q mirror.gcr.io "$CONF" 2>/dev/null || fail "daemon.json not written by the setup"
 
 # 5. a session that cloned ai-dotfiles alone still starts (FR-2)
 SOLO="$TMP/solo"
