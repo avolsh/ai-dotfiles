@@ -12,8 +12,9 @@
 # docs, env/ai-dotfiles and a path per clone: the section docs/workspace/.mrconfig
 # gives its URL (research/<name>, say), else src/<host>/<org>/<repo>. `docs` is the clone named
 # with --docs; without it, the one clone holding workspace/CLAUDE.md, and none
-# when several do. A clone whose origin makes no plain <host>/<org>/<repo> path
-# is left out of src/.
+# when several do. A --docs clone the session did not clone is a warning: a
+# cloud session may hold any subset of the project's repos. A clone whose
+# origin makes no plain <host>/<org>/<repo> path is left out of src/.
 #
 # A symlink is repaired, a missing entry created, and a real file identical to
 # its source replaced by the link. A real entry that differs is kept and
@@ -69,7 +70,8 @@ if [ "$cloud" -eq 1 ]; then
     0:*) place "$(basename "$docs_clone")" "$root/docs" ;;
     1:) _err "WARN no clone in $root holds workspace/CLAUDE.md; docs not linked" ;;
     2:) _err "WARN several clones in $root hold workspace/CLAUDE.md; docs not linked — name one: --docs <repo>" ;;
-    1:*|2:*) _err "--docs '$docs' is not a clone in $root"; exit 2 ;;
+    1:*) _err "WARN --docs '$docs' is not a clone in $root; docs not linked" ;;
+    2:*) _err "--docs '$docs' is not a plain clone name"; exit 2 ;;
     *) # a docs repo not initialised yet: linked, so ai-workspace.sh --docs can fill it
       docs_clone="$root/$docs"
       place "$docs" "$root/docs"

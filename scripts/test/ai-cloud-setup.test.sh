@@ -44,10 +44,14 @@ printf '{"model":"opus","hooks":{"Stop":[{"hooks":[{"type":"command","command":"
 
 run() { HOME="$TMP/home" AI_CLOUD_HOME="$CFG" "$DF/scripts/ai-cloud-setup.sh" --no-docker "${@:---docs=repo-b}" personal >/dev/null 2>&1; }
 
-# 1. usage error without a profile, or with a --docs that names no docs clone
+# 1. usage error without a profile or with a --docs that is not a plain name; a --docs clone
+#    the session did not clone is only a warning (IMP-20261026-cloud-setup-partial-sessions FR-1, FR-2)
 if "$DF/scripts/ai-cloud-setup.sh" >/dev/null 2>&1; then fail "no profile accepted"; fi
-if run --docs not-a-repo; then fail "a --docs naming no docs clone accepted"; fi
-[ -e "$WS/docs" ] && fail "a refused --docs still linked docs"
+if run --docs ../repo-b; then fail "a --docs that is not a plain name accepted"; fi
+out="$(HOME="$TMP/home" AI_CLOUD_HOME="$CFG" "$DF/scripts/ai-cloud-setup.sh" --no-docker --docs not-a-repo personal 2>&1)" \
+  || fail "a --docs clone the session lacks failed the setup"
+echo "$out" | grep -q "'not-a-repo' is not a clone" || fail "the absent --docs clone not reported"
+[ -e "$WS/docs" ] && fail "an absent --docs clone linked docs"
 
 # 2. first run wires everything
 run || fail "first run rc"
@@ -109,6 +113,14 @@ docker_run || fail "docker run rc (foreign daemon.json)"
 [ "$(mirrors)" = "['https://mirror.gcr.io'] True" ] || fail "mirror not merged into an existing daemon.json: $(mirrors)"
 docker_run || fail "docker run rc (mirrored daemon.json)"
 [ "$(mirrors)" = "['https://mirror.gcr.io'] True" ] || fail "mirror duplicated or key lost: $(mirrors)"
+
+# 5. a session that cloned ai-dotfiles alone still starts (FR-2)
+SOLO="$TMP/solo"
+mkdir -p "$SOLO/ai-dotfiles"
+cp -R "$DF/framework" "$DF/scripts" "$DF/docs" "$DF/profiles" "$SOLO/ai-dotfiles/"
+HOME="$TMP/solo-home" AI_CLOUD_HOME="$TMP/solo-home/.claude" "$SOLO/ai-dotfiles/scripts/ai-cloud-setup.sh" --no-docker personal \
+  >/dev/null 2>&1 || fail "a session holding only ai-dotfiles failed the setup"
+[ -L "$TMP/solo-home/.claude/CLAUDE.md" ] || fail "the solo session not wired"
 
 if [ "$fails" -ne 0 ]; then
   echo "$fails ai-cloud-setup test(s) failed ✗" >&2

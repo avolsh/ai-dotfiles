@@ -5,14 +5,19 @@
 # (IMP-20261025-cloud-sessions FR-1..FR-3). Run from the cloud environment's
 # Setup script, which starts in the directory holding the cloned repos:
 #
-#   bash ai-dotfiles/scripts/ai-cloud-setup.sh <profile> --docs <docs repo>
+#   [ ! -f ai-dotfiles/scripts/ai-cloud-setup.sh ] || bash ai-dotfiles/scripts/ai-cloud-setup.sh <profile>
+#
+# A session may clone any subset of the project's repos: a missing clone,
+# the docs one included, is a warning, never a failed setup
+# (IMP-20261026-cloud-setup-partial-sessions FR-2).
 #
 # `<system>/` is ~/.claude here: the harness keeps its own files in it, so
 # CLAUDE_CONFIG_DIR is never repointed and nothing it owns is replaced.
 # Idempotent: a second run changes nothing.
 #
 # Usage: ai-cloud-setup.sh [--no-docker] [--docs <repo>] <profile>
-#        --docs names the clone whose workspace/ becomes the root files; see
+#        --docs names the clone whose workspace/ becomes the root files, needed
+#        only when several clones hold workspace/CLAUDE.md; see
 #        ai-workspace-link.sh for what happens without it.
 # Env:   AI_CLOUD_HOME overrides ~/.claude, AI_CLOUD_DOCKER_CONF the daemon.json
 #        path and AI_CLOUD_DOCKER_LOG dockerd's log (tests use these).

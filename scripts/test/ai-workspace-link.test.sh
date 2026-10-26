@@ -46,7 +46,7 @@ clone "$WS/spaced" "git@github.com:geeoz/re po"
 clone "$WS/half-docs" https://github.com/tobeverse/half-docs
 mkdir -p "$WS/half-docs/workspace" "$WS/not-a-repo"
 
-for bad in "--docs nope" "--docs ../cloud/tobevisit-docs" "--docs"; do
+for bad in "--docs ../cloud/tobevisit-docs" "--docs"; do
   # shellcheck disable=SC2086 # the option and its value are two words
   "$DF/scripts/ai-workspace-link.sh" --cloud $bad "$WS" >/dev/null 2>&1 && fail "accepted: $bad"
 done
@@ -131,6 +131,10 @@ out="$("$W2/ai-dotfiles/scripts/ai-workspace-link.sh" --cloud "$W2" 2>&1)" || fa
 [ -e "$W2/docs" ] && fail "a docs clone guessed between two"
 [ -e "$W2/CLAUDE.md" ] && fail "root files linked from a guessed clone"
 echo "$out" | grep -q "several clones" || fail "the ambiguity not reported"
+# a named docs clone the session did not clone is a warning, not a failure (IMP-20261026 FR-1)
+out="$("$W2/ai-dotfiles/scripts/ai-workspace-link.sh" --cloud --docs nope "$W2" 2>&1)" || fail "an absent --docs clone failed the run"
+[ -e "$W2/docs" ] && fail "an absent --docs clone linked docs"
+echo "$out" | grep -q "'nope' is not a clone" || fail "the absent --docs clone not reported"
 # a named docs repo not initialised yet is linked and reported, not refused (FR-15)
 clone "$W2/empty-docs" https://github.com/tobeverse/empty-docs
 out="$("$W2/ai-dotfiles/scripts/ai-workspace-link.sh" --cloud --docs empty-docs "$W2" 2>&1)" || fail "an uninitialised --docs refused"
