@@ -112,6 +112,32 @@ HOME="$TMP/solo-home" AI_CLOUD_HOME="$TMP/solo-home/.claude" "$SOLO/ai-dotfiles/
   >/dev/null 2>&1 || fail "a session holding only ai-dotfiles failed the setup"
 [ -L "$TMP/solo-home/.claude/CLAUDE.md" ] || fail "the solo session not wired"
 
+# 6. README's Setup script line itself, over the four sets of clones a session can hold (AC-1)
+line="$(python3 - "$SRC/README.md" <<'PY'
+import re, sys
+row = next(l for l in open(sys.argv[1], encoding="utf-8") if l.startswith("| Setup script |"))
+print(re.search(r"`([^`]+)`", row).group(1).replace("\\|", "|"))
+PY
+)"
+case "$line" in *"ai-cloud-setup.sh personal"*) ;; *) fail "README Setup script line not found: $line" ;; esac
+for set in all no-docs no-dotfiles none; do
+  W="$TMP/line-$set"
+  mkdir -p "$W"
+  case "$set" in all|no-docs) mkdir -p "$W/ai-dotfiles"; cp -R "$DF/framework" "$DF/scripts" "$DF/docs" "$DF/profiles" "$W/ai-dotfiles/" ;; esac
+  case "$set" in all|no-dotfiles)
+    git init -q "$W/tobevisit-docs"; git -C "$W/tobevisit-docs" remote add origin https://github.com/org/tobevisit-docs
+    mkdir -p "$W/tobevisit-docs/workspace"; echo "# ws" > "$W/tobevisit-docs/workspace/CLAUDE.md" ;;
+  esac
+  git init -q "$W/repo-a"
+  rc=0
+  (cd "$W" && HOME="$TMP/line-home-$set" AI_CLOUD_HOME="$TMP/line-home-$set/.claude" AI_CLOUD_DOCKER_CONF="$TMP/line-daemon.json" \
+    AI_CLOUD_DOCKER_LOG="$TMP/dockerd.log" AI_CLOUD_DOCKER_WAIT=0 PATH="$STUB:$PATH" bash -c "$line") >/dev/null 2>&1 || rc=$?
+  [ "$rc" -eq 0 ] || fail "the README Setup script exits $rc with clone set '$set'"
+done
+[ "$(readlink "$TMP/line-all/docs")" = "tobevisit-docs" ] || fail "the README line did not link the single docs clone"
+[ -L "$TMP/line-home-no-docs/.claude/CLAUDE.md" ] || fail "the README line did not wire a session without the docs clone"
+[ -e "$TMP/line-home-none/.claude" ] && fail "the README line wired a session without ai-dotfiles"
+
 if [ "$fails" -ne 0 ]; then
   echo "$fails ai-cloud-setup test(s) failed ✗" >&2
   exit 1

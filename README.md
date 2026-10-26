@@ -1,6 +1,6 @@
 # ai-dotfiles
 
-*Last updated: 2026-10-25*
+*Last updated: 2026-10-26*
 
 Personal AI Agent Framework dotfiles — skills, spec-workflows, prompts, and
 identity profiles for GitHub Copilot, Claude Code, and OpenAI Codex CLI.
@@ -36,6 +36,7 @@ ai-dotfiles/
 ├── scripts/
 │   ├── ai-switch.sh        ← Switches active profile, persists env, links shared state
 │   ├── ai-cloud-setup.sh   ← Wires a profile into a cloud session's ~/.claude (§ Cloud sessions)
+│   ├── ai-cloud-docker.sh  ← Starts Docker in a cloud session, at setup and every SessionStart
 │   └── ai-profile-init.sh  ← Renders profile tool subdirs (one-time per profile)
 ├── Makefile                ← Entry-point wrapper; run `make help`
 ├── docs/
@@ -274,11 +275,13 @@ The setup script cannot read the environment's variables, so the profile is its 
 profile gets a cloud environment of its own. Open the project's settings, open the **Cloud environment**
 menu and choose **Add cloud environment**, which also selects it for the project; sessions started
 after that run on it. The project's repositories must include `ai-dotfiles`: the script treats the
-directory holding it as the workspace.
+directory holding it as the workspace. A session may still clone only some of them: the Setup script
+skips the framework when `ai-dotfiles` is not among them, and a missing clone, the docs one included,
+is a warning in the setup log, never a failed session.
 
 | Field | Value |
 |---|---|
-| Setup script | `bash ai-dotfiles/scripts/ai-cloud-setup.sh personal --docs <docs repo>` (`work` for the other profile; the docs repo is the clone holding `workspace/`, e.g. `tobevisit-docs`) |
+| Setup script | `[ ! -f ai-dotfiles/scripts/ai-cloud-setup.sh ] \|\| bash ai-dotfiles/scripts/ai-cloud-setup.sh personal` (`work` for the other profile; add `--docs <docs repo>` only when several clones hold `workspace/CLAUDE.md`) |
 | Network access | Limited, with **Allow package managers** ticked and `mirror.gcr.io` under Allowed domains |
 | Environment variables | Development keys only. No production key, no kubeconfig, nothing that reaches a cluster |
 
@@ -293,9 +296,11 @@ The script, idempotent:
 5. builds the laptop's workspace layout from the flat clones and links the workspace root files
    (§ Workspace root below);
 6. starts `dockerd` with `mirror.gcr.io` as its registry mirror, because anonymous Docker Hub pulls from
-   the shared egress address are refused. `--no-docker` skips this step.
+   the shared egress address are refused (`scripts/ai-cloud-docker.sh`). `--no-docker` skips this step.
 
-The SessionStart hook runs `ai-doctor.sh --fast --hook`, which adds the cloud checks whenever
+A resumed session keeps its files but not its processes, and the Setup script does not run again, so
+the SessionStart hook first runs `ai-cloud-docker.sh`, which starts `dockerd` in the cloud only and waits
+up to 10 s for it. The same hook then runs `ai-doctor.sh --fast --hook`, which adds the cloud checks whenever
 `CLAUDE_CODE_REMOTE=true`; `scripts/ai-doctor.sh --cloud` prints the whole report. SessionStart adds a
 hook's stdout to the agent's context only when it exits 0, so `--hook` writes the whole report there and
 exits 0: the agent sees the failures and the notes, and tells you. A session uses the
