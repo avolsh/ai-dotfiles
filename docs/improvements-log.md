@@ -781,3 +781,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was changed:** none — logged for review.
 - **Suggested follow-up:** a table in `agent-protocol`: process finding → `docs/improvements-log.md`; project rule or command → `_canonical.md`; a spec's decisions and state → the spec; the owner's standing preferences in a cloud project → one memory file per subject, never an index file.
 
+### 2026-11-23 — The Jira ticket was updated only when the owner asked
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** across the project the ticket's description and status were brought up to date only after the owner wrote "онови TBV-…" (TBV-73, TBV-83, TBV-102, TBV-106, TBV-107, TBV-108, TBV-70). On 2026-11-23 he asked that the ticket be updated without reminders, and that work done for a ticket (this log, too) be recorded under it.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** in the spec lifecycle, update the ticket named by the work at each milestone (requirements approved, PR opened, closure, merge, release) without being asked; a thread or PR that serves a ticket names its key (`[TBV-102]` in the thread title, `TBV-102` first in the PR title).
+
