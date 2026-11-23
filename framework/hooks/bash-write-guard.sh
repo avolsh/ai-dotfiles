@@ -6,7 +6,8 @@
 #   - a write to a path no active spec governs, by the same decision `spec-status-guard.sh` makes (FR-1)
 #   - a state-changing git verb anywhere in the command, per boundaries.md § Never do #10 (FR-3) — except, in a
 #     cloud session (CLAUDE_CODE_REMOTE=true), the writes its cloud exception allows on the agent's own
-#     `claude/*` branch (IMP-20261025-cloud-sessions FR-6)
+#     `claude/*` branch (IMP-20261025-cloud-sessions FR-6), a merge of a fetched branch into it included
+#     (IMP-20261123-owner-review-corrections FR-13)
 #   - in a cloud session, a `gh pr` verb that opens or changes a PR: PRs go through the GitHub tools, whose base
 #     `pr-base-guard.sh` checks (FR-7)
 #
@@ -199,6 +200,7 @@ CLOUD = os.environ.get("CLAUDE_CODE_REMOTE") == "true"
 AGENT = "claude/"
 GH_PR_WRITE = {"create", "new", "edit", "merge", "ready", "close", "reopen", "revert", "update-branch"}  # `new` is gh'"'"'s alias of create
 CHECKOUT_DENY = {"-f", "--force", "--discard-changes", "-m", "--merge"}  # each discards or rewrites local work
+MERGE_FLAGS = {"--no-edit", "--ff-only", "--no-ff", "--abort", "--continue"}
 PUSH_DENY = {"-f", "--force", "--force-with-lease", "--force-if-includes", "-d", "--delete", "--mirror",
              "--all", "--tags", "--prune"}
 
@@ -263,6 +265,25 @@ def cloud_allows(sub, rest, where):
         if any(":" in a for a in rest if not a.startswith("-")):
             return False  # `pull origin X:X` writes the local branch X
         return "--ff-only" in rest and not any(a in ("-r", "--rebase") or a.startswith("--rebase=") for a in rest)
+    if sub == "merge":
+        # A fetched branch merged into the agent'"'"'s own branch: FETCH_HEAD or origin/<ref>, never master or
+        # develop, a local branch, or an option that rewrites the result (IMP-20261123-owner-review-corrections
+        # FR-13). --abort and --continue finish or undo a merge already started here.
+        flags = [a for a in rest if a.startswith("-")]
+        refs = [a for a in rest if not a.startswith("-")]
+        if any(f not in MERGE_FLAGS for f in flags):
+            return False
+        if any(f in ("--abort", "--continue") for f in flags):
+            return not refs and len(flags) == 1
+        if len(refs) != 1:
+            return False
+        ref = refs[0]
+        if ref.startswith("refs/remotes/"):
+            ref = ref[len("refs/"):][len("remotes/"):]
+        if ref == "FETCH_HEAD":
+            return True
+        name = ref[len("origin/"):] if ref.startswith("origin/") else ""
+        return bool(name) and ":" not in name and name not in ("master", "develop")
     if sub == "push":
         if denied(rest, PUSH_DENY) or any(a.startswith("--force") for a in rest):
             return False
@@ -502,7 +523,7 @@ while IFS= read -r finding; do
     echo "Blocked by bash-write-guard: 'git $rest' changes repository state, which is the human's to run (boundaries.md § Never do #10)." >&2
     echo "Reading commands — status, log, diff, show, branch --show-current — are unrestricted. Say what you would run and wait." >&2
     if [ "${CLAUDE_CODE_REMOTE:-}" = "true" ]; then
-      echo "Cloud session: only add, commit, fetch, pull --ff-only and a named push of your own claude/* branch, and creating that branch with -b or -c and --no-track, are allowed (boundaries.md § Never do #10, cloud exception)." >&2
+      echo "Cloud session: only add, commit, fetch, pull --ff-only, a merge of FETCH_HEAD or origin/<branch> (not master or develop) with --no-edit, --ff-only or --no-ff, and a named push of your own claude/* branch, and creating that branch with -b or -c and --no-track, are allowed (boundaries.md § Never do #10, cloud exception)." >&2
     fi
     exit 2
   fi

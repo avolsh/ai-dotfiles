@@ -406,6 +406,28 @@ for c in "git push origin TBV-1" "git push --force origin claude/x" "git push --
          "git checkout --forc -b claude/y --no-track origin/TBV-1"; do
   cloud_expect 2 "$c" true
 done
+# the agent merges a fetched branch into its own claude/* branch, never master or develop, a local branch, or
+# with an option that rewrites the result (IMP-20261123-owner-review-corrections FR-13, AC-3)
+for c in "git merge --no-edit FETCH_HEAD" "git merge --no-edit origin/TBV-1" "git merge --abort" \
+         "git merge --continue" "git merge --ff-only origin/claude/x" "git merge --no-ff --no-edit origin/TBV-1" \
+         "git fetch origin claude/x && git merge --no-edit FETCH_HEAD"; do
+  cloud_expect 0 "$c" true
+  cloud_expect 2 "$c" ""
+done
+for c in "git merge TBV-1" "git merge origin/master" "git merge --no-edit origin/develop" \
+         "git merge --squash origin/TBV-1" "git merge -s ours origin/TBV-1" "git merge -X theirs origin/TBV-1" \
+         "git merge --no-verify origin/TBV-1" "git merge --allow-unrelated-histories FETCH_HEAD" \
+         "git merge origin/TBV-1 origin/TBV-2" "git merge" "git merge -m x origin/TBV-1" \
+         "git merge --no-edit refs/remotes/origin/master" "git merge origin/TBV-1:x"; do
+  cloud_expect 2 "$c" true
+done
+mainrepo="$TMP/mainrepo"
+git init -q "$mainrepo"
+git -C "$mainrepo" checkout -q -b TBV-1
+set +e
+cmd_payload "git merge --no-edit FETCH_HEAD" "$mainrepo" | CLAUDE_CODE_REMOTE=true "$BWG" >/dev/null 2>&1; rc=$?
+set -e
+expect "bash-write-guard cloud: merge on a branch that is not claude/*" 2 "$rc"
 # a commit message that merely contains n is not -n, and an allowed long option is no abbreviation of a denied one
 cloud_expect 0 "git commit -am note" true
 cloud_expect 0 "git commit --no-edit -m x" true
@@ -554,6 +576,25 @@ sed -i 's/^status: plan$/status: in-progress/' "$prws/other/docs/specs/active/CR
 prg_expect 2 ai-dotfiles TBV-7-planned
 prg_expect 2 ai-dotfiles TBV-83-cloud-setup
 rm "$prws/other/docs/specs/active/CR-20261025-y.md"
+# with no in-progress record for the repo, a spec at specify or plan supplies the base: a spec-only PR for a
+# spec still at specify (IMP-20261123-owner-review-corrections FR-12, AC-2)
+mkdir -p "$prws/third/docs/specs/active"
+spec_at() { # $1 file, $2 status, $3 base for repo "third"
+  printf -- '---\nid: %s\nstatus: %s\nbranches: {third: %s}\n---\n# s\n' "$(basename "$1" .md)" "$2" "$3" > "$1"
+}
+spec_at "$prws/third/docs/specs/active/CR-20261123-a.md" specify TBV-1
+prg_expect 0 third TBV-1
+prg_expect 2 third master
+spec_at "$prws/third/docs/specs/active/CR-20261123-b.md" in-progress TBV-2
+prg_expect 2 third TBV-1
+prg_expect 0 third TBV-2
+prg_expect 2 third master
+rm "$prws/third/docs/specs/active/CR-20261123-b.md"
+spec_at "$prws/third/docs/specs/active/CR-20261123-c.md" plan TBV-3
+prg_expect 2 third TBV-1
+prg_expect 2 third TBV-3
+prg_expect 2 third master
+rm -r "$prws/third"
 # a spec tree above cwd is found without AI_DOTFILES
 set +e
 pr_payload mcp__github__create_pull_request other TBV-9-a "$prws/ai-dotfiles/docs" | CLAUDE_CODE_REMOTE=true "$PRG" >/dev/null 2>&1; rc=$?
