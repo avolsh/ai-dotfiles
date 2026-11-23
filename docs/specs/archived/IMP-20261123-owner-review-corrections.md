@@ -2,7 +2,8 @@
 id: IMP-20261123-owner-review-corrections
 type: IMP
 date: 2026-11-23
-status: in-progress
+status: done
+closed: 2026-11-23
 owner: avolsh
 risk: medium
 affected-repos:
@@ -114,11 +115,11 @@ None.
 
 | # | Description | Files | Source files (read-only) | Depends on | Skills | Model | Status |
 |---|---|---|---|---|---|---|---|
-| 1 | Guards: `pr-base-guard` reads `specify` / `plan` records when no `in-progress` one exists; `bash-write-guard` allows the cloud merge of `FETCH_HEAD` / `origin/<ref>` into the agent branch; suite cases first run against the old guards (FR-12, FR-13; AC-2, AC-3) | `framework/hooks/pr-base-guard.sh`, `framework/hooks/bash-write-guard.sh`, `framework/scripts/test/hooks.test.sh`, `framework/hooks/README.md` | `framework/hooks/lib/spec-lease.sh` | — | writing-specs | default | ◐ awaiting approval |
-| 2 | Boundaries: #15 says what was checked; #10 cloud exception names the merge, a diverged branch merged instead of stopping, and the `claude/<ticket>-<slug>` branch name (FR-2, FR-13, FR-14) | `framework/boundaries.md`, `README.md` | `docs/rule-canonical-map.md` | 1 | writing-docs | default | ◐ awaiting approval |
-| 3 | Agent protocol: source of record, messages to the owner, propose before changing, autonomous mode, cloud threads and the owner's device, where facts live (FR-1, FR-3, FR-4, FR-5, FR-10, FR-11) | `docs/agent-protocol.md`, `docs/spec-asking-questions.md` | `docs/rule-canonical-map.md` | — | writing-docs | default | ◐ awaiting approval |
-| 4 | Spec process: task order, T1 alone and the adjacent-change exception, release before closure and runs with a go, the tracker ticket, idempotency at the requirements gate (FR-5, FR-6, FR-7, FR-8, FR-9) | `framework/skills/writing-specs/references/authoring-steps.md`, `framework/skills/writing-specs/references/splitting-rules.md`, `framework/spec-workflows/spec-lifecycle.md`, `framework/prompts/create-spec.prompt.md` | `docs/splitting-specs.md` | 3 | writing-specs, writing-docs | default | ◐ awaiting approval |
-| 5 | Closure: closing improvements-log entry, `make check`, review, Closure Evidence, archive, PR #18 and the ticket (AC-1) | `docs/improvements-log.md`, `docs/specs/active/IMP-20261123-owner-review-corrections.md` | — | 1–4 | reviewing-changes | default | ◐ awaiting approval |
+| 1 | Guards: `pr-base-guard` reads `specify` / `plan` records when no `in-progress` one exists; `bash-write-guard` allows the cloud merge of `FETCH_HEAD` / `origin/<ref>` into the agent branch; suite cases first run against the old guards (FR-12, FR-13; AC-2, AC-3) | `framework/hooks/pr-base-guard.sh`, `framework/hooks/bash-write-guard.sh`, `framework/scripts/test/hooks.test.sh`, `framework/hooks/README.md` | `framework/hooks/lib/spec-lease.sh` | — | writing-specs | default | ☑ done |
+| 2 | Boundaries: #15 says what was checked; #10 cloud exception names the merge, a diverged branch merged instead of stopping, and the `claude/<ticket>-<slug>` branch name (FR-2, FR-13, FR-14) | `framework/boundaries.md`, `README.md` | `docs/rule-canonical-map.md` | 1 | writing-docs | default | ☑ done |
+| 3 | Agent protocol: source of record, messages to the owner, propose before changing, autonomous mode, cloud threads and the owner's device, where facts live (FR-1, FR-3, FR-4, FR-5, FR-10, FR-11) | `docs/agent-protocol.md`, `docs/spec-asking-questions.md` | `docs/rule-canonical-map.md` | — | writing-docs | default | ☑ done |
+| 4 | Spec process: task order, T1 alone and the adjacent-change exception, release before closure and runs with a go, the tracker ticket, idempotency at the requirements gate (FR-5, FR-6, FR-7, FR-8, FR-9) | `framework/skills/writing-specs/references/authoring-steps.md`, `framework/skills/writing-specs/references/splitting-rules.md`, `framework/spec-workflows/spec-lifecycle.md`, `framework/prompts/create-spec.prompt.md` | `docs/splitting-specs.md` | 3 | writing-specs, writing-docs | default | ☑ done |
+| 5 | Closure: closing improvements-log entry, `make check`, review, Closure Evidence, archive, PR #18 and the ticket (AC-1) | `docs/improvements-log.md`, `docs/specs/active/IMP-20261123-owner-review-corrections.md` | — | 1–4 | reviewing-changes | default | ☑ done |
 
 ## Closure Evidence
 `make check` exits 0 at closure (2026-11-23, in this cloud thread): links (179 files), `validate-specs` OK (57 specs), `lint-rules` OK (90 phrases), `validate-anchors` OK (176 fragments), every self-test suite passed.
@@ -130,7 +131,7 @@ None.
 | AC-3 | `hooks.test.sh` § cloud exception: `git merge --no-edit FETCH_HEAD`, `--no-edit origin/PROJ-1`, `--abort`, `--continue`, `--ff-only origin/claude/x`, `--no-ff --no-edit origin/PROJ-1` and `git fetch origin claude/x && git merge --no-edit FETCH_HEAD` pass in the cloud and are denied outside it; `git merge PROJ-1`, `origin/master`, `origin/develop`, `refs/remotes/origin/master`, `--squash`, `-s ours`, `-X theirs`, `--no-verify`, `--allow-unrelated-histories`, two refs, none, `-m x` and `origin/PROJ-1:x` are denied, and so is a merge on branch `PROJ-1`. Against the previous guard the seven allowed forms failed (rc 2); every earlier case, including `git merge PROJ-1` and `git fetch` + `git merge origin/master`, keeps its result. |
 
 ### Review
-Waived — `risk: medium` needs no recorded review ([`spec-lifecycle.md § Status transitions`](../../../framework/spec-workflows/spec-lifecycle.md)); the owner approves the closure synchronously.
+Waived — `risk: medium` needs no recorded review ([`spec-lifecycle.md § Status transitions`](../../../framework/spec-workflows/spec-lifecycle.md)); the owner approved the closure in the thread on 2026-11-23 18:45 Kyiv (`так`).
 
 ## Agent instructions
 Per `<system>/boundaries.md` and `<system>/docs/agent-protocol.md`.
