@@ -789,3 +789,11 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was changed:** none — logged for review.
 - **Suggested follow-up:** in the spec lifecycle, update the ticket named by the work at each milestone (requirements approved, PR opened, closure, merge, release) without being asked; a thread or PR that serves a ticket names its key (`[TBV-102]` in the thread title, `TBV-102` first in the PR title).
 
+
+### 2026-11-23 — Files changed on the owner's Mac while he was building
+
+- **Spec / task:** ad-hoc — reported by the owner on 2026-11-23 in the TBV-102 framework-corrections thread
+- **Category:** `protocol`
+- **What was found:** an agent with access to the owner's Mac kept editing files in his repository after he had started a build there. The owner: "я збираю білд а ти міняєш файли, ти в своєму розумі?". The agent's answer admits it was still editing, should have asked him to wait, then disconnected from the Mac and held its cloud push. Nothing in the framework says that the owner's working tree is shared with the owner: a build, a test run or a review there reads whatever the agent writes mid-way, and the result is neither his tree nor the agent's.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** a rule for work on the owner's device (folder access or Remote Control): before editing there, say which files will change and finish or stop before he builds; once he says he is building, testing or reviewing, write nothing in that tree until he says it is done; prefer a branch or worktree of the agent's own over his checkout; when the agent's edits are done, say so in one line so he knows the tree is stable.
