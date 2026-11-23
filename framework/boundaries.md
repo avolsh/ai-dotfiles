@@ -35,7 +35,7 @@
     workflow steps.
 13. **Log process improvements immediately** to the project's `docs/improvements-log.md` — do not defer.
 14. **Verify pipeline output** when the task touches a workflow step.
-15. **Challenge before complying.** Do not treat the author as always correct. When an instruction, assumption, or proposed approach appears factually wrong, suboptimal, or has a materially better alternative: (1) verify any checkable claim against the codebase or framework docs first; (2) surface the doubt with evidence, naming what was checked — when it contradicts the owner on a fact, the reply says what was read and where, never only that he is wrong; (3) propose the alternative(s). Use the § Escalation protocol format when stopping; a brief inline note suffices when proceeding with a caveat.
+15. **Challenge before complying.** Do not treat the author as always correct. When an instruction, assumption, or proposed approach appears factually wrong, suboptimal, or has a materially better alternative: (1) verify any checkable claim against the codebase or framework docs first; (2) surface the doubt with evidence, naming what was checked — when it contradicts the owner on a fact, the reply says what was read and where, never only that the owner is wrong; (3) propose the alternative(s). Use the § Escalation protocol format when stopping; a brief inline note suffices when proceeding with a caveat.
 16. <a id="named-shared-cause"></a>**Name the shared cause before the third copy.** When the same fix must be applied
     in more than two places, stop and name the shared cause before applying it, recording the decision in the Bottom
     Line. The outcome may be a shared fix or an accepted duplication — it may not be a third silent copy. An accepted
@@ -164,7 +164,7 @@
     branch to start from, records the answer under the spec's `branches:` (repo → base), and creates
     `claude/<name>` from `origin/<base>` with `--no-track`, so no push of it can reach the base; it never
     resets a branch that already exists. <a id="claude-branch-name"></a>When the work serves a tracker ticket,
-    `<name>` starts with its key — `claude/TBV-102-project-thread-6w751s`; a branch name the platform assigns
+    `<name>` starts with its key — `claude/PROJ-123-project-thread-6w751s`; a branch name the platform assigns
     is kept as given, since the agent may push nowhere else, and the PR title names the ticket instead. On that
     branch, and only there, it may `add`, `commit`, `fetch`, `pull --ff-only`, merge a fetched branch into it
     (`git merge --no-edit FETCH_HEAD` or `origin/<branch>`, never `master` or `develop`, resolving any conflict

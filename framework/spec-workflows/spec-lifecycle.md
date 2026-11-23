@@ -263,10 +263,10 @@ spec. A base found gone is asked for again, recorded under `branches:`, and the 
     ([`boundaries.md § Never do #11`](../boundaries.md#environments-are-the-humans) covers deployed targets).
 
 17. **Keep the tracker ticket current.** <a id="tracker-ticket"></a>
-    When the work serves a tracker ticket (Jira `TBV-102`, say), the agent updates it at each milestone —
+    When the work serves a tracker ticket (Jira `PROJ-123`, say), the agent updates it at each milestone —
     requirements approved, PR opened, closure, merge, release — without being asked: a minimal edit of the
     lines its work owns, made right after re-reading the ticket, since other threads edit it too. A PR or a
-    thread that serves the ticket carries its key first (`TBV-102 …` in the PR title, `[TBV-102]` in the thread
+    thread that serves the ticket carries its key first (`PROJ-123 …` in the PR title, `[PROJ-123]` in the thread
     title), and a repository the work touches is added to the ticket's repo list.
 
 ## RES exception <a id="res-exception"></a>

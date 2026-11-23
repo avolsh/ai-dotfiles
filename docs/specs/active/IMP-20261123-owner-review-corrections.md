@@ -46,7 +46,7 @@ baseline-impact: none — no docs/domain baselines in ai-dotfiles
 - `authoring-steps.md § C` step 4 orders tasks by dependency only; `agent-protocol.md § Interpreting "continue"` grants one task at a time, with no mode for "do everything you can without me".
 - `splitting-rules.md § 2` makes T1 alone a must-split; the owner declined that split twice (2026-11-13, 2026-11-19).
 - The lifecycle has no rule on a release before closure, a tracker ticket, or a re-run AC's idempotency.
-- `pr-base-guard.sh` reads `branches:` only from `in-progress` specs, so a spec-only PR for a spec at `specify` is refused (2026-11-14, 2026-11-19); `bash-write-guard.sh` refuses every `git merge` in the cloud (tests: `git merge TBV-1`, `git merge origin/master`), so the owner merged by hand and left conflict markers (2026-11-18).
+- `pr-base-guard.sh` reads `branches:` only from `in-progress` specs, so a spec-only PR for a spec at `specify` is refused (2026-11-14, 2026-11-19); `bash-write-guard.sh` refuses every `git merge` in the cloud (tests: `git merge PROJ-1`, `git merge origin/master`), so the owner merged by hand and left conflict markers (2026-11-18).
 
 ## Proposed Improvement
 - One rule per correction, each in the one canonical file that owns its subject, the others linking to it.
@@ -67,7 +67,7 @@ baseline-impact: none — no docs/domain baselines in ai-dotfiles
 - FR-11: `agent-protocol.md` MUST add a table of where each kind of fact is stored, with no index file for project memory (entry 15).
 - FR-12: `pr-base-guard.sh` MUST, when no `in-progress` spec records a base for the repo, accept a base recorded under `branches:` by a spec at `specify` or `plan`; an `in-progress` record still wins, and disagreeing records at the deciding status still deny (entry 11).
 - FR-13: `bash-write-guard.sh` MUST, in a cloud session on the agent's own `claude/*` branch, allow `git merge` of `FETCH_HEAD` or `origin/<ref>` other than `master` / `develop`, with no option but `--no-edit`, `--ff-only`, `--no-ff`, `--abort`, `--continue`; `boundaries.md § Never do #10` says so (entry 11).
-- FR-14: `boundaries.md § Never do #10` MUST name a `claude/*` branch the agent creates `claude/<ticket>-<slug>` when the work serves a tracker ticket (`claude/TBV-102-project-thread-6w751s`), and say that a branch name the platform assigns is kept and the ticket named in the PR instead (the owner, 2026-11-23 18:21 Kyiv, in the thread).
+- FR-14: `boundaries.md § Never do #10` MUST name a `claude/*` branch the agent creates `claude/<ticket>-<slug>` when the work serves a tracker ticket (`claude/PROJ-123-project-thread-6w751s`), and say that a branch name the platform assigns is kept and the ticket named in the PR instead (the owner, 2026-11-23 18:21 Kyiv, in the thread).
 
 ## Acceptance Criteria
 ### AC-1: Each rule has one canonical home (FR-1–FR-11, FR-14)
@@ -76,13 +76,13 @@ When the changed files are read and `make check` runs
 Then each rule appears once, in the file its FR names, other files link to it, and `make check` exits 0 (links, anchors, lint-rules, validate-specs, tests)
 
 ### AC-2: A spec-only PR for a spec still at specify is allowed (FR-12)
-Given fixture spec trees: one spec at `specify` recording `TBV-1`; that spec plus an `in-progress` one recording `TBV-2`; two `specify` specs recording `TBV-1` and `TBV-3`
-When `pr-base-guard.sh` checks a PR into `TBV-1`, `TBV-2` and `master`
-Then `TBV-1` passes in the first tree, only `TBV-2` in the second, none in the third, and `master` never
+Given fixture spec trees: one spec at `specify` recording `PROJ-1`; that spec plus an `in-progress` one recording `PROJ-2`; two `specify` specs recording `PROJ-1` and `PROJ-3`
+When `pr-base-guard.sh` checks a PR into `PROJ-1`, `PROJ-2` and `master`
+Then `PROJ-1` passes in the first tree, only `PROJ-2` in the second, none in the third, and `master` never
 
 ### AC-3: The agent merges a fetched branch into its own branch (FR-13)
 Given a cloud session on `claude/x` and the existing guard suite
-When it runs `git merge --no-edit FETCH_HEAD`, `git merge --no-edit origin/TBV-1`, `git merge --abort`, and the denied forms `git merge TBV-1`, `git merge origin/master`, `git merge --squash origin/TBV-1`, a merge on a non-`claude/` branch, and one outside the cloud
+When it runs `git merge --no-edit FETCH_HEAD`, `git merge --no-edit origin/PROJ-1`, `git merge --abort`, and the denied forms `git merge PROJ-1`, `git merge origin/master`, `git merge --squash origin/PROJ-1`, a merge on a non-`claude/` branch, and one outside the cloud
 Then the first three pass, every other one is denied, and every earlier case keeps its result
 
 ## Design
@@ -118,7 +118,7 @@ None.
 | 2 | Boundaries: #15 says what was checked; #10 cloud exception names the merge, a diverged branch merged instead of stopping, and the `claude/<ticket>-<slug>` branch name (FR-2, FR-13, FR-14) | `framework/boundaries.md`, `README.md` | `docs/rule-canonical-map.md` | 1 | writing-docs | default | ◐ awaiting approval |
 | 3 | Agent protocol: source of record, messages to the owner, propose before changing, autonomous mode, cloud threads and the owner's device, where facts live (FR-1, FR-3, FR-4, FR-5, FR-10, FR-11) | `docs/agent-protocol.md`, `docs/spec-asking-questions.md` | `docs/rule-canonical-map.md` | — | writing-docs | default | ◐ awaiting approval |
 | 4 | Spec process: task order, T1 alone and the adjacent-change exception, release before closure and runs with a go, the tracker ticket, idempotency at the requirements gate (FR-5, FR-6, FR-7, FR-8, FR-9) | `framework/skills/writing-specs/references/authoring-steps.md`, `framework/skills/writing-specs/references/splitting-rules.md`, `framework/spec-workflows/spec-lifecycle.md`, `framework/prompts/create-spec.prompt.md` | `docs/splitting-specs.md` | 3 | writing-specs, writing-docs | default | ◐ awaiting approval |
-| 5 | Closure: closing improvements-log entry, `make check`, review, Closure Evidence, archive, PR #18 and TBV-102 (AC-1) | `docs/improvements-log.md`, `docs/specs/active/IMP-20261123-owner-review-corrections.md` | — | 1–4 | reviewing-changes | default | ◐ awaiting approval |
+| 5 | Closure: closing improvements-log entry, `make check`, review, Closure Evidence, archive, PR #18 and the ticket (AC-1) | `docs/improvements-log.md`, `docs/specs/active/IMP-20261123-owner-review-corrections.md` | — | 1–4 | reviewing-changes | default | ◐ awaiting approval |
 
 ## Closure Evidence
 `make check` exits 0 at closure (2026-11-23, in this cloud thread): links (179 files), `validate-specs` OK (57 specs), `lint-rules` OK (90 phrases), `validate-anchors` OK (176 fragments), every self-test suite passed.
@@ -126,8 +126,8 @@ None.
 | AC | Evidence |
 |---|---|
 | AC-1 | Each rule has one home, the others link to it: FR-1, FR-3, FR-4 → `docs/agent-protocol.md § Working with the owner` (`#answer-from-source`, `#messages-to-owner`, `#propose-before-changing`), linked from `docs/spec-asking-questions.md`; FR-2 → `framework/boundaries.md § Always do #15`; FR-5 → `authoring-steps.md § C` step 4 and `agent-protocol.md#autonomous-mode`, each linking the other; FR-6 → `splitting-rules.md` `#t1-alone`, E6, § 5; FR-7 → `spec-lifecycle.md § Rules #16` (`#ship-before-closure`); FR-8 → `§ Rules #17` (`#tracker-ticket`), linked from the store table; FR-9 → `create-spec.prompt.md` step 6; FR-10 → `agent-protocol.md#cloud-threads`; FR-11 → `#where-facts-live`; FR-14 → `boundaries.md#claude-branch-name`, linked from `#cloud-threads`. `validate-anchors` resolves every new fragment and `lint-rules` finds no tracked phrase outside its canonical file. |
-| AC-2 | `framework/scripts/test/hooks.test.sh` § pr-base-guard, the `third` tree: a `specify` spec recording `TBV-1` → `TBV-1` allowed, `master` denied; plus an `in-progress` spec recording `TBV-2` → only `TBV-2`; a `specify` and a `plan` spec disagreeing → `TBV-1`, `TBV-3`, `master` all denied. Run against the previous guard, `third -> TBV-1` failed (rc 2); the earlier case "a `plan` spec beside an `in-progress` one" keeps its result. |
-| AC-3 | `hooks.test.sh` § cloud exception: `git merge --no-edit FETCH_HEAD`, `--no-edit origin/TBV-1`, `--abort`, `--continue`, `--ff-only origin/claude/x`, `--no-ff --no-edit origin/TBV-1` and `git fetch origin claude/x && git merge --no-edit FETCH_HEAD` pass in the cloud and are denied outside it; `git merge TBV-1`, `origin/master`, `origin/develop`, `refs/remotes/origin/master`, `--squash`, `-s ours`, `-X theirs`, `--no-verify`, `--allow-unrelated-histories`, two refs, none, `-m x` and `origin/TBV-1:x` are denied, and so is a merge on branch `TBV-1`. Against the previous guard the seven allowed forms failed (rc 2); every earlier case, including `git merge TBV-1` and `git fetch` + `git merge origin/master`, keeps its result. |
+| AC-2 | `framework/scripts/test/hooks.test.sh` § pr-base-guard, the `third` tree: a `specify` spec recording `PROJ-1` → `PROJ-1` allowed, `master` denied; plus an `in-progress` spec recording `PROJ-2` → only `PROJ-2`; a `specify` and a `plan` spec disagreeing → `PROJ-1`, `PROJ-3`, `master` all denied. Run against the previous guard, `third -> PROJ-1` failed (rc 2); the earlier case "a `plan` spec beside an `in-progress` one" keeps its result. |
+| AC-3 | `hooks.test.sh` § cloud exception: `git merge --no-edit FETCH_HEAD`, `--no-edit origin/PROJ-1`, `--abort`, `--continue`, `--ff-only origin/claude/x`, `--no-ff --no-edit origin/PROJ-1` and `git fetch origin claude/x && git merge --no-edit FETCH_HEAD` pass in the cloud and are denied outside it; `git merge PROJ-1`, `origin/master`, `origin/develop`, `refs/remotes/origin/master`, `--squash`, `-s ours`, `-X theirs`, `--no-verify`, `--allow-unrelated-histories`, two refs, none, `-m x` and `origin/PROJ-1:x` are denied, and so is a merge on branch `PROJ-1`. Against the previous guard the seven allowed forms failed (rc 2); every earlier case, including `git merge PROJ-1` and `git fetch` + `git merge origin/master`, keeps its result. |
 
 ### Review
 Waived — `risk: medium` needs no recorded review ([`spec-lifecycle.md § Status transitions`](../../../framework/spec-workflows/spec-lifecycle.md)); the owner approves the closure synchronously.
