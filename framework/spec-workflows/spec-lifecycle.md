@@ -1,6 +1,6 @@
 # Spec Lifecycle
 
-*Last updated: 2026-10-25*
+*Last updated: 2026-11-23*
 
 Single canonical source for status definitions, transitions, gates, front-matter schema, anti-skip rules, and
 Design Decisions / Visualize / Split sub-step triggers. Other framework files MUST link here, not restate the rules.
@@ -251,6 +251,23 @@ spec. A base found gone is asked for again, recorded under `branches:`, and the 
     `Designed`. Code-first projects carry no badges and skip this rule; the
     mode and the badge semantics are defined in
     [`figma-file-organization.md § 6`](../prompts/references/figma-file-organization.md#source-of-truth--code-first-or-design-first).
+
+16. **Ship before closure; nothing runs without a go.** <a id="ship-before-closure"></a>
+    A change that reaches its users through an image, a deploy or a release names that step under
+    `## Rollout / migration notes`, and the spec closes after the step is done and observed, not at the merge
+    — a released change and a merged one are different claims. Where the project builds a preview per branch,
+    acceptance runs on the PR branch's own preview before the merge, so only working code is merged.
+    Every run that touches the project's data or costs money (an AI batch, a paid API, a pipeline stage) is
+    named with its exact command and started only after the owner's go for that command; a full paid run is
+    never made on a local copy, whose results are thrown away
+    ([`boundaries.md § Never do #11`](../boundaries.md#environments-are-the-humans) covers deployed targets).
+
+17. **Keep the tracker ticket current.** <a id="tracker-ticket"></a>
+    When the work serves a tracker ticket (Jira `PROJ-123`, say), the agent updates it at each milestone —
+    requirements approved, PR opened, closure, merge, release — without being asked: a minimal edit of the
+    lines its work owns, made right after re-reading the ticket, since other threads edit it too. A PR or a
+    thread that serves the ticket carries its key first (`PROJ-123 …` in the PR title, `[PROJ-123]` in the thread
+    title), and a repository the work touches is added to the ticket's repo list.
 
 ## RES exception <a id="res-exception"></a>
 

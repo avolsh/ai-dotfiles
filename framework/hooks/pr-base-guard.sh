@@ -4,7 +4,7 @@
 # PreToolUse guard on the GitHub PR tools (IMP-20261025-cloud-sessions FR-7): the PR half of the cloud
 # exception to boundaries.md § Never do #10. In a cloud session (CLAUDE_CODE_REMOTE=true) a PR the agent
 # opens or retargets must have as its base the branch the human named for that repo, as recorded under an
-# in-progress spec's `branches:` — never `master` or `develop`. Outside a cloud session it does nothing: there
+# active spec's `branches:` — never `master` or `develop`. Outside a cloud session it does nothing: there
 # the agent opens no PR at all, and § Never do #10 says so.
 #
 # Contract (see framework/hooks/README.md):
@@ -15,8 +15,10 @@
 #   exit 2 — deny; stderr names the base, the repo and the bases the specs record.
 #
 # Spec trees searched: every ancestor of .cwd owning docs/specs/active, and every repo beside $AI_DOTFILES.
-# Only a spec at status in-progress counts: its work is the one a PR carries. Two such specs recording
-# different bases for one repo leave the base ambiguous, and the PR is denied until the human settles it.
+# A spec at status in-progress decides: its work is the one a PR carries. When none records the repo, a spec at
+# specify or plan does — the PR then carries that spec (IMP-20261123-owner-review-corrections FR-12). Two specs
+# of the deciding status recording different bases for one repo leave the base ambiguous, and the PR is denied
+# until the human settles it.
 set -euo pipefail
 
 payload="$(cat || true)"
@@ -55,7 +57,7 @@ if ws:
     roots += [os.path.dirname(os.path.dirname(os.path.dirname(p)))
               for p in glob.glob(os.path.join(ws, "*", "docs", "specs", "active"))]
 
-recorded = set()
+by_status = {"in-progress": set(), "earlier": set()}
 for root in dict.fromkeys(roots):
     for spec in glob.glob(os.path.join(root, "docs", "specs", "active", "*.md")):
         try:
@@ -63,18 +65,23 @@ for root in dict.fromkeys(roots):
         except OSError:
             continue
         m = re.match(r"---\n(.*?)\n---", text, re.S)
-        if not m or not re.search(r"^status:\s*in-progress\s*$", m.group(1), re.M):
+        status = m and re.search(r"^status:\s*(\S+)\s*$", m.group(1), re.M)
+        if not status or status.group(1) not in ("in-progress", "specify", "plan"):
             continue
         line = re.search(r"^branches:\s*\{(.*)\}\s*$", m.group(1), re.M)
         if not line:
             continue
+        kind = "in-progress" if status.group(1) == "in-progress" else "earlier"
         for pair in line.group(1).split(","):
             name, _, value = pair.partition(":")
             if name.strip() == repo and value.strip():
-                recorded.add(value.strip())
+                by_status[kind].add(value.strip())
+# The spec being implemented decides; only when none records this repo does a spec still at specify or plan,
+# whose PR then carries the spec itself (IMP-20261123-owner-review-corrections FR-12).
+recorded = by_status["in-progress"] or by_status["earlier"]
 
 if len(recorded) > 1:
-    print("DENY\t" + base + "\t" + repo + "\t" + ", ".join(sorted(recorded)) + "\tin-progress specs disagree on the base")
+    print("DENY\t" + base + "\t" + repo + "\t" + ", ".join(sorted(recorded)) + "\tactive specs disagree on the base")
 elif base not in recorded:
     print("DENY\t" + base + "\t" + repo + "\t" + (", ".join(sorted(recorded)) or "none") + "\tnot the recorded base")
 ')"

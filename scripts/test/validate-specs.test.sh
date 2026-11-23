@@ -98,7 +98,7 @@ assert_silent "FR-7 cites-reqs is no longer a known list field" "$out" "field 'c
 # ---------- IMP-20261025-cloud-sessions FR-8: `branches:` (repo -> base branch) is accepted ----------
 p="$(newproj branches)"
 mkspec "$p" "IMP-20261025-branches.md" <<'EOF2'
-branches: {ai-dotfiles: TBV-83-cloud-setup, tobevisit-content: TBV-83-new-categories}
+branches: {ai-dotfiles: PROJ-83-cloud-setup, tobevisit-content: PROJ-83-new-categories}
 EOF2
 run "$p"
 expect "FR-8 a spec with a branches map validates" 0 "$rc"

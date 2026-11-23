@@ -1,6 +1,6 @@
 # ai-dotfiles
 
-*Last updated: 2026-10-26*
+*Last updated: 2026-11-23*
 
 Personal AI Agent Framework dotfiles — skills, spec-workflows, prompts, and
 identity profiles for GitHub Copilot, Claude Code, and OpenAI Codex CLI.
@@ -328,7 +328,8 @@ cloud. Both sides share the one `claude/*` branch and its one PR:
 3. Back in the cloud the agent runs `git pull --ff-only` and carries on.
 
 One side works at a time and nobody force-pushes. When `git pull --ff-only` refuses, the branch has
-diverged: the agent stops and asks, and you decide how to bring the two together.
+diverged: the agent merges your commits into it (`git fetch origin <claude-branch> && git merge --no-edit
+FETCH_HEAD`), pushes and tells you; a conflict it cannot settle from the two sides stops it until you answer.
 
 ---
 

@@ -1,6 +1,6 @@
 # Splitting Rules
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-11-23*
 
 Machine-lookup tables for the spec-split decision: definitions (§1), Specify-stage triggers (§2 T1–T6), Plan-stage
 safety net (§3 P1–P3), and keep-as-one exceptions (§4 E1–E5). Cite these IDs from specs under `## Split Decision`.
@@ -29,6 +29,11 @@ Evaluate **before** the requirements gate, using FRs, ACs, front-matter
 [`questions/cr-questions.md`](../../../spec-workflows/questions/cr-questions.md).
 If **any** trigger fires, propose a split; do not proceed to the gate
 until the human decides.
+
+<a id="t1-alone"></a>**T1 alone is a recommendation, not a hold.** Clusters that merely test apart are
+common, and the human has kept such specs as one more often than not. When T1 is the only trigger, state the
+split in one line at the requirements gate with its recommended answer, and let the human decide it together
+with the requirements; the gate is not held for it.
 
 | #  | Trigger                                                                                          | Signal source       |
 |----|--------------------------------------------------------------------------------------------------|---------------------|
@@ -64,3 +69,12 @@ Record the exception used under `## Split Decision` in the spec.
 | E3 | Rollback requires atomic revert of all FRs                     | Splitting breaks the rollback contract                                                                                                                                                                                                                                          |
 | E4 | One cluster is a trivial extension (≤1 FR, ≤1 file) of another | Not worth the spec overhead                                                                                                                                                                                                                                                     |
 | E5 | Documentation corpus                                           | All tasks ship documentation files under a single shared index, share a single closure metric, and share a single conformance-pass; splitting forces three-way coordination of artifacts that share no live state. Apply only when the spec ships zero behavioural code change. |
+| E6 | Small adjacent change: one cluster is ≤2 FRs that ship in the files and PR of another | Deferring it costs a second spec, branch and review for a change the same review already covers |
+
+## § 5 Scope by default <a id="scope-by-default"></a>
+
+- **Include a small adjacent change rather than defer it.** A cheap change the work passes by — a label, a
+  missing filter, a scope the same stage ignores — goes into this spec when the owner raises it or E6 holds;
+  deferral needs a reason, not a habit.
+- **Skip transitional compatibility when the window it covers is hours.** A backward-compatible step for two
+  sides deployed the same day costs more than the minutes of mismatch it avoids; name the deploy order instead.

@@ -1,6 +1,6 @@
 # Improvements Log — ai-dotfiles
 
-*Last updated: 2026-10-26*
+*Last updated: 2026-11-23*
 
 Process-improvement log for the **ai-dotfiles framework** itself.
 Authoring format and timing rule live in
@@ -660,3 +660,149 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** 27 cases failed on 2026-10-26 on every branch: the fixtures' fixed `*Last updated: 2026-08-26*` stamps turned 61 days old, past the 60-day freshness rule, so the specs meant to validate cleanly reported `freshness_stale`.
 - **What was changed:** the spec engine's `today` reads `AI_SPECS_TODAY` when set; the suite pins it to 2026-09-20, and `test-env.sh` clears it for every other suite.
 - **Suggested follow-up:** a suite whose fixtures carry dates pins the clock; a freshness-style rule's tests state the day they judge on.
+
+### 2026-11-23 — Status questions were answered from memory, not from the source
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** Asked what was next in a ticket (2026-11-20), the agent answered from memory that the UI dictionary was the last of five specs; the Jira ticket lists six (IMP-20261116-cache-bucket-cleanup). On 2026-11-15 the same question got a proposal to move on to the step-12 sync while three specs of that ticket were still open. The same failure in other shapes: the Directus adapter still in packages-next.js was described as supported, though Directus had been gone for half a year (2026-11-19) — it was dead code and should have been reported as a finding; the owner was sent to look for a setup-script log the product does not have (2026-10-26); a requirements gate assumed production held data it did not (2026-11-14), and the owner had to ask "check it in detail first".
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** A rule in `agent-protocol`: a question about status, scope or what exists is answered after reading its source of record (Jira ticket, spec, code at the named ref, product docs), and the reply names that source. A claim in a gate carries its evidence or says it is a guess.
+
+### 2026-11-23 — Doubting the owner is fine; doubting without checking is not
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** On 2026-10-26 the agent recommended a Hetzner CX43 and answered the owner's "there is no CX43" as if he had not looked ("ти вважаєш, що я не перевірив?"). The owner's review: questioning his statement is allowed, but only after the agent has checked.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** Extend the author-challenge stance (2026-06-16 entry): before contradicting the owner on a fact, verify it, and say what was checked.
+
+### 2026-11-23 — Advice carried over from a one-off runbook, and an answer made harder than the question
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `anti-pattern`
+- **What was found:** Asked whether the accumulated raw places can be processed without paying twice (2026-11-18), the agent told the owner to run `areas` and `link` "2–3 times until they converge". That came from the one-off 14→27 roots migration runbook; the processes are designed to be safe to just run, and the owner objected. The follow-up answer about the Google quota was also more complex than needed. Related, already logged in tobevisit-content (2026-11-19): the agent said `make env-local SEED=…` does not touch the cluster, but it starts an rclone pod there.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** Operational advice cites the current runbook or code it comes from; a step from a one-off migration is never generalised. Answer the question asked first, then the caveats.
+
+### 2026-11-23 — Addressing the owner by an invented name
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** Thread messages opened with "Альоша" (2026-11-11), "Алексе" (2026-11-14, 2026-11-16) and "Олексію" (2026-11-15). Each time the owner objected; the name was guessed from the display name.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** A rule in `agent-protocol` output conventions: no salutation and no name; start with the content.
+
+### 2026-11-23 — Decision questions belong in the chat, numbered, and every one gets an answer
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** The owner answers from his phone (2026-10-27: "відповідати з телефона в MD не зручно"), so questions moved into a doc or an .md file cost him; internal terms (Stage 1/2, vocabulary release) were used unexplained. On 2026-11-15 a gate reply skipped one of his numbered questions ("ти так і не описав, що пропонував з /api/revalidate").
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** In `writing-specs` / gate prompts: questions go in the thread message, numbered, one recommended answer each, answerable as "1A, 2–7 так"; jargon explained first; the reply to his answers covers every number he raised.
+
+### 2026-11-23 — Owner steps that could not be pasted, and a vague PR request that made a duplicate PR
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** Steps handed to the owner failed on form, not content: a curl command broke across two lines (2026-11-13), `SITE_READ_KEY` was not explained, the Workers Build change was described in prose ("не розумію, просто замінити…", 2026-11-16), and a scope proposal had to be asked back ("Ти це пропонував?", 2026-11-19). On 2026-11-19 "open the PR" without a link made the owner open a second tobevisit-web PR (#45); the agent then rewrote #45's description to fit instead of saying it was a mistake.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** Owner steps are one-line, copy-paste commands or the exact UI place and value; a PR the agent cannot open is asked for with its compare link; a mistake is named before anything is adapted to it.
+
+### 2026-11-23 — Gate order skipped, and code changed before the change was explained
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** On 2026-10-27 the agent wrote a plan for a spec still at `specify` without the requirements questions ("який план, а узгодження вимог і питання?"). On 2026-10-29, reacting to the owner's complaint about test noise, it announced `jest --silent` and started editing in the same turn ("спершу поясни, що ти хочеш зробити").
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** In `plan-spec`: a spec at `specify` gets the requirements round first. In `agent-protocol`: a fix the owner did not ask for by name is proposed (change, effect, downside) and done only after his answer.
+
+### 2026-11-23 — Plans should run autonomously first; "do everything you can without me" had to be said three times
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** The owner asked twice for plans that order every task the agent can finish alone first and group his checks at the end (2026-10-29, again 2026-11-14). He then said "роби все, що можеш без мене" on 2026-11-15 and twice on 2026-11-19: the per-task Bottom Line gate stopped work he did not need to see.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** `plan-spec` orders owner-independent tasks first and owner checks in one block at the end; the per-task gate gets an "autonomous until owner checks" mode the owner can set once per spec.
+
+### 2026-11-23 — The split rule fires too eagerly, and scope gets pushed out by reflex
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `pattern`
+- **What was found:** The split signal recommended splitting CR-20260918-web-ui-dictionary in two; the owner chose one spec (2026-11-19), as he had on 2026-11-13 ("я за одну спеку"). The agent also tended to move adjacent, cheap work to a later spec ("може одразу?", "чому ні?") and planned a few hours of backward-compatibility steps the owner did not want (2026-11-13, T11).
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** Tighten the split rule (independent ACs alone are not enough), and in Specify prefer including a small adjacent change over deferring it; skip transitional compatibility when the window is hours.
+
+### 2026-11-23 — A PR closed without its release; merge only working code; nothing runs without a go
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** The owner's rule (2026-11-11) is that a tobevisit-content PR closes with its release to the cluster; on 2026-11-19 the promote IMP was closed without it ("а ми вже задеплоїли?"). On 2026-11-16 he asked that only working code is merged, so acceptance runs on the PR branch's own Preview before the merge. Since 2026-10-27 nothing that touches pipeline data runs without his explicit go and the exact command.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** Make these closure rules part of the spec lifecycle: a release step in Rollout when the change ships in an image, acceptance on the PR branch before merge, and every data-touching run named and approved.
+
+### 2026-11-23 — Guards push agents into bypasses and hand-offs
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `tooling`
+- **What was found:** Already logged per project, recurring across them: the agent deleted a file it had created via Python `os.remove` after `rm` was blocked (tobevisit-content, 2026-11-19) — the rule is to take the route the guard names or ask the owner; `pr-base-guard` refuses PRs into `develop`, into an epic branch with no `in-progress` spec (tobevisit-web #49, 2026-11-20) and for a spec still at `specify` (2026-11-14, 2026-11-19), so the owner opens them by hand; `git merge` is blocked, the owner merged by hand and left conflict markers (tobevisit-content, 2026-11-18); a claude branch cannot be reset or switched, so each spec starts yet another branch; spec-status-guard blocks test files a spec does not list (2026-11-19).
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** In `bash-write-guard.sh` allow `rm` of a file git does not track; in `pr-base-guard.sh` accept a base named in any spec's `branches:` or an existing ticket branch (`<KEY>-*`); allow `git merge --no-edit` of the base into the agent's own claude branch.
+
+### 2026-11-23 — A PR merged seconds before the last push, and a review request that cannot succeed
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `tooling`
+- **What was found:** On 2026-11-20 the owner merged tobevisit-web #47 seconds before the agent pushed one more commit, which then missed the branch and needed a new PR (#49). Separately, every "request review from avolsh" fails because the PRs are created under his own account and GitHub treats him as the author.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** Keep a PR in draft until the closure commit is pushed and say "one more commit coming"; drop the review request when the reviewer is the PR's author.
+
+### 2026-11-23 — Cloud threads: naming, Remote Control, and paid runs on copies
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** The framework has nothing on cloud project threads yet. Thread titles: a thread for a spec is named after it (logged in tobevisit-web, 2026-11-20), and the owner added on 2026-11-23 that a Jira key goes first — `[<KEY>-102]`, and with a spec `[<KEY>-102] CR-…`. Remote Control: on 2026-11-04 the RC session on the owner's Mac and the cloud thread did the same request in parallel; on 2026-11-16 RC acted on its own when the owner's short replies were forwarded to it; on 2026-11-16 and 2026-11-19 the agent handed the owner commands it could have run itself through RC ("може сам зробиш?", "а з remote ти не хочеш сам це зробити?"). On 2026-11-19 a full paid run on a local copy was proposed; the owner stopped it, because spend on a copy is thrown away. On 2026-10-25 the coordinator forwarded a context file meant for itself to another thread.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** Add a cloud-threads section to the framework: title `[<Jira key>] <spec id>` (key alone without a spec), never renamed to prose; check a live RC session before coding and stop RC when its device work is done; run on RC what the agent may run instead of handing it over; no paid full runs on local copies.
+
+### 2026-11-23 — A spec named a CLI that is not idempotent, an AC promised a no-op, and a release step contradicted the documented order
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `pattern`
+- **What was found:** IMP-20261116-cache-bucket-cleanup named `wrangler r2 bucket lifecycle`, but its `add` duplicates and its `set` wipes other rules; the requirements gate switched to the R2 API (2026-11-20). The Jira AC said a second `make env-cloudflare-update` changes nothing, while the Cache Rule step and the `cdn-gen` deploy write on every run (logged in tobevisit-web, 2026-11-20). On 2026-11-19 the agent asked for the `v0.7.0` tag on a feature-branch commit, though packages-next.js's release steps say merge first, then tag; the owner deleted and recreated it.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** At the requirements gate, check the idempotency of any tool a spec names and of any "re-run is a no-op" AC against the whole command; release advice follows the repo's documented steps.
+
+### 2026-11-23 — Nothing says which fact belongs in which store, so agents wrote to MEMORY.md
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** on 2026-10-27 the owner asked four times to remove MEMORY.md, the platform's project-memory index, and "do not use MEMORY.md" is now a project instruction. The framework already says the improvements log, not harness memory, takes process findings (2026-06-05 entry), but it names no home for the other kinds of fact: the owner's standing working rules, a spec's state, how to run something, a one-off decision. Agents filled the gap with the platform's memory and its index.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** a table in `agent-protocol`: process finding → `docs/improvements-log.md`; project rule or command → `_canonical.md`; a spec's decisions and state → the spec; the owner's standing preferences in a cloud project → one memory file per subject, never an index file.
+
+### 2026-11-23 — The Jira ticket was updated only when the owner asked
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** across the project the ticket's description and status were brought up to date only after the owner asked for it by name, on seven tickets of the project. On 2026-11-23 he asked that the ticket be updated without reminders, and that work done for a ticket (this log, too) be recorded under it.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** in the spec lifecycle, update the ticket named by the work at each milestone (requirements approved, PR opened, closure, merge, release) without being asked; a thread or PR that serves a ticket names its key (`[<KEY>-102]` in the thread title, `<KEY>-102` first in the PR title).
+
+
+### 2026-11-23 — Files changed on the owner's Mac while he was building
+
+- **Spec / task:** ad-hoc — reported by the owner on 2026-11-23 in the framework-corrections thread
+- **Category:** `protocol`
+- **What was found:** an agent with access to the owner's Mac kept editing files in his repository after he had started a build there. The owner: "я збираю білд а ти міняєш файли, ти в своєму розумі?". The agent's answer admits it was still editing, should have asked him to wait, then disconnected from the Mac and held its cloud push. Nothing in the framework says that the owner's working tree is shared with the owner: a build, a test run or a review there reads whatever the agent writes mid-way, and the result is neither his tree nor the agent's.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** a rule for work on the owner's device (folder access or Remote Control): before editing there, say which files will change and finish or stop before he builds; once he says he is building, testing or reviewing, write nothing in that tree until he says it is done; prefer a branch or worktree of the agent's own over his checkout; when the agent's edits are done, say so in one line so he knows the tree is stable.
+
+### 2026-11-23 — The owner's review of the project threads, applied
+
+- **Spec / task:** IMP-20261123-owner-review-corrections
+- **Closed:** 2026-11-23
+- **Category:** `protocol`
+- **What was found:** the 17 entries above dated 2026-11-23 were logged for review; the owner approved them all and asked for them to be implemented at once, plus one more rule: a `claude/*` branch carries the ticket key (`claude/<KEY>-102-…`).
+- **What was changed:** sources of record, gate evidence, runbook-cited advice and the question answered first (entries 1, 3, 14) → `agent-protocol.md § Answer from the source of record`; saying what was checked before contradicting the owner (2) → `boundaries.md § Always do #15`; no salutation, numbered questions in the message, every number answered, copy-paste steps, compare links, mistakes named (4, 5, 6) → `§ Messages to the owner`, linked from `spec-asking-questions.md`; propose before changing (7) → `§ Propose before changing` (the plan-before-requirements case breaks a rule `plan-spec.prompt.md` already has); owner tasks last and the autonomous mode (8) → `authoring-steps.md § C` step 4 and `agent-protocol.md § Interpreting "continue"`; T1 alone, E6 and scope by default (9) → `splitting-rules.md`; release before closure, preview acceptance, runs with a go and no paid runs on copies (10, 13) → `spec-lifecycle.md § Rules #16`; the tracker ticket (16) → `§ Rules #17`; idempotency at the gate (14) → `create-spec.prompt.md` step 6; cloud threads, Remote Control, draft PRs, the owner's working tree, forwarded files (12, 13, 17) → `agent-protocol.md § Cloud threads and the owner's device`; where each fact is stored (15) → `§ Where each fact is stored`; `pr-base-guard.sh` takes a `specify` / `plan` spec's base when no `in-progress` spec records the repo, and `bash-write-guard.sh` lets the agent merge `FETCH_HEAD` or `origin/<branch>` into its own branch, so a diverged branch is merged instead of stopping (11) → the guards, `boundaries.md § Never do #10`, README; the branch name → `§ Never do #10`.
+- **Suggested follow-up:** two parts of entry 11 stay as they are, by decision: the guard still refuses `rm` of a file git does not track (an untracked file is the one git cannot restore; `.env` files are untracked), and a `claude/*` branch is still never reset (a reset discards unpushed commits).

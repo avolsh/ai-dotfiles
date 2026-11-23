@@ -332,8 +332,8 @@ bwg_expect 0 "find . -name x -exec rm {} ;"
 bwg_expect 0 "cp /tmp/x src/foo/*.ts"
 # outside the cloud an expansion still leaves the command alone, a git write included; a heredoc body and a
 # `$` the shell keeps as it is are no expansion, so the write is read (review cycle 5)
-bwg_expect 0 'git push origin TBV-1 $X'
-bwg_expect 2 $'# note\ngit push origin TBV-1'
+bwg_expect 0 'git push origin PROJ-1 $X'
+bwg_expect 2 $'# note\ngit push origin PROJ-1'
 bwg_expect 0 $'git status <<EOF\ngit merge x\nEOF'
 bwg_expect 2 $'cat > src/foo/b <<\'EOF\'\n$HOME\nEOF'
 bwg_expect 2 "echo x > 'src/foo/\$b'"
@@ -371,41 +371,63 @@ cloud_expect() { # $1 expected rc, $2 command, $3 CLAUDE_CODE_REMOTE value ("" =
 }
 for c in "git add -A" "git commit -m x" "git push origin claude/x" "git push -u origin claude/x" \
          "git push origin HEAD:refs/heads/claude/x" "git pull --ff-only origin claude/x" "git fetch origin" \
-         "git fetch origin TBV-1" "git checkout -b claude/y --no-track origin/TBV-1" \
-         "git switch -c claude/y --no-track origin/TBV-1" "cd ../cloudrepo && git commit -m x" \
+         "git fetch origin PROJ-1" "git checkout -b claude/y --no-track origin/PROJ-1" \
+         "git switch -c claude/y --no-track origin/PROJ-1" "cd ../cloudrepo && git commit -m x" \
          "git push origin claude/x 2>&1 | tail -1" "git push origin claude/x |& tail -1" \
          "git commit -m x 2>/dev/null" "! git commit -m x" \
          "time git commit -m x" "if true; then git commit -m x; fi" $'git status\ngit commit -m x'; do
   cloud_expect 0 "$c" true
   cloud_expect 2 "$c" ""
 done
-for c in "git push origin TBV-1" "git push --force origin claude/x" "git push --force-with-lease origin claude/x" \
-         "git push origin +claude/x" "git push origin claude/x:TBV-1" "git push origin claude/other" "git push" \
-         "git push origin --delete claude/x" "git merge TBV-1" "git commit --amend" "git pull origin claude/x" \
-         "git pull --ff-only --rebase origin claude/x" "git fetch origin TBV-1:TBV-1" "git rebase TBV-1" \
-         "git reset --hard" "git checkout -b claude/y origin/TBV-1" "git checkout -b feat --no-track origin/TBV-1" \
+for c in "git push origin PROJ-1" "git push --force origin claude/x" "git push --force-with-lease origin claude/x" \
+         "git push origin +claude/x" "git push origin claude/x:PROJ-1" "git push origin claude/other" "git push" \
+         "git push origin --delete claude/x" "git merge PROJ-1" "git commit --amend" "git pull origin claude/x" \
+         "git pull --ff-only --rebase origin claude/x" "git fetch origin PROJ-1:PROJ-1" "git rebase PROJ-1" \
+         "git reset --hard" "git checkout -b claude/y origin/PROJ-1" "git checkout -b feat --no-track origin/PROJ-1" \
          "git tag v1" "git checkout -B claude/x --no-track origin/master" \
          "git switch -C claude/x --no-track origin/master" "gh pr create --base master" \
-         "gh pr edit 12 --base TBV-1" "gh pr merge 12" \
-         "git pull --ff-only origin TBV-1:TBV-1" "git commit --no-verify -m x" "git commit -n -m x" \
+         "gh pr edit 12 --base PROJ-1" "gh pr merge 12" \
+         "git pull --ff-only origin PROJ-1:PROJ-1" "git commit --no-verify -m x" "git commit -n -m x" \
          "git commit -anm x" "git -c core.hooksPath=/dev/null commit -m x" \
          "git --config-env=core.hooksPath=H commit -m x" "GIT_CONFIG_COUNT=1 git commit -m x" \
-         "git checkout -f -b claude/y --no-track origin/TBV-1" \
-         "git switch --discard-changes -c claude/y --no-track origin/TBV-1" \
+         "git checkout -f -b claude/y --no-track origin/PROJ-1" \
+         "git switch --discard-changes -c claude/y --no-track origin/PROJ-1" \
          "git commit --no-verif -m x" "git commit --amen -m x" "git push origin :claude/x" \
          "git push origin --del claude/x" "git push --forc origin claude/x" "gh pr new --base master" \
          "gh pr revert 12" "gh pr update-branch 12" "gh pr update-branch 12 --rebase" \
          "git commit 2>&1 -n -m x" "git commit -m x >&2 --no-verify" "git push origin claude/x >&2 --force" \
-         "git push origin claude/x >&2 :TBV-1" "git push origin claude/x &>/dev/null --force" \
-         $'git status\ngit push origin TBV-1' $'git add -A\ngit push origin TBV-1' \
-         $'git fetch\ngit merge origin/master' "if true; then git push origin TBV-1; fi" \
-         "for i in 1; do git merge origin/master; done" "! git push origin TBV-1" "time git push origin TBV-1" \
+         "git push origin claude/x >&2 :PROJ-1" "git push origin claude/x &>/dev/null --force" \
+         $'git status\ngit push origin PROJ-1' $'git add -A\ngit push origin PROJ-1' \
+         $'git fetch\ngit merge origin/master' "if true; then git push origin PROJ-1; fi" \
+         "for i in 1; do git merge origin/master; done" "! git push origin PROJ-1" "time git push origin PROJ-1" \
          "gh pr -R o/r merge 12" "gh -R o/r pr create --base master" "gh --repo o/r pr merge 12" \
-         "gh pr --repo=o/r merge 12" "git status |& git push origin TBV-1" \
+         "gh pr --repo=o/r merge 12" "git status |& git push origin PROJ-1" \
          "export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=core.hooksPath GIT_CONFIG_VALUE_0=/dev/null; git commit -m x" \
-         "git checkout --forc -b claude/y --no-track origin/TBV-1"; do
+         "git checkout --forc -b claude/y --no-track origin/PROJ-1"; do
   cloud_expect 2 "$c" true
 done
+# the agent merges a fetched branch into its own claude/* branch, never master or develop, a local branch, or
+# with an option that rewrites the result (IMP-20261123-owner-review-corrections FR-13, AC-3)
+for c in "git merge --no-edit FETCH_HEAD" "git merge --no-edit origin/PROJ-1" "git merge --abort" \
+         "git merge --continue" "git merge --ff-only origin/claude/x" "git merge --no-ff --no-edit origin/PROJ-1" \
+         "git fetch origin claude/x && git merge --no-edit FETCH_HEAD"; do
+  cloud_expect 0 "$c" true
+  cloud_expect 2 "$c" ""
+done
+for c in "git merge PROJ-1" "git merge origin/master" "git merge --no-edit origin/develop" \
+         "git merge --squash origin/PROJ-1" "git merge -s ours origin/PROJ-1" "git merge -X theirs origin/PROJ-1" \
+         "git merge --no-verify origin/PROJ-1" "git merge --allow-unrelated-histories FETCH_HEAD" \
+         "git merge origin/PROJ-1 origin/PROJ-2" "git merge" "git merge -m x origin/PROJ-1" \
+         "git merge --no-edit refs/remotes/origin/master" "git merge origin/PROJ-1:x"; do
+  cloud_expect 2 "$c" true
+done
+mainrepo="$TMP/mainrepo"
+git init -q "$mainrepo"
+git -C "$mainrepo" checkout -q -b PROJ-1
+set +e
+cmd_payload "git merge --no-edit FETCH_HEAD" "$mainrepo" | CLAUDE_CODE_REMOTE=true "$BWG" >/dev/null 2>&1; rc=$?
+set -e
+expect "bash-write-guard cloud: merge on a branch that is not claude/*" 2 "$rc"
 # a commit message that merely contains n is not -n, and an allowed long option is no abbreviation of a denied one
 cloud_expect 0 "git commit -am note" true
 cloud_expect 0 "git commit --no-edit -m x" true
@@ -423,27 +445,27 @@ cloud_expect 2 "git >&2 push origin master" ""
 cloud_expect 2 "FOO=1 git commit -m x" ""
 # the pre-pass: a comment, a line continuation, a heredoc body and a descriptor glued to an operator hide
 # nothing, and `time -p` and `coproc` stand before the command they run (review cycle 5)
-for c in $'# note\ngit push origin TBV-1' "git commit -m a#b -n" "true;2>/dev/null git push origin TBV-1" \
-         "(2>&1 git push origin TBV-1)" "git status|2>&1 git push origin TBV-1" $'git commit -m x \\\n --no-verify' \
-         "time -p git push origin TBV-1" "coproc git push origin TBV-1" \
-         $'cat <<EOF\nx\nEOF\ngit status\ngit push origin TBV-1'; do
+for c in $'# note\ngit push origin PROJ-1' "git commit -m a#b -n" "true;2>/dev/null git push origin PROJ-1" \
+         "(2>&1 git push origin PROJ-1)" "git status|2>&1 git push origin PROJ-1" $'git commit -m x \\\n --no-verify' \
+         "time -p git push origin PROJ-1" "coproc git push origin PROJ-1" \
+         $'cat <<EOF\nx\nEOF\ngit status\ngit push origin PROJ-1'; do
   cloud_expect 2 "$c" true
 done
-for c in "git commit -m x # a comment" "git push origin claude/x # not TBV-1" $'git commit -F - <<\'EOF\'\nfix\ngit merge origin/master\nEOF' \
+for c in "git commit -m x # a comment" "git push origin claude/x # not PROJ-1" $'git commit -F - <<\'EOF\'\nfix\ngit merge origin/master\nEOF' \
          $'cat <<EOF\ncd /tmp\nEOF\ngit commit -m x' $'gh pr view 12 <<EOF\ngh pr merge 12\nEOF' \
-         $'cat > notes.md <<\'EOF\'\ngit push origin TBV-1\nEOF'; do
+         $'cat > notes.md <<\'EOF\'\ngit push origin PROJ-1\nEOF'; do
   cloud_expect 0 "$c" true
 done
 # a git write or gh pr verb with a word the shell decides is denied in the cloud, a substitution body is read
 # as a command, and reads, a quoted commit message, a glob inside a path and a path write pass (FR-6)
-for c in 'git push origin TBV-1 $X' 'git push -u origin "$(git branch --show-current)"' \
+for c in 'git push origin PROJ-1 $X' 'git push -u origin "$(git branch --show-current)"' \
          'git push -u origin `git branch --show-current`' 'git add *.md && git push origin claude/x' \
          'git commit -m $MSG' 'git commit -m fix$X' 'git -C "$D" commit -m x' 'git $SUB origin claude/x' \
          'cd "$(git rev-parse --show-toplevel)" && git commit -m x' 'gh pr $V 12' 'gh $X merge 12' \
-         'for b in TBV-1; do git push origin $b; done' 'echo "$(git push origin TBV-1)"' \
-         'echo `git push origin TBV-1`' 'X=$(git merge origin/master)' 'git commit -m "$(git push origin TBV-1)"' \
+         'for b in PROJ-1; do git push origin $b; done' 'echo "$(git push origin PROJ-1)"' \
+         'echo `git push origin PROJ-1`' 'X=$(git merge origin/master)' 'git commit -m "$(git push origin PROJ-1)"' \
          'git checkout -b claude/y --no-track "$BASE"' 'git commit -m $(cat msg)' \
-         'cd ../otherrepo && echo "$(git commit -m x)"' $'git push origin TBV-1\necho "x' \
+         'cd ../otherrepo && echo "$(git commit -m x)"' $'git push origin PROJ-1\necho "x' \
          'git commit -m x --no-verify \' 'export $K=1; git commit -m x'; do
   cloud_expect 2 "$c" true
 done
@@ -457,7 +479,7 @@ for c in 'git log -1 $REF' 'git log --oneline "$(git merge-base HEAD origin/main
   cloud_expect 0 "$c" true
 done
 # the denial names the word, and the cloud exception
-for c in 'git push origin TBV-1 $X|git push|$X' 'cd "$D" && git commit -m x|git commit|$D' \
+for c in 'git push origin PROJ-1 $X|git push|$X' 'cd "$D" && git commit -m x|git commit|$D' \
          'git $SUB origin claude/x|git|$SUB'; do
   IFS='|' read -r cmd what word <<< "$c"
   set +e
@@ -477,7 +499,7 @@ done
 # a cd or --git-dir moving the write to another repository (review finding 1)
 otherrepo="$TMP/otherrepo"
 git init -q "$otherrepo"
-git -C "$otherrepo" checkout -q -b TBV-1
+git -C "$otherrepo" checkout -q -b PROJ-1
 for c in "cd ../otherrepo && git commit -m x" "cd ../otherrepo && git add -A" \
          "git --git-dir=../otherrepo/.git commit -m x" "git --work-tree ../otherrepo add -A" \
          "cd - && git commit -m x" "cd && git add -A" "git -C ../otherrepo commit -m x" \
@@ -494,13 +516,13 @@ expect "bash-write-guard cloud: a cd inside a group is not followed out of it" 2
 cloud_expect 0 "(git commit -m x)" true
 cloud_expect 2 "(git commit -m x)" ""
 cloud_expect 2 "git commit -m x" false
-git -C "$cloudrepo" checkout -q -b TBV-1
+git -C "$cloudrepo" checkout -q -b PROJ-1
 cloud_expect 2 "git commit -m x" true
-cloud_expect 2 "git push origin TBV-1" true
-cloud_expect 0 "git checkout -b claude/z --no-track origin/TBV-1" true
+cloud_expect 2 "git push origin PROJ-1" true
+cloud_expect 0 "git checkout -b claude/z --no-track origin/PROJ-1" true
 cloud_expect 2 "cd ../cloudrepo && git commit -m x" true
 set +e
-bwg_out="$(cmd_payload "git push origin TBV-1" "$cloudrepo" | CLAUDE_CODE_REMOTE=true "$BWG" 2>&1 >/dev/null)"
+bwg_out="$(cmd_payload "git push origin PROJ-1" "$cloudrepo" | CLAUDE_CODE_REMOTE=true "$BWG" 2>&1 >/dev/null)"
 set -e
 echo "$bwg_out" | grep -q "cloud exception" || { echo "FAIL: cloud deny must name the cloud exception" >&2; fails=$((fails+1)); }
 
@@ -512,7 +534,7 @@ cat > "$prws/ai-dotfiles/docs/specs/active/IMP-20261025-x.md" <<'EOF2'
 ---
 id: IMP-20261025-x
 status: in-progress
-branches: {ai-dotfiles: TBV-83-cloud-setup, other: TBV-9-a}
+branches: {ai-dotfiles: PROJ-83-cloud-setup, other: PROJ-9-a}
 ---
 # x
 EOF2
@@ -530,33 +552,52 @@ prg_expect() { # $1 expected rc, $2 repo, $3 base, [$4 tool], [$5 cwd]
   set -e
   expect "pr-base-guard: $2 -> ${3:-<none>} (${4:-create})" "$1" "$rc"
 }
-prg_expect 0 ai-dotfiles TBV-83-cloud-setup
+prg_expect 0 ai-dotfiles PROJ-83-cloud-setup
 prg_expect 2 ai-dotfiles master
 prg_expect 2 ai-dotfiles develop
-prg_expect 2 ai-dotfiles TBV-99
-prg_expect 0 other TBV-9-a
-prg_expect 2 unrecorded TBV-83-cloud-setup
+prg_expect 2 ai-dotfiles PROJ-99
+prg_expect 0 other PROJ-9-a
+prg_expect 2 unrecorded PROJ-83-cloud-setup
 prg_expect 2 ai-dotfiles master mcp__github__update_pull_request
-prg_expect 0 ai-dotfiles TBV-83-cloud-setup mcp__github__update_pull_request
+prg_expect 0 ai-dotfiles PROJ-83-cloud-setup mcp__github__update_pull_request
 prg_expect 0 ai-dotfiles "" mcp__github__update_pull_request
 # only an in-progress spec counts, and two of them disagreeing deny (review finding 4)
 cat > "$prws/other/docs/specs/active/CR-20261025-y.md" <<'EOF2'
 ---
 id: CR-20261025-y
 status: plan
-branches: {ai-dotfiles: TBV-7-planned}
+branches: {ai-dotfiles: PROJ-7-planned}
 ---
 # y
 EOF2
-prg_expect 2 ai-dotfiles TBV-7-planned
-prg_expect 0 ai-dotfiles TBV-83-cloud-setup
+prg_expect 2 ai-dotfiles PROJ-7-planned
+prg_expect 0 ai-dotfiles PROJ-83-cloud-setup
 sed -i 's/^status: plan$/status: in-progress/' "$prws/other/docs/specs/active/CR-20261025-y.md"
-prg_expect 2 ai-dotfiles TBV-7-planned
-prg_expect 2 ai-dotfiles TBV-83-cloud-setup
+prg_expect 2 ai-dotfiles PROJ-7-planned
+prg_expect 2 ai-dotfiles PROJ-83-cloud-setup
 rm "$prws/other/docs/specs/active/CR-20261025-y.md"
+# with no in-progress record for the repo, a spec at specify or plan supplies the base: a spec-only PR for a
+# spec still at specify (IMP-20261123-owner-review-corrections FR-12, AC-2)
+mkdir -p "$prws/third/docs/specs/active"
+spec_at() { # $1 file, $2 status, $3 base for repo "third"
+  printf -- '---\nid: %s\nstatus: %s\nbranches: {third: %s}\n---\n# s\n' "$(basename "$1" .md)" "$2" "$3" > "$1"
+}
+spec_at "$prws/third/docs/specs/active/CR-20261123-a.md" specify PROJ-1
+prg_expect 0 third PROJ-1
+prg_expect 2 third master
+spec_at "$prws/third/docs/specs/active/CR-20261123-b.md" in-progress PROJ-2
+prg_expect 2 third PROJ-1
+prg_expect 0 third PROJ-2
+prg_expect 2 third master
+rm "$prws/third/docs/specs/active/CR-20261123-b.md"
+spec_at "$prws/third/docs/specs/active/CR-20261123-c.md" plan PROJ-3
+prg_expect 2 third PROJ-1
+prg_expect 2 third PROJ-3
+prg_expect 2 third master
+rm -r "$prws/third"
 # a spec tree above cwd is found without AI_DOTFILES
 set +e
-pr_payload mcp__github__create_pull_request other TBV-9-a "$prws/ai-dotfiles/docs" | CLAUDE_CODE_REMOTE=true "$PRG" >/dev/null 2>&1; rc=$?
+pr_payload mcp__github__create_pull_request other PROJ-9-a "$prws/ai-dotfiles/docs" | CLAUDE_CODE_REMOTE=true "$PRG" >/dev/null 2>&1; rc=$?
 set -e
 expect "pr-base-guard: ancestor spec tree" 0 "$rc"
 # outside a cloud session the guard is silent; a malformed payload allows
@@ -569,9 +610,9 @@ printf 'not json' | CLAUDE_CODE_REMOTE=true "$PRG" >/dev/null 2>&1; rc=$?
 set -e
 expect "pr-base-guard: fails open on a malformed payload" 0 "$rc"
 set +e
-prg_out="$(pr_payload mcp__github__create_pull_request ai-dotfiles TBV-99 "$TMP" | CLAUDE_CODE_REMOTE=true AI_DOTFILES="$prws/ai-dotfiles" "$PRG" 2>&1 >/dev/null)"
+prg_out="$(pr_payload mcp__github__create_pull_request ai-dotfiles PROJ-99 "$TMP" | CLAUDE_CODE_REMOTE=true AI_DOTFILES="$prws/ai-dotfiles" "$PRG" 2>&1 >/dev/null)"
 set -e
-echo "$prg_out" | grep -q "TBV-83-cloud-setup" || { echo "FAIL: pr-base-guard deny must name the recorded base" >&2; fails=$((fails+1)); }
+echo "$prg_out" | grep -q "PROJ-83-cloud-setup" || { echo "FAIL: pr-base-guard deny must name the recorded base" >&2; fails=$((fails+1)); }
 
 # ---------- secrets-scan.sh ----------
 SCAN="$HOOKS_DIR/secrets-scan.sh"
