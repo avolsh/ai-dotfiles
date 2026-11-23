@@ -1,6 +1,6 @@
 # Authoring Steps — inline procedures
 
-*Last updated: 2026-09-17*
+*Last updated: 2026-11-23*
 
 <!-- Anchors in this file (per `docs/rule-canonical-map.md`): R14 `§ C step 5` (the cap counts decisions) · R15 `§ C step 6` (adjudicated cluster is an override, not a re-run). -->
 
@@ -66,7 +66,7 @@ Plan-stage safety net ([`splitting-rules.md § 3`](splitting-rules.md)).
 1. **Verify prerequisites** — Requirements, Acceptance Criteria, Split Decision, Design all populated.
 2. **Build the FR→AC map.**
 3. **Cluster into vertical slices** — each owns ≥1 FR and ends at a verifiable AC/green build moment. A slice is over-bundled when it exceeds the ≤5 cap of step 5 — which counts decisions, not written files — and is split on that count, never on the length of its Files column.
-4. **Order by dependency** — earlier tasks produce what later tasks consume; scaffolding first, verification/closure last; aim for a near-linear chain.
+4. **Order by dependency, the owner's tasks last** — earlier tasks produce what later tasks consume; scaffolding first, verification/closure last; aim for a near-linear chain. Within that order, every task the agent can finish alone comes before any task that needs the owner (a run he must allow, a deploy, a manual check, a decision), and those are grouped at the end, so an [autonomous run](../../../../docs/agent-protocol.md#autonomous-mode) reaches them in one stop.
 5. **Per task, build the row** — Description (what/why + FR/AC numbers); Files (every file the task writes, exact paths, mark `*(new)*`); Source files (read-only, optional, uncapped); Depends on (earlier task IDs or `—`); Skills (subset of spec `skills:`); Model (`fast`/`default`/`deep` per [`docs/model-selection.md`](../../../../docs/model-selection.md), default `default`); Status `☐ pending` (later values per [`boundaries.md § Always do #11`](../../../boundaries.md#task-row-status-in-place)).
 
    **The ≤5 cap counts files the task decides about; the Files column lists every file the task writes.**

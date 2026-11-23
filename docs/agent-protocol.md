@@ -1,6 +1,6 @@
 # Agent Protocol
 
-*Last updated: 2026-09-18*
+*Last updated: 2026-11-23*
 
 Operating procedures for AI agents working in any project that participates in the AI Agent Framework: path prefixes, two-scope model, context loading order, checklists, output conventions, and the on-demand reference material (determinism, schema sync, doc freshness, skills audit).
 
@@ -332,6 +332,78 @@ in a fenced block, a UI's ⏳ and 📍 in a sentence. What the rule still forbid
 and what the check still fails on, is a sentence written in another script —
 write the prose in English and put the foreign string in backticks.
 
+## Working with the owner <a id="working-with-the-owner"></a>
+
+The owner reads most replies on a phone, between other work, and acts on them hours later. These rules come
+from the corrections he made across the tobevisit-mvp project threads (`docs/improvements-log.md`, the
+entries of 2026-11-23; IMP-20261123-owner-review-corrections).
+
+### Answer from the source of record <a id="answer-from-source"></a>
+
+- **A question about status, scope or what exists is answered after reading its source of record** — the
+  tracker ticket, the spec, the code at the named ref, the product's docs — and the reply names that source.
+  Memory of an earlier session is a lead to check, never the answer: "what is next in TBV-76" is answered from
+  the ticket's spec list, not from the last spec remembered.
+- **A claim in a gate carries its evidence or says it is a guess.** What production holds, what a tool does,
+  what a dependency supports: read it, or write "not checked".
+- **Operational advice cites the current runbook or code it comes from.** A step written for a one-off
+  migration ("run it 2–3 times until it converges") is never offered as how the process works; a release
+  follows the repo's documented release steps, in their order.
+- **Answer the question asked first**, in its own terms; caveats and the wider picture come after.
+- Code that is still there but no longer used is a finding to report, not a feature to describe as supported.
+
+### Messages to the owner <a id="messages-to-owner"></a>
+
+- **No salutation and no name.** Start with the content. A name guessed from a display name is wrong more
+  often than not.
+- **Decision questions go in the message itself**, numbered, each with one recommended answer, so the owner
+  can reply in a line (`1A, 2–7 так`); a question is not moved into a document or a file he has to open.
+  An internal term (a stage number, a release name) is explained the first time it appears.
+- **A reply to his answers covers every number he raised**, in his order; one left out is asked again.
+- **A step he runs is one copy-paste line**, a command that survives the paste (no line break inside it), or
+  the exact UI place and the value to set. Every key or variable it needs is said where to find.
+- **A PR the agent cannot open is asked for with its compare link**
+  (`https://github.com/<org>/<repo>/compare/<base>...<head>?expand=1`), never with a branch name alone.
+- **A mistake is named before anything is adapted to it.** A PR opened by misunderstanding is called that;
+  its description is not rewritten to fit.
+
+### Propose before changing <a id="propose-before-changing"></a>
+
+A change the owner did not ask for by name — a fix to a complaint, a flag that silences noise, a refactor seen
+on the way — is proposed first: what changes, what it does for him, what it costs or hides. It is made after
+his answer, never in the turn that announces it.
+
+## Where each fact is stored <a id="where-facts-live"></a>
+
+| Kind of fact | Store |
+|---|---|
+| A process finding, a friction, a better approach | the scope's `docs/improvements-log.md` ([`boundaries.md § Always do #13`](../framework/boundaries.md)) |
+| A project rule, a command, how to run something | the project's `_canonical.md` (rendered by `make sync-agents`) |
+| A spec's decisions, state and evidence | the spec itself |
+| Work state for a ticket (PRs, releases, what is open) | the tracker ticket ([`spec-lifecycle.md § Rules #17`](../framework/spec-workflows/spec-lifecycle.md#tracker-ticket)) |
+| The owner's standing preferences in a cloud project | project memory, one file per subject, never an index file (no `MEMORY.md`) |
+| A one-off decision in a thread | the thread, and the spec or ticket it belongs to |
+
+A fact written to a store that is not its own is a fact the next session does not find.
+
+## Cloud threads and the owner's device <a id="cloud-threads"></a>
+
+- **Thread titles** carry the tracker key first: `[TBV-102]`, and with a spec `[TBV-102] IMP-20261123-…`.
+  A title is not renamed to prose afterwards. A `claude/*` branch is named after the ticket too
+  ([`boundaries.md § Never do #10`](../framework/boundaries.md#claude-branch-name)).
+- **Remote Control.** Before coding on a request the owner also sent while a Remote Control session on his
+  device is live, ask that session what it is doing, so the work is not done twice; stop the session when its
+  device work is done. What the agent may run on the device (builds, tests, local scripts) it runs there
+  itself instead of handing the command to the owner; a command reaching a deployed environment still needs
+  his go ([`boundaries.md § Never do #11`](../framework/boundaries.md#environments-are-the-humans)).
+- **The owner's working tree is shared with him.** Before editing files on his device (folder access or Remote
+  Control) the agent names the files it will change. Once he says he is building, testing or reviewing there,
+  it writes nothing in that tree until he says he is done; it works in a branch or worktree of its own rather
+  than his checkout where it can, and it says in one line when its edits are finished.
+- **Pull requests.** A PR stays draft until its last commit is pushed; "one more commit coming" is said before
+  he can merge early. No review is requested from the PR's author, which GitHub refuses.
+- **A file meant for one session is not forwarded to another** — a coordinator's own context stays with it.
+
 ## Controlled refactoring
 
 Refactoring and feature work must not be mixed in the same task.
@@ -417,6 +489,14 @@ When a user says "continue spec implementation", this grants permission for
 the **next single task only**. After that task, the agent must stop again and
 wait for explicit approval to proceed. That approval is what flips the
 preceding task's row from `◐` to `☑` — never a later one.
+
+<a id="autonomous-mode"></a>**Autonomous until owner checks.** When the owner says, for a spec, to do
+everything the agent can without him (`роби все, що можеш без мене`, "do everything you can without me"),
+the agent records it under the `## Tasks` line — `> **Autonomous until owner checks** — <who, date, words>` —
+and runs task after task without waiting. It still posts each task's Bottom Line and leaves each row at
+`◐ awaiting approval`; the owner's approval at the end flips them to `☑`. It stops at the first task that needs
+him — a run he must allow, a deploy, a decision — and at any failure it cannot fix inside the task. The plan
+puts those tasks last ([`authoring-steps.md § C`](../framework/skills/writing-specs/references/authoring-steps.md)).
 
 **On bug fix:**
 Follow the bug-fix protocol in the BUG template.

@@ -1,6 +1,6 @@
 # Asking Questions During Specify
 
-*Last updated: 2026-05-14*
+*Last updated: 2026-11-23*
 
 How to ask effective clarifying questions during the Specify step of a spec.
 
@@ -16,6 +16,9 @@ How to ask effective clarifying questions during the Specify step of a spec.
   questions: "Should we add a new entity or extend the existing one?"
 - **Group related questions** — combine closely related questions to stay
   within the 10-question budget.
+- **Ask in the message, numbered, with a recommendation each** — so the
+  answer fits in a line; every number the human answers gets a reply. Format:
+  [`agent-protocol.md § Messages to the owner`](agent-protocol.md#messages-to-owner).
 
 ## Question categories
 
