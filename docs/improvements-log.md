@@ -772,3 +772,12 @@ own `docs/improvements-log.md` for project-specific findings.
 - **What was found:** IMP-20261116-cache-bucket-cleanup named `wrangler r2 bucket lifecycle`, but its `add` duplicates and its `set` wipes other rules; the requirements gate switched to the R2 API (2026-11-20). The Jira AC said a second `make env-cloudflare-update` changes nothing, while the Cache Rule step and the `cdn-gen` deploy write on every run (logged in tobevisit-web, 2026-11-20). On 2026-11-19 the agent asked for the `v0.7.0` tag on a feature-branch commit, though packages-next.js's release steps say merge first, then tag; the owner deleted and recreated it.
 - **What was changed:** none — logged for review.
 - **Suggested follow-up:** At the requirements gate, check the idempotency of any tool a spec names and of any "re-run is a no-op" AC against the whole command; release advice follows the repo's documented steps.
+
+### 2026-11-23 — Nothing says which fact belongs in which store, so agents wrote to MEMORY.md
+
+- **Spec / task:** ad-hoc — owner's review of the tobevisit-mvp project threads, 2026-10-25 … 2026-11-22
+- **Category:** `protocol`
+- **What was found:** on 2026-10-27 the owner asked four times to remove MEMORY.md, the platform's project-memory index, and "do not use MEMORY.md" is now a project instruction. The framework already says the improvements log, not harness memory, takes process findings (2026-06-05 entry), but it names no home for the other kinds of fact: the owner's standing working rules, a spec's state, how to run something, a one-off decision. Agents filled the gap with the platform's memory and its index.
+- **What was changed:** none — logged for review.
+- **Suggested follow-up:** a table in `agent-protocol`: process finding → `docs/improvements-log.md`; project rule or command → `_canonical.md`; a spec's decisions and state → the spec; the owner's standing preferences in a cloud project → one memory file per subject, never an index file.
+
